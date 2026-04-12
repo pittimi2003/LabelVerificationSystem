@@ -2,7 +2,6 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject StateService stateService
-@inject SessionService _sessionService
 @using BlazorColorPicker
 @inject IColorPickerService ColorPickerService
 
@@ -21,20 +20,16 @@
 
     <MudMainContent Class="main-content app-content" @onclick="() => icontextCloseFn()">
         <MudContainer MaxWidth="MaxWidth.False" Class="container-fluid page-container main-body-container">
-        @Body
+            @Body
         </MudContainer>
     </MudMainContent>
-@* 
-    <Footer /> *@
 
     @if (ShowButton)
     {
-        <!-- Scroll To Top -->
         <div class="scrollToTop" @onclick="ScrollToTop">
             <span class="arrow lh-1"><i class="ti ti-arrow-big-up fs-18"></i></span>
         </div>
         <div id="responsive-overlay"></div>
-        <!-- Scroll To Top -->
     }
 
 </MudLayout>
@@ -42,19 +37,21 @@
 <BlazorColorPicker.ColorPicker />
 
 @code {
-    NavMenu? navMenuRef;
-    bool ShowButton { get; set; } = false;
+    private NavMenu? navMenuRef;
+    private bool ShowButton { get; set; }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-
         if (firstRender)
         {
             var currentState = new AppState();
             var newState = stateService.GetAppState();
+
             if (!currentState.Equals(newState))
             {
                 await stateService.retrieveFromLocalStorage();
             }
+
             StateHasChanged();
             await JSRuntime.InvokeVoidAsync("interop.updateScrollVisibility", DotNetObjectReference.Create(this));
         }
@@ -66,30 +63,26 @@
         ShowButton = scrollHeight >= 100;
         StateHasChanged();
     }
-    async Task ScrollToTop()
+
+    private async Task ScrollToTop()
     {
         await JSRuntime.InvokeVoidAsync("interop.scrollToTop");
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-    }
-
-    // Icon ClickOpen Start
     private async void icontextCloseFn()
     {
         var dataToggled = await JSRuntime.InvokeAsync<string>("interop.getAttributeToHtml", "data-toggled");
         var dataNavLayout = await JSRuntime.InvokeAsync<string>("interop.getAttributeToHtml", "data-nav-layout");
         var inner = await JSRuntime.InvokeAsync<int>("interop.inner", "innerWidth");
+
         if (dataToggled == "icon-text-close")
         {
             await JSRuntime.InvokeAsync<string>("interop.removeAttributeFromHtml", "data-icon-text");
         }
+
         if (dataNavLayout == "horizontal" && inner >= 992)
         {
             navMenuRef?.closeMenuFn();
-        } 
+        }
     }
-    // Icon Clickopen End
 }

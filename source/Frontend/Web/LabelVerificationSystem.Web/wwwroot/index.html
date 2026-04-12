@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-toggled="double-menu-open">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>Label verification system</title>
+    <meta name="Description" content="Label verification system double scanning process" />
+    <meta name="Author" content="MachSoft" />
+    <meta name="keywords" content="label verification system" />
+
+    <base href="/" />
+
+    <link rel="icon" href="assets/images/brand-logos/favicon.ico" type="image/x-icon" />
+
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="assets/css/styles.min.css" rel="stylesheet" />
+    <link href="assets/css/icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/libs/@tarekraafat/autocomplete.js/css/autoComplete.css" />
+    <link href="_content/BlazorColorPicker/colorpicker.css" rel="stylesheet" />
+    <link href="_content/BlazorColorPicker/BlazorColorPicker.bundle.scp.css" rel="stylesheet" />
+    <link href="_content/FlatpickrBlazor/flatpickr.min.css" rel="stylesheet" />
+    <link href="_content/FlatpickrBlazor/plugins/monthSelect/style.css" rel="stylesheet" />
+    <link href="LabelVerificationSystem.Web.styles.css" rel="stylesheet" />
+    <link href="app.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">Cargando...</div>
+
+    <script src="assets/libs/@tarekraafat/autocomplete.js/autoComplete.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var scriptUrls = [
+                "_content/FlatpickrBlazor/flatpickr.min.js",
+                "_content/FlatpickrBlazor/flatpickr.blazor.js",
+                "_content/FlatpickrBlazor/l10n/de.js",
+                "_content/FlatpickrBlazor/plugins/monthSelect/index.js",
+                "_content/FlatpickrBlazor/plugins/minMaxTimePlugin.js",
+                "assets/js/custom.js"
+            ];
+
+            scriptUrls.forEach(function (url) {
+                var script = document.createElement("script");
+                script.src = url;
+                document.body.appendChild(script);
+            });
+        });
+    </script>
+
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="js/javaScriptInterop.js"></script>
+    <script src="js/resizeInterop.js"></script>
+    <script src="js/browserStorage.js"></script>
+
+    <script>
+        function CaptureElementAndCallBlazorFunction(event, menuData) {
+            var element = event.currentTarget;
+            var menuId = element.dataset.menuId;
+            window.DotNet.invokeMethodAsync("vyzor.SubNavMenu", "TriggerFunction", element, menuData, null);
+        }
+    </script>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+</html>

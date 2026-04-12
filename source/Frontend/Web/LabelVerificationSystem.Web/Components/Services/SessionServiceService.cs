@@ -1,108 +1,56 @@
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
+using Microsoft.JSInterop;
 using System.Text.Json;
 
 public class SessionService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    
-    // Constructor should have the same name as the class
-    public SessionService(IHttpContextAccessor httpContextAccessor)
+    private const string AppStateKey = "AppState";
+    private const string InitialAppStateKey = "InitalAppState";
+    private readonly IJSRuntime _jsRuntime;
+
+    public SessionService(IJSRuntime jsRuntime)
     {
-        _httpContextAccessor = httpContextAccessor;
+        _jsRuntime = jsRuntime;
     }
 
     public async Task SetAppStateToSession(AppState state)
     {
-        var httpContext = _httpContextAccessor.HttpContext;
-        
-        if (httpContext != null)
-        {
-            var session = httpContext.Session;
-            
-            if (session != null)
-            {
-                var jsonState = JsonSerializer.Serialize(state);
-                session.SetString("AppState", jsonState);
-            }
-        }
-        await Task.CompletedTask;
+        var jsonState = JsonSerializer.Serialize(state);
+        await _jsRuntime.InvokeVoidAsync("browserStorage.setSessionItem", AppStateKey, jsonState);
     }
-    public void DeleteAppStateFromSession()
+
+    public async Task DeleteAppStateFromSession()
     {
-        var httpContext = _httpContextAccessor?.HttpContext;
-        if (httpContext != null)
-        {
-            var session = httpContext.Session;
-            session.Remove("AppState");
-        }
+        await _jsRuntime.InvokeVoidAsync("browserStorage.removeSessionItem", AppStateKey);
     }
-    public Task<AppState> GetAppStateFromSession()
+
+    public async Task<AppState> GetAppStateFromSession()
     {
-        var httpContext = _httpContextAccessor.HttpContext;
+        var jsonState = await _jsRuntime.InvokeAsync<string?>("browserStorage.getSessionItem", AppStateKey);
 
-        // Check if HttpContext or Session is null
-        if (httpContext == null || httpContext.Session == null)
+        if (string.IsNullOrWhiteSpace(jsonState))
         {
-            // Handle the situation where HttpContext or Session is null
-            return Task.FromResult(new AppState()); // Or throw an exception, depending on your application's logic
+            return new AppState();
         }
 
-        var session = httpContext.Session;
-        var jsonState = session.GetString("AppState");
-
-        if (jsonState == null)
-        {
-            return Task.FromResult(new AppState()); // Return default state if session data is not available
-        }
-
-        // Deserialize the state
         var appState = JsonSerializer.Deserialize<AppState>(jsonState);
-
-        // Check if deserialization succeeded and appState is not null
-        if (appState == null)
-        {
-            return Task.FromResult(new AppState()); // Return default state if deserialization failed
-        }
-
-        return Task.FromResult(appState);
+        return appState ?? new AppState();
     }
+
     public async Task SetInitalAppStateToSession(AppState state)
     {
-        if (_httpContextAccessor.HttpContext != null)
-        {
-            var session = _httpContextAccessor.HttpContext.Session;
-            if (session != null)
-            {
-                var jsonState = JsonSerializer.Serialize(state);
-                session.SetString("InitalAppState", jsonState);
-            }
-        }
-
-        await Task.CompletedTask;
+        var jsonState = JsonSerializer.Serialize(state);
+        await _jsRuntime.InvokeVoidAsync("browserStorage.setSessionItem", InitialAppStateKey, jsonState);
     }
+
     public async Task<AppState?> GetInitalAppStateFromSession()
     {
-        await Task.Yield(); // This satisfies the async method requirement
+        var jsonState = await _jsRuntime.InvokeAsync<string?>("browserStorage.getSessionItem", InitialAppStateKey);
 
-        var httpContext = _httpContextAccessor.HttpContext;
-        if (httpContext == null)
+        if (string.IsNullOrWhiteSpace(jsonState))
         {
             return null;
         }
 
-        var session = httpContext.Session;
-        if (session == null)
-        {
-            return null;
-        }
-
-        var jsonState = session.GetString("InitalAppState");
-        if (jsonState == null)
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<AppState>(jsonState) ?? null;
+        return JsonSerializer.Deserialize<AppState>(jsonState);
     }
 }
