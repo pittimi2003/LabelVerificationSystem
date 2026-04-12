@@ -1,0 +1,1671 @@
+
+
+@inject StateService stateService
+@inject IActionService ActionService
+@inject IJSRuntime JSRuntime
+@inject IJSRuntime JS
+@using Microsoft.JSInterop;
+@using BlazorColorPicker
+@inject IColorPickerService ColorPickerService
+@using MudBlazor
+
+    <header class="app-header sticky @headerClass" id="header">
+
+        <!-- Start::main-header-container -->
+        <div class="main-header-container container-fluid">
+
+            <!-- Start::header-content-left -->
+            <div class="header-content-left">
+
+                <!-- Start::header-element -->
+                <div class="header-element">
+                    <div class="horizontal-logo">
+                        <MudLink Href="" Class="header-logo">
+                            <MudImage Src="../assets/images/brand-logos/desktop-logo.png" Alt="logo" Class="desktop-logo" />
+                            <MudImage Src="../assets/images/brand-logos/toggle-logo.png" Alt="logo" Class="toggle-logo" />
+                            <MudImage Src="../assets/images/brand-logos/desktop-dark.png" Alt="logo" Class="desktop-dark" />
+                            <MudImage Src="../assets/images/brand-logos/toggle-dark.png" Alt="logo" Class="toggle-dark" />
+                        </MudLink>
+                    </div>
+                </div>
+                <!-- End::header-element -->
+
+                <!-- Start::header-element -->
+                <div class="header-element">
+                    <!-- Start::header-link -->
+                    <MudLink aria-label="Hide Sidebar" @onclick="ToggleMenu" Class="sidemenu-toggle header-link animated-arrow hor-toggle horizontal-navtoggle" Underline="Underline.None" Href="javascript:void(0);"><span></span></MudLink>
+                    <!-- End::header-link -->
+                </div>
+                <!-- End::header-element -->
+
+                <div Class="header-element  header-search header-search-content d-md-block d-none">
+                    <!-- Start::header-link -->
+                    <MudInput Value="@("")" Placeholder="Search" Underline="false" Class="header-search-bar form-control" id="header-search" Variant="Variant.Text" />
+                    <MudLink Href="javascript:void(0);" Class="header-search-icon border-0">
+                        <MudIcon Icon="bi bi-search fs-12 mb-2" />
+                    </MudLink>
+                    <!-- End::header-link -->
+                </div>
+
+            </div>
+            <!-- End::header-content-left -->
+
+            <!-- Start::header-content-right -->
+            <div class="header-content-right">
+
+                <!-- Start::header-element -->
+                <li Class="header-element d-md-none d-flex">
+                    <MudLink Href="javascript:void(0);" Class="header-link" OnClick="@(() => {OpenDialogFn(_dialogOptions, ref _visible1);})">
+                        <!-- Start::header-link-icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" Class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><circle cx="112" cy="112" r="80" opacity="0.2"/><circle cx="112" cy="112" r="80" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="168.57" y1="168.57" x2="224" y2="224" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                        <!-- End::header-link-icon -->
+                    </MudLink>  
+                </li>
+                <!-- End::header-element -->
+
+                @* Start::header-element *@
+                <div class="country-selector dropdown d-sm-block d-none">
+                    <MudMenu Class="" Variant="Variant.Text"  PopoverClass="header-menu-dropdown-position country-dropdown-menu dropdown-menu" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <ActivatorContent>
+                            <MudLink Href="javascript:void(0);" Class="header-link dropdown-toggle" data-bs-auto-close="outside" data-bs-toggle="dropdown">
+                                <svg xmlns="http://www.w3.org/2000/svg" Class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M215,168.71a96.42,96.42,0,0,1-30.54,37l-9.36-9.37a8,8,0,0,0-3.63-2.09L150,188.59a8,8,0,0,1-5.88-8.9l2.38-16.2a8,8,0,0,1,4.85-6.22l30.45-12.66a8,8,0,0,1,8.47,1.49Z" opacity="0.2"/><path d="M184,74a8,8,0,0,1-1.94,5.22L159.89,105a8,8,0,0,1-5,2.71l-31.46,4.26a8.06,8.06,0,0,1-5.77-1.45l-19.81-13a8,8,0,0,0-11.34,2l-20.94,31.3a8.06,8.06,0,0,0-1.35,4.41L64,171.49a8,8,0,0,1-3.61,6.64l-9.92,6.52A96,96,0,0,1,184,50Z" opacity="0.2"/><circle cx="128" cy="128" r="96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M184.42,205.68l-9.36-9.37a8,8,0,0,0-3.63-2.09L150,188.59a8,8,0,0,1-5.88-8.9l2.38-16.2a8,8,0,0,1,4.85-6.22l30.45-12.66a8,8,0,0,1,8.47,1.49L215,168.71" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M50.49,184.65l9.92-6.52A8,8,0,0,0,64,171.49l.21-36.23a8.06,8.06,0,0,1,1.35-4.41l20.94-31.3a8,8,0,0,1,11.34-2l19.81,13a8.06,8.06,0,0,0,5.77,1.45l31.46-4.26a8,8,0,0,0,5-2.71L182.06,79.2A8,8,0,0,0,184,74V50" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                            </MudLink>
+                        </ActivatorContent>
+                        <ChildContent>
+                        
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/us_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                English
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/spain_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                español
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/french_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                français
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/uae_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                عربي
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/germany_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                Deutsch
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/china_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                中国人
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b" Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/italy_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                Italiano
+                            </MudMenuItem>
+                            <MudMenuItem Href="javascript:void(0);">
+                                <MudAvatar Class="mud-avatar-xs lh-1 me-2">
+                                    <MudImage Src="../assets/images/flags/russia_flag.jpg"></MudImage>
+                                </MudAvatar>
+                                Русский
+                            </MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </div>  
+                @* End::header-element *@
+
+                <!-- Start::header-element -->
+                <li Class="header-element header-theme-mode"  @onclick='() => colorthemeFn()'>
+                    <!-- Start::header-link|layout-setting -->
+                    <MudLink Href="javascript:void(0);" Class="header-link layout-setting">
+                        <span Class="light-layout">
+                            <!-- Start::header-link-icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" Class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" opacity="0.2"/><path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                            <!-- End::header-link-icon -->
+                        </span>
+                        <span Class="dark-layout">
+                            <!-- Start::header-link-icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" Class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><circle cx="128" cy="128" r="56" opacity="0.2"/><line x1="128" y1="40" x2="128" y2="32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><circle cx="128" cy="128" r="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="64" y1="64" x2="56" y2="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="64" y1="192" x2="56" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="192" y1="64" x2="200" y2="56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="192" y1="192" x2="200" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="40" y1="128" x2="32" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="128" y1="216" x2="128" y2="224" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="216" y1="128" x2="224" y2="128" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                            <!-- End::header-link-icon -->
+                        </span>
+                    </MudLink>
+                    <!-- End::header-link|layout-setting -->
+                </li>
+                <!-- End::header-element -->
+
+                @* Start::header-element *@
+                <div class="header-element dropdown cart-dropdown">
+                    <MudMenu Class="" Variant="Variant.Text" PopoverClass="header-menu-dropdown-position cart-dropdown-menu" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <ActivatorContent>
+                            <!-- Cart Icon with Dynamic Badge -->
+                            <MudBadge Class="header-link dropdown-toggle" 
+                                    Content="@CartCount" 
+                                    Color="Color.Primary" 
+                                    Overlap="true" 
+                                    id="cart-icon-badge">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"></rect><path d="M70.55,144H196.1a16,16,0,0,0,15.74-13.14L224,64H56Z" opacity="0.2"></path><path d="M188,184H91.17a16,16,0,0,1-15.74-13.14L48.73,24H24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"></path><circle cx="92" cy="204" r="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"></circle><circle cx="188" cy="204" r="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"></circle><path d="M70.55,144H196.1a16,16,0,0,0,15.74-13.14L224,64H56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"></path></svg>
+                               
+                            </MudBadge>
+                        </ActivatorContent>
+
+                        <ChildContent>
+                            <!-- Cart Header -->
+                            <MudMenuItem Class="dropdown-item pa-0 cart-menu-main-header rounded-t">
+                                <div class="pa-4 mud-primary mud-fixed-white-text">
+                                    <div class="d-flex align-center justify-space-between">
+                                        <MudText Class="mb-0 fs-16 normal-badge">
+                                            Cart Items
+                                            <MudBadge Class="ms-1 fs-12 badge-pill" Color="Color.Warning" Content="@CartCount"></MudBadge>
+                                        </MudText>
+                                        <MudLink Href="javascript:void(0);" Class="mud-fixed-white-text text-decoration-underline fs-12">
+                                            Continue Shopping
+                                            <MudIcon Icon="ti ti-arrow-narrow-right fs-12 align-center" />
+                                        </MudLink>
+                                    </div>
+                                </div>
+                            </MudMenuItem>
+                             
+                             <BlazorOverlayScrollbars>
+                                <BlazorOverlayScrollbarsContent>
+                                 <div class="cart-list-menu">
+                                    @if (CartItems.Any())
+                                    {
+                                        <!-- Looping Through Cart Items -->
+                                        @foreach (var item in CartItems)
+                                        {
+                                            <MudMenuItem Class="dropdown-item border-b cart-menu-item" AutoClose=false>
+                                                <div class="d-flex align-start cart-dropdown-item gap-3">
+                                                    <MudAvatar Class="mud-avatar-xl bg-gray-300" Rounded="true">
+                                                        <MudImage Src="@item.Image" Alt="@item.Title" />
+                                                    </MudAvatar>
+
+                                                    <div class="flex-grow-1 w-75">
+                                                        <div class="d-flex align-start justify-space-between mb-3">
+                                                            <div class="fs-14 fw-medium w-75">
+                                                                <div class="text-truncate">
+                                                                    <MudLink Href="javascript:void(0);" Class="mud-dark-text fw-semibold">@item.Title</MudLink>
+                                                                </div>
+                                                                <div class="fs-11 text-muted text-truncate">
+                                                                    <span>@item.Description</span>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Delete Icon -->
+                                                            <div class="text-end">
+                                                                <MudLink href="javascript:void(0);" OnClick="() => DeleteItem(item)" class="header-cart-remove float-end dropdown-item-close">
+                                                                    <MudIcon Icon="ri-delete-bin-line" class="fs-14 align-center text-muted" />
+                                                                </MudLink>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="d-flex align-center justify-space-between">
+                                                            <div class="flex-grow-1">
+                                                                <div class="lh-1 fs-12 mb-1">
+                                                                    <span class="text-muted fw-normal d-inline-block text-decoration-line-through">
+                                                                        @item.OldPrice
+                                                                    </span>
+                                                                    <span class="mud-success-text ms-1">@item.Offer</span>
+                                                                </div>
+                                                                <MudText Typo="Typo.h6" class="fw-medium mb-0">@item.Price</MudText>
+                                                            </div>
+
+                                                            <div class="d-flex rounded align-center flex-nowrap order-qnt gap-2 justify-end">
+                                                                <MudLink href="javascript:void(0);" OnClick="() => DecreaseQty(item)" class="border px-1 rounded">
+                                                                    <MudIcon Icon="ri-subtract-line" class="fs-14 align-center text-muted" />
+                                                                </MudLink>
+                                                                    <MudText>@item.Quantity</MudText>
+                                                                <MudLink href="javascript:void(0);" OnClick="() => IncreaseQty(item)" class="border px-1 rounded">
+                                                                    <MudIcon Icon="ri-add-line" class="fs-14 align-center text-muted" />
+                                                                </MudLink>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </MudMenuItem>
+                                        }
+                                    }
+                                        else
+                                    {
+                                        <div class="pa-5 empty-item">
+                                            <div class="text-center">
+                                                <MudAvatar class="mud-avatar-xl avatar-rounded mud-success-transparent">
+                                                    <MudIcon Icon="ti ti-shopping-cart fs-2" />
+                                                </MudAvatar>
+                                                <MudText Typo="Typo.h6" class="fw-medium mb-1 mt-3">No items in your cart yet</MudText>
+                                                <span class="mb-3 fw-normal fs-13 d-block">Add some to enjoy a seamless checkout experience! :)</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                             </BlazorOverlayScrollbarsContent>
+                            </BlazorOverlayScrollbars>
+
+                            <!-- Footer -->
+                            <div AutoClose=false class="dropdown-item cart-menu-item @(CartItems.Any() ? "" : "d-none")">
+                                <div class="pa-4 empty-header-item1 border-t">
+                                    <div class="text-center d-grid">
+                                        <MudButton Variant="Variant.Filled" Href="checkout" Color="Color.Primary"  FullWidth="true">Proceed to checkout</MudButton>
+                                    </div>
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </MudMenu>
+                </div>
+                @* End::header-element *@
+                
+                @* Start::header-element *@
+                <div class="header-element dropdown notifications-dropdown">
+                    <MudMenu Class="" Variant="Variant.Text"  PopoverClass="header-menu-dropdown-position notification-dropdown-menu" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <ActivatorContent>
+                            <!-- Start::header-link|dropdown-toggle -->
+                            <MudLink Href="javascript:void(0);" Class="header-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" id="messageDropdown" aria-expanded="false">
+                                <svg xmlns="http://www.w3.org/2000/svg" Class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M56,104a72,72,0,0,1,144,0c0,35.82,8.3,64.6,14.9,76A8,8,0,0,1,208,192H48a8,8,0,0,1-6.88-12C47.71,168.6,56,139.81,56,104Z" opacity="0.2"/><path d="M96,192a32,32,0,0,0,64,0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M56,104a72,72,0,0,1,144,0c0,35.82,8.3,64.6,14.9,76A8,8,0,0,1,208,192H48a8,8,0,0,1-6.88-12C47.71,168.6,56,139.81,56,104Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                                <span Class="header-icon-pulse mud-theme-secondary rounded pulse pulse-secondary"></span>
+                            </MudLink>
+                            <!-- End::header-link|dropdown-toggle -->
+                        </ActivatorContent>
+                        <ChildContent> 
+                            <!-- notification Header -->
+                            <MudMenuItem Class="dropdown-item pa-0 cart-menu-main-header rounded-t">
+                                <div class="pa-4 mud-primary mud-fixed-white-text">
+                                    <div class="d-flex align-center justify-space-between">
+                                        <MudText Class="mb-0 fs-16">
+                                           Notifications
+                                        </MudText>
+                                        <MudLink Href="javascript:void(0);" Class="notification-badge mud-default-text border">
+                                          Clear All
+                                        </MudLink>
+                                    </div>
+                                </div>
+                            </MudMenuItem>   
+
+                              <BlazorOverlayScrollbars>
+                                <BlazorOverlayScrollbarsContent>
+                                    <div class="notification-list-menu">
+                                        <MudMenuItem class="dropdown-item border-b position-relative">
+                                            <a href="javascript:void(0);" class="stretched-link"></a>
+                                            <div class="d-flex align-start gap-3">
+                                                <div class="lh-1">
+                                                    <MudAvatar Class="bg-primary-transparent" Size="Size.Small">
+                                                        <MudImage Src="../assets/images/faces/1.jpg" Alt="img"></MudImage>
+                                                    </MudAvatar>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="d-block fw-semibold">New Message</span>
+                                                    <span class="d-block text-muted fs-13">You have received a new message from John Doe</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="d-block mb-1 fs-12 text-muted">11:45am</span>
+                                                </div>
+                                            </div>
+                                        </MudMenuItem>
+                                        <MudMenuItem class="dropdown-item border-b position-relative">
+                                            <a href="javascript:void(0);" class="stretched-link"></a>
+                                            <div class="d-flex align-start gap-3">
+                                                <div class="lh-1">
+                                                        <MudAvatar class="mud-primary-transparent" Size="Size.Small">
+                                                        <MudIcon Icon="ri-notification-line fs-16" />
+                                                        </MudAvatar>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="d-block fw-semibold">Task Reminder</span>
+                                                    <span class="d-block text-muted fs-13">Don't forget to submit your report by 3 PM today</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="d-block mb-1 fs-12 text-muted">02:16pm</span>
+                                                </div>
+                                            </div>
+                                        </MudMenuItem>
+                                        <MudMenuItem class="dropdown-item border-b position-relative">
+                                            <a href="javascript:void(0);" class="stretched-link"></a>
+                                            <div class="d-flex align-start gap-3">
+                                                <div class="lh-1">
+                                                    <MudAvatar Class="bg-primary-transparent" Size="Size.Small">
+                                                        <MudImage Src="../assets/images/faces/12.jpg" Alt="img"></MudImage>
+                                                    </MudAvatar>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="d-block fw-semibold">Friend Request</span>
+                                                    <span class="d-block text-muted fs-13">Jane Smith sent you a friend request</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="d-block mb-1 fs-12 text-muted">10:04am</span>
+                                                    <span class="d-block mud-primary-text"><MudIcon Icon="ri-circle-fill fs-9 align-center" /></span>
+                                                </div>
+                                            </div>
+                                        </MudMenuItem>
+                                        <MudMenuItem class="dropdown-item border-b position-relative">
+                                            <a href="javascript:void(0);" class="stretched-link"></a>
+                                            <div class="d-flex align-start gap-3">
+                                                <div class="lh-1">
+                                                    <MudAvatar class="mud-primary-transparent fs-5" Size="Size.Small">
+                                                        <MudIcon Icon="ri-notification-line fs-16" />
+                                                    </MudAvatar>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="d-block fw-semibold">Event Reminder</span>
+                                                    <span class="d-block text-muted fs-13">You have an upcoming event: Team Meeting on October 25 at 10 AM.</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="d-block mb-1 fs-12 text-muted">12:58pm</span>
+                                                    <span class="d-block mud-primary-text"><MudIcon Icon="ri-circle-fill fs-9 align-center" /></span>
+                                                </div>
+                                            </div>
+                                        </MudMenuItem>
+                                        <MudMenuItem class="dropdown-item position-relative">
+                                            <a href="javascript:void(0);" class="stretched-link"></a>
+                                            <div class="d-flex align-start gap-3">
+                                                <div class="lh-1">
+                                                    <MudAvatar class="mud-primary-transparent fs-5" Size="Size.Small">
+                                                        <MudIcon Icon="ri-notification-line fs-16" />
+                                                    </MudAvatar>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <span class="d-block fw-semibold">File Uploaded</span>
+                                                    <span class="d-block text-muted fs-13">The file "Project_Proposal.pdf" has been uploaded successfully</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="d-block mb-1 fs-12 text-muted">05:13pm</span>
+                                                    <span class="d-block mud-primary-text"><MudIcon Icon="ri-circle-fill fs-9 align-center" /></span>
+                                                </div>
+                                            </div>
+                                        </MudMenuItem>
+                                    </div>
+                             </BlazorOverlayScrollbarsContent>
+                            </BlazorOverlayScrollbars>
+
+                        </ChildContent>
+                    </MudMenu>
+                </div>  
+                @* End::header-element *@
+
+                @* Start::header-element *@
+                <li Class="header-element header-fullscreen">
+                    <!-- Start::header-link -->
+                    <MudLink Href="javascript:void(0);" Class="header-link" OnClick="ToggleFullscreen">
+                        <svg xmlns="http://www.w3.org/2000/svg" Class="full-screen-open header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><rect x="48" y="48" width="160" height="160" opacity="0.2"/><polyline points="168 48 208 48 208 88" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><polyline points="88 208 48 208 48 168" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><polyline points="208 168 208 208 168 208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><polyline points="48 88 48 48 88 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" Class="full-screen-close header-link-icon d-none" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><rect x="32" y="32" width="192" height="192" rx="16" opacity="0.2"/><polyline points="160 48 208 48 208 96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="144" y1="112" x2="208" y2="48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><polyline points="96 208 48 208 48 160" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="112" y1="144" x2="48" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                    </MudLink>
+                    <!-- End::header-link -->
+                </li>
+                @* End::header-element *@
+
+                @* Start::header-element *@
+                <div class="header-element header-link">
+                    <MudMenu Class="" Variant="Variant.Text" PopoverClass="header-menu-dropdown-position user-profile-dropdown" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                        <ActivatorContent>
+                        <div>
+                            <div Class="lh-1">
+                                <MudAvatar Class="header-link-icon rounded-pill">
+                                    <MudImage Src="../assets/images/faces/12.jpg"  Class="rounded-pill" Alt="img"></MudImage>
+                                </MudAvatar>
+                            </div>
+                        </div>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem class="profile-menu-item normal-badge pa-0 mud-primary mud-fixed-white-text  rounded-t" Href="mail">
+                                <div Class="d-flex align-center justify-space-between pa-4 mud-primary mud-fixed-white-text">
+                                    <p Class="mb-0 fs-16">Profile</p>
+                                    <MudLink Href="javascript:void(0);" Class="mud-fixed-white-text"><MudIcon Icon="ti ti-settings-cog fs-13" /></MudLink>
+                                </div>
+                            </MudMenuItem>
+                            <MudMenuItem Class="border-b">
+                                <div Class="d-flex align-start gap-2 py-2">
+                                    <div Class="lh-1">
+                                        <MudAvatar Class="me-2 bg-primary-transparent" Size="Size.Small">
+                                            <MudImage Src="../assets/images/faces/12.jpg" Alt="img"></MudImage>
+                                        </MudAvatar>
+                                    </div>
+                                    <div>
+                                        <span Class="d-block fw-semibold lh-1">Tom Phillip</span>
+                                        <span Class="text-muted fs-12">tomphillip32@gmail.com</span>
+                                    </div>
+                                </div>
+                            </MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-user-circle me-2 fs-18 lh-1 align-middle" />View Profile</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center border-b" Href="javascript:void(0);"><MudIcon Icon="ti ti-settings-cog me-2 fs-18 lh-1 align-middle" />Account Settings</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-lifebuoy me-2 fs-18 lh-1 align-middle" />Support</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-bolt me-2 fs-18 lh-1 align-middle" />Activity Log</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center border-b" Href="javascript:void(0);"><MudIcon Icon="ti ti-calendar me-2 fs-18 lh-1 align-middle" />Events</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-logout me-2 fs-18 lh-1 align-middle" />Log Out</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </div>  
+                @* End::header-element *@
+
+                @* Start::header-element *@
+                <div class="header-element">
+                    <!-- Start::header-link|switcher-icon -->
+                    <MudLink Href="javascript:void(0);" Class="header-link switcher-icon" data-bs-toggle="offcanvas" data-bs-target="#switcher-canvas"  OnClick="@(() => OpenDrawer(Anchor.End))">
+                        <svg xmlns="http://www.w3.org/2000/svg" Class="header-link-icon" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M207.86,123.18l16.78-21a99.14,99.14,0,0,0-10.07-24.29l-26.7-3a81,81,0,0,0-6.81-6.81l-3-26.71a99.43,99.43,0,0,0-24.3-10l-21,16.77a81.59,81.59,0,0,0-9.64,0l-21-16.78A99.14,99.14,0,0,0,77.91,41.43l-3,26.7a81,81,0,0,0-6.81,6.81l-26.71,3a99.43,99.43,0,0,0-10,24.3l16.77,21a81.59,81.59,0,0,0,0,9.64l-16.78,21a99.14,99.14,0,0,0,10.07,24.29l26.7,3a81,81,0,0,0,6.81,6.81l3,26.71a99.43,99.43,0,0,0,24.3,10l21-16.77a81.59,81.59,0,0,0,9.64,0l21,16.78a99.14,99.14,0,0,0,24.29-10.07l3-26.7a81,81,0,0,0,6.81-6.81l26.71-3a99.43,99.43,0,0,0,10-24.3l-16.77-21A81.59,81.59,0,0,0,207.86,123.18ZM128,168a40,40,0,1,1,40-40A40,40,0,0,1,128,168Z" opacity="0.2"/><circle cx="128" cy="128" r="40" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><path d="M41.43,178.09A99.14,99.14,0,0,1,31.36,153.8l16.78-21a81.59,81.59,0,0,1,0-9.64l-16.77-21a99.43,99.43,0,0,1,10.05-24.3l26.71-3a81,81,0,0,1,6.81-6.81l3-26.7A99.14,99.14,0,0,1,102.2,31.36l21,16.78a81.59,81.59,0,0,1,9.64,0l21-16.77a99.43,99.43,0,0,1,24.3,10.05l3,26.71a81,81,0,0,1,6.81,6.81l26.7,3a99.14,99.14,0,0,1,10.07,24.29l-16.78,21a81.59,81.59,0,0,1,0,9.64l16.77,21a99.43,99.43,0,0,1-10,24.3l-26.71,3a81,81,0,0,1-6.81,6.81l-3,26.7a99.14,99.14,0,0,1-24.29,10.07l-21-16.78a81.59,81.59,0,0,1-9.64,0l-21,16.77a99.43,99.43,0,0,1-24.3-10l-3-26.71a81,81,0,0,1-6.81-6.81Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                    </MudLink>
+                    <!-- End::header-link|switcher-icon -->
+                </div>
+                @* End::header-element *@
+
+            </div>
+            <!-- End::header-content-right -->
+
+        </div>
+        <!-- End::main-header-container -->
+
+    </header>
+
+    <MudDialog @bind-Visible="_visible1" Options="_dialogOptions" Class="small-mud-search-dialog">
+        <DialogContent>
+            <div class="modal-body">
+                <div Class="input-group">
+                    <MudInput Value="@("")" Underline="false" Class="form-control rounded-e-0" Placeholder="Search Anything ..."/>
+                    <MudIconButton Icon="bi bi-search fs-15 lh-1 align-center" Variant="Variant.Filled" Color="Color.Primary" Class="btn-icon py-5 px-5 rounded-e" />
+                </div>
+            </div>
+        </DialogContent>
+    </MudDialog>
+
+    @*start main switcher*@
+    <MudDrawer @bind-Open="@_open" Width="@_width" Height="@_height" Anchor="@_anchor" Elevation="1" Variant="@DrawerVariant.Temporary" class="switcher-canvas">
+        <MudDrawerHeader class="d-flex align-center justify-space-between border-b switcher-canvas-header">
+            <MudText Typo="Typo.h5" Class="offcanvas-title">Switcher</MudText>
+            <MudIconButton Icon="ri-close-line" Class="close-btn float-end pb-2 pa-0" OnClick="_ => _open = false" />
+        </MudDrawerHeader>
+        <div class="offcanvas-body pa-0">
+            <MudTabs MinimumTabWidth="182px" Class="nav-style-1 tab-content">
+                <MudTabPanel Text="Theme Styles">
+                    <div class="tab-pane text-muted pa-0 border-0 pb-15">
+                        <div class="">
+                            <MudText class="switcher-style-head">Theme Color Mode:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.ColorTheme" ValueChanged="OnColorThemeChange">
+                                <MudGrid Spacing="0" class="switcher-style">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@light"
+                                            Size="Size.Small"
+                                            id="switcher-light-theme"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ColorTheme == "light")">
+                                            Light
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@dark"
+                                            Size="Size.Small"
+                                            id="switcher-dark-theme"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ColorTheme == "dark")">
+                                            Dark
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="">
+                            <MudText class="switcher-style-head">Directions:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.Direction" ValueChanged="OndirectionChange">
+                                <MudGrid Spacing="0" class="switcher-style">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@ltr"
+                                            Size="Size.Small"
+                                            id="switcher-ltr"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.Direction == "ltr")">
+                                            LTR
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@rtl"
+                                            Size="Size.Small"
+                                            id="switcher-rtl"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.Direction == "rtl")">
+                                            RTL
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="">
+                            <MudText class="switcher-style-head">Navigation Styles:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.NavigationStyles" ValueChanged="OnNavigationChange">
+                                <MudGrid Spacing="0" class="switcher-style">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@vertical"
+                                            Size="Size.Small"
+                                            id="switcher-vertical"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.NavigationStyles == "vertical")">
+                                            Vertical
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@horizontal"
+                                            Size="Size.Small"
+                                            id="switcher-horizontal"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.NavigationStyles == "horizontal")">
+                                            Horizontal
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="navigation-menu-styles">
+                            <MudText class="switcher-style-head">Vertical & Horizontal Menu Styles:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.MenuStyles" ValueChanged="OnMenuStylesChange">
+                                <MudGrid Spacing="0" class="switcher-style gap-y-4">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@menuclick"
+                                            Size="Size.Small"
+                                            id="switcher-menu-click"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.MenuStyles == "menu-click")">
+                                            Menu Click
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@menuhover"
+                                            Size="Size.Small"
+                                            id="switcher-menu-hover"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.MenuStyles == "menu-hover")">
+                                            Menu Hover
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@iconclick"
+                                            Size="Size.Small"
+                                            id="switcher-icon-click"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.MenuStyles == "icon-click")">
+                                            Icon Click
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@iconhover"
+                                            Size="Size.Small"
+                                            id="switcher-icon-hover"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.MenuStyles == "icon-hover")">
+                                            Icon Hover
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="sidemenu-layout-styles">
+                            <MudText class="switcher-style-head">Sidemenu Layout Styles:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.LayoutStyles" ValueChanged="OnSidemenuLayoutChange">
+                                <MudGrid Spacing="0" class="switcher-style gap-y-4">
+                                    <MudItem xs="6">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@defaultmenu"
+                                            Size="Size.Small"
+                                            id="switcher-default-menu"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.LayoutStyles == "default-menu")">
+                                            Default Menu
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@closedmenu"
+                                            Size="Size.Small"
+                                            id="switcher-closed-menu"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.LayoutStyles == "closed-menu")">
+                                        Closed Menu
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@icontextmenu"
+                                            Size="Size.Small"
+                                            id="switcher-icontext-menu"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.LayoutStyles == "icontext-menu")">
+                                            Icon Text
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@iconoverlay"
+                                            Size="Size.Small"
+                                            id="switcher-icon-overlay"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.LayoutStyles == "icon-overlay")">
+                                            Icon Overlay
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@detached"
+                                            Size="Size.Small"
+                                            id="switcher-detached"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.LayoutStyles == "detached")">
+                                            Detached
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@doublemenu"
+                                            Size="Size.Small"
+                                            id="switcher-double-menu"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.LayoutStyles == "double-menu")">
+                                            Double Menu
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="">
+                            <MudText class="switcher-style-head">Page Styles:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.PageStyles" ValueChanged="OnPageStylesChange">
+                                <MudGrid Spacing="0" class="switcher-style gap-y-4">
+                                    <MudItem xs="6" sm="6" md="3" lg="3" xl="3">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@regular"
+                                            Size="Size.Small"
+                                            id="switcher-regular"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.PageStyles == "regular")">
+                                            Regular
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="6" md="3" lg="3" xl="3">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@classic"
+                                            Size="Size.Small"
+                                            id="switcher-classic"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.PageStyles == "classic")">
+                                            Classic
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="6" md="3" lg="3" xl="3">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@modern"
+                                            Size="Size.Small"
+                                            id="switcher-modern"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.PageStyles == "modern")">
+                                            Modern
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="6" sm="6" md="3" lg="3" xl="3">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@flat"
+                                            Size="Size.Small"
+                                            id="switcher-flat"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.PageStyles == "flat")">
+                                            Flat
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="">
+                            <MudText class="switcher-style-head">Layout Width Styles:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.WidthStyles" ValueChanged="OnWidthStylesChange">
+                                <MudGrid Spacing="0" class="switcher-style">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@defaultwidth"
+                                            Size="Size.Small"
+                                            id="switcher-default"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.WidthStyles == "default")">
+                                        Default
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@fullwidth"
+                                            Size="Size.Small"
+                                            id="switcher-full-width"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.WidthStyles == "fullwidth")">
+                                        Full Width
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@boxed"
+                                            Size="Size.Small"
+                                            id="switcher-boxed"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.WidthStyles == "boxed")">
+                                        Boxed
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="">
+                            <MudText class="switcher-style-head">Menu Positions:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.MenuPosition" ValueChanged="OnMenuPositionChange">
+                                <MudGrid Spacing="0" class="switcher-style">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@menufixed"
+                                            Size="Size.Small"
+                                            id="switcher-menu-fixed"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.MenuPosition == "fixed")">
+                                        Fixed
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@menuscrollable"
+                                            Size="Size.Small"
+                                            id="switcher-menu-scrollable"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.MenuPosition == "scrollable")">
+                                        Scrollable
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                        <div class="">
+                            <MudText class="switcher-style-head">Header Positions:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.HeaderPosition" ValueChanged="OnHeaderPositionChange">
+                                <MudGrid Spacing="0" class="switcher-style">
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@headerfixed"
+                                            Size="Size.Small"
+                                            id="switcher-header-fixed"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.HeaderPosition == "fixed")">
+                                        Fixed
+                                        </MudRadio>
+                                    </MudItem>
+                                    <MudItem xs="4">
+                                        <MudRadio T="string"
+                                            class="form-check-input"
+                                            Value="@headerscrollable"
+                                            Size="Size.Small"
+                                            id="switcher-header-scrollable"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.HeaderPosition == "scrollable")">
+                                        Scrollable
+                                        </MudRadio>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudRadioGroup>
+                        </div>
+                    </div>
+                </MudTabPanel>
+                <MudTabPanel Text="Theme Colors">
+                    <div class="tab-pane pa-0 text-muted border-0">
+                        <div class="theme-colors">
+                            <MudText class="switcher-style-head">Menu Colors:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.MenuColor" class="switcher-style switcher-radio-group" ValueChanged="OnMenuColorChange">
+                                <MudRadio T="string" class="form-check-input color-input color-white"
+                                    Value="@menulight"
+                                    Size="Size.Small"
+                                    id="switcher-menu-light"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.MenuColor == "light")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-dark"
+                                    Value="@menudark"
+                                    Size="Size.Small"
+                                    id="switcher-menu-dark"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.MenuColor == "dark")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-menucolor"
+                                    Value="@menucolor"
+                                    Size="Size.Small"
+                                    id="switcher-menu-color"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.MenuColor == "color")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-gradient"
+                                    Value="@menugradient"
+                                    Size="Size.Small"
+                                    id="switcher-menu-gradient"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.MenuColor == "gradient")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-transparent"
+                                    Value="@menutransparent"
+                                    Size="Size.Small"
+                                    id="switcher-menu-transparent"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.MenuColor == "transparent")">
+                                </MudRadio>
+                            </MudRadioGroup>
+                            <div class="px-4 pb-3 text-muted fs-11 pt-2">Note:If you want to change color Menu dynamically change from below Theme Primary color picker</div>
+                        </div>
+                        <div class="theme-colors">
+                            <MudText class="switcher-style-head">Header Colors:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.HeaderColor" class="switcher-style switcher-radio-group" ValueChanged="OnHeaderColorChange">
+                                <MudRadio T="string" class="form-check-input color-input color-white"
+                                    Value="@headerlight"
+                                    Size="Size.Small"
+                                    id="switcher-header-light"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.HeaderColor == "light")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-dark"
+                                    Value="@headerdark"
+                                    Size="Size.Small"
+                                    id="switcher-header-dark"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.HeaderColor == "dark")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-menucolor"
+                                    Value="@headercolor"
+                                    Size="Size.Small"
+                                    id="switcher-header-color"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.HeaderColor == "color")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-gradient"
+                                    Value="@headergradient"
+                                    Size="Size.Small"
+                                    id="switcher-header-gradient"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.HeaderColor == "gradient")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input color-transparent"
+                                    Value="@headertransparent"
+                                    Size="Size.Small"
+                                    id="switcher-header-transparent"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.HeaderColor == "transparent")">
+                                </MudRadio>
+                            </MudRadioGroup>
+                            <div class="px-4 pb-3 text-muted fs-11 pt-2">Note:If you want to change color Header dynamically
+                                change from below Theme Primary color picker</div>
+                        </div>
+                        <div class="theme-colors">
+                            <MudText class="switcher-style-head">Theme Primary:</MudText>
+                            <div class="d-flex align-center pb-1">
+                                <MudRadioGroup T="string" Value="currentState.ThemePrimary" class="switcher-style switcher-radio-group" ValueChanged="OnThemePrimaryChange">
+                                    <MudRadio T="string" class="form-check-input color-input color-primary-1"
+                                        Value="@primary1"
+                                        Size="Size.Small"
+                                        id="switcher-primary"
+                                        Color="Color.Primary"
+                                        Dense="@(currentState?.ThemePrimary == "58, 88, 146")">
+                                    </MudRadio>
+                                    <MudRadio T="string"
+                                        class="form-check-input color-input color-primary-2"
+                                        Value="@primary2"
+                                        Size="Size.Small"
+                                        id="switcher-primary1"
+                                        Color="Color.Primary"
+                                        Dense="@(currentState?.ThemePrimary == "92, 144, 163")">
+                                    </MudRadio>
+                                    <MudRadio T="string"
+                                        class="form-check-input color-input color-primary-3"
+                                        Value="@primary3"
+                                        Size="Size.Small"
+                                        id="switcher-primary2"
+                                        Color="Color.Primary"
+                                        Dense="@(currentState?.ThemePrimary == "161, 90, 223")">
+                                    </MudRadio>
+                                    <MudRadio T="string"
+                                        class="form-check-input color-input color-primary-4"
+                                        Value="@primary4"
+                                        Size="Size.Small"
+                                        id="switcher-primary3"
+                                        Color="Color.Primary"
+                                        Dense="@(currentState?.ThemePrimary == "78, 172, 76")">
+                                    </MudRadio>
+                                    <MudRadio T="string"
+                                        class="form-check-input color-input color-primary-5"
+                                        Value="@primary5"
+                                        Size="Size.Small"
+                                        id="switcher-primary4"
+                                        Color="Color.Primary"
+                                        Dense="@(currentState?.ThemePrimary == "223, 90, 90")">
+                                    </MudRadio>
+                                </MudRadioGroup>
+                                <div class="form-check switch-select ps-0 color-primary-light ms-2 mb-3">
+                                    <a href="javascript:void(0);" @onclick="PrimaryModal">
+                                        <div style="background-color:rgb(@primarycolor)" class="buttonColor m-0"></div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="theme-colors">
+                            <MudText class="switcher-style-head">Theme Background:</MudText>
+                            <div class="d-flex align-center pb-1">
+                                <MudRadioGroup T="string" Value="currentState.ThemeBackground" class="switcher-style switcher-radio-group" ValueChanged="@(EventCallback.Factory.Create<string>(this, (val) => OnThemeBackgroundChange(val)))">
+                                    <MudRadio T="string" class="form-check-input color-input color-background-1"
+                                            Value="@themebackground1"
+                                            Size="Size.Small"
+                                            id="switcher-background"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ThemeBackground == themebackground1)">
+                                    </MudRadio>
+                                    <MudRadio T="string" class="form-check-input color-input color-background-2"
+                                            Value="@themebackground2"
+                                            Size="Size.Small"
+                                            id="switcher-background1"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ThemeBackground == themebackground2)">
+                                    </MudRadio>
+                                    <MudRadio T="string" class="form-check-input color-input color-background-3"
+                                            Value="@themebackground3"
+                                            Size="Size.Small"
+                                            id="switcher-background2"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ThemeBackground == themebackground3)">
+                                    </MudRadio>
+                                    <MudRadio T="string" class="form-check-input color-input color-background-4"
+                                            Value="@themebackground4"
+                                            Size="Size.Small"
+                                            id="switcher-background3"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ThemeBackground == themebackground4)">
+                                    </MudRadio>
+                                    <MudRadio T="string" class="form-check-input color-input color-background-5"
+                                            Value="@themebackground5"
+                                            Size="Size.Small"
+                                            id="switcher-background4"
+                                            Color="Color.Primary"
+                                            Dense="@(currentState?.ThemeBackground == themebackground5)">
+                                    </MudRadio>
+                                </MudRadioGroup>
+                                <div class="form-check switch-select ps-0 tooltip-static-demo color-bg-transparent ms-2 mb-3">
+                                    <a href="javascript:void(0);" @onclick="BackgroundModal">
+                                        <div style="background-color:rgb(@Backgroundcolor)" class="buttonColor m-0"></div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="menu-image mb-3">
+                            <MudText class="switcher-style-head">Menu With Background Image:</MudText>
+                            <MudRadioGroup T="string" Value="currentState.BackgroundImage" class="switcher-style switcher-radio-group switcher-bg-radio-group py-5 mb-7" ValueChanged="OnBackgroundImageChange">
+                                <MudRadio T="string" class="form-check-input color-input bgimage-1"
+                                    Value="@bgimg1"
+                                    Size="Size.Small"
+                                    id="switcher-bg-img"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.BackgroundImage == "bgimg1")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input bgimage-2"
+                                    Value="@bgimg2"
+                                    Size="Size.Small"
+                                    id="switcher-bg-img1"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.BackgroundImage == "bgimg2")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input bgimage-3"
+                                    Value="@bgimg3"
+                                    Size="Size.Small"
+                                    id="switcher-bg-img2"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.BackgroundImage == "bgimg3")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input bgimage-4"
+                                    Value="@bgimg4"
+                                    Size="Size.Small"
+                                    id="switcher-bg-img3"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.BackgroundImage == "bgimg4")">
+                                </MudRadio>
+                                <MudRadio T="string"
+                                    class="form-check-input color-input bgimage-5"
+                                    Value="@bgimg5"
+                                    Size="Size.Small"
+                                    id="switcher-bg-img4"
+                                    Color="Color.Primary"
+                                    Dense="@(currentState?.BackgroundImage == "bgimg5")">
+                                </MudRadio>
+                            </MudRadioGroup>
+                        </div>
+                    </div>
+                </MudTabPanel>
+            </MudTabs>
+        </div>
+        <div class="d-grid canvas-footer">
+            <MudButton Variant="Variant.Filled" id="reset-all" Color="Color.Error" @onclick='() => reset()'>Reset</MudButton>
+        </div>
+    </MudDrawer>
+    @*end main switcher*@
+
+@code {
+    // Cart Model
+    public class CartItem
+    {
+        public string Image { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string OldPrice { get; set; } = string.Empty;
+        public string Offer { get; set; } = string.Empty;
+        public string Price { get; set; } = string.Empty;
+        public int Quantity { get; set; } = 1;
+    }
+
+    // Cart List
+    private List<CartItem> CartItems = new()
+    {
+        new CartItem { Image = "../assets/images/ecommerce/png/13.png", Title = "Urban Chic Satchel", Description = "Sleek, stylish, and perfect for daily use", OldPrice = "$120", Offer = "25% off", Price = "$90" },
+        new CartItem { Image = "../assets/images/ecommerce/png/15.png", Title = "TrailBlaze Runners", Description = "Lightweight and built for comfort", OldPrice = "$80", Offer = "25% off", Price = "$60" },
+        new CartItem { Image = "../assets/images/ecommerce/png/19.png", Title = "VisionTech SLR", Description = "High-quality shots with every click", OldPrice = "$500", Offer = "25% off", Price = "$375" },
+        new CartItem { Image = "../assets/images/ecommerce/png/6.png", Title = "FlexiSeat Office Chair", Description = "Comfortable support for long hours", OldPrice = "$200", Offer = "25% off", Price = "$150" },
+        new CartItem { Image = "../assets/images/ecommerce/png/11.png", Title = "DecoDial Classic", Description = "A bold, colorful timepiece for any room", OldPrice = "$50", Offer = "30% off", Price = "$35" }
+    };
+
+    // Property to Show Cart Count
+    private int CartCount => CartItems.Count;
+
+    // Delete Function
+    private void DeleteItem(CartItem item)
+    {
+        CartItems.Remove(item);
+    }
+
+    // Quantity Functions
+    private void IncreaseQty(CartItem item) => item.Quantity++;
+    private void DecreaseQty(CartItem item)
+    {
+        if (item.Quantity > 1)
+            item.Quantity--;
+    }
+
+    ////////////  Dialog Code //////////// 
+    private bool _visible1;
+    private readonly DialogOptions _dialogOptions = new() {FullWidth = true, CloseButton = false , Position = DialogPosition.TopCenter };
+    
+    private void OpenDialogFn(DialogOptions options, ref bool visibleId)
+    {
+      visibleId = true;
+    }
+
+
+}
+
+@code {             
+
+    <!-- ToggleMenu -->
+    private async void ToggleMenu() {
+        var toggled = await JSRuntime.InvokeAsync<string>("interop.getAttributeToHtml", "data-toggled");
+        var verticalStyle = await JSRuntime.InvokeAsync<string>("interop.getAttributeToHtml", "data-vertical-style");
+        var navStyle = await JSRuntime.InvokeAsync<string>("interop.getAttributeToHtml", "data-nav-style");
+        var isdoubleMenuActive = await JSRuntime.InvokeAsync<bool>("interop.isEleExist", ".double-menu-active");
+        var inner = await JSRuntime.InvokeAsync<int>("interop.inner", "innerWidth");
+          
+        if (inner <= 992) {
+                if (toggled == "open") {
+                    await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "close");
+                } else {
+                    await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "open");
+                }
+        } 
+        else {
+            if (navStyle != null) {
+                if (toggled != null) {
+                    await JSRuntime.InvokeAsync<string>("interop.removeAttributeFromHtml", "data-toggled");
+                } 
+                else {
+                    await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", navStyle + "-closed");
+                }
+            } 
+            else if (verticalStyle != null) {
+                if (verticalStyle == "doublemenu") {
+                    if (toggled == "double-menu-open" && isdoubleMenuActive) {
+                        await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "double-menu-close");
+                    } 
+                    else {
+                        if (isdoubleMenuActive) {
+                            await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "double-menu-open");
+                        }
+                    }
+                } 
+                else if (toggled != null) {
+                        await JSRuntime.InvokeAsync<string>("interop.removeAttributeFromHtml", "data-toggled");
+                } 
+                else {
+                    switch (verticalStyle) {
+                        case "default-menu":
+                            await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "close-menu-close");
+                            break;
+                        case "closed":
+                            await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "close-menu-close");
+                            break;
+                        case "icontext":
+                            await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "icon-text-close");
+                            break;
+                        case "overlay":
+                            await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "icon-overlay-close");
+                            break;
+                        case "detached":
+                            await JSRuntime.InvokeAsync<string>("interop.addAttributeToHtml", "data-toggled", "detached-close");
+                            break;
+                    }
+                }
+            }
+        }
+    }
+    private AppState currentState => stateService.GetAppState();
+    private async void colorthemeFn()
+    {
+        var val = currentState.ColorTheme == "light" ? "dark" : "light";
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzorcolortheme", val);
+        await stateService.colorthemeFn(val, true);
+    }
+    //sticky-pin //
+    private string headerClass = "";
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+
+        if (firstRender)
+        {
+            
+            await AttachHeaderScrollListener();
+        }
+    }
+    private async Task AttachHeaderScrollListener()
+    {
+        await JSRuntime.InvokeVoidAsync("interop.registerheaderScrollListener", DotNetObjectReference.Create(this));
+    }
+    [JSInvokable]
+    public void SetStickyClass1(int scrollY)
+    {
+        if (scrollY >= 25)
+        {
+            headerClass = "sticky-pin";
+        }
+        else
+        {
+            headerClass = "";
+        }
+        StateHasChanged();
+    }
+    //sticky-pin //
+}
+
+
+@code {
+    private bool isFullscreen = false;
+
+    // This method will toggle fullscreen mode on/off
+    private async Task ToggleFullscreen()
+    {
+        try
+        {
+            if (isFullscreen)
+            {
+                // Exit fullscreen
+                await JS.InvokeVoidAsync("eval", "document.exitFullscreen()");
+            }
+            else
+            {
+                // Request fullscreen
+                await JS.InvokeVoidAsync("eval", "document.documentElement.requestFullscreen()");
+            }
+
+            // Toggle fullscreen state
+            isFullscreen = !isFullscreen;
+
+            // Handle icon visibility toggling
+            await ToggleIcons(isFullscreen);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error invoking JavaScript: {ex.Message}");
+        }
+    }
+
+    // Method to toggle icon visibility based on fullscreen state
+    private async Task ToggleIcons(bool fullscreen)
+    {
+        // Show/hide icons based on fullscreen state
+        if (fullscreen)
+        {
+            await JS.InvokeVoidAsync("eval", "document.querySelector('.full-screen-open').classList.add('d-none')");
+            await JS.InvokeVoidAsync("eval", "document.querySelector('.full-screen-close').classList.remove('d-none')");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("eval", "document.querySelector('.full-screen-open').classList.remove('d-none')");
+            await JS.InvokeVoidAsync("eval", "document.querySelector('.full-screen-close').classList.add('d-none')");
+        }
+    }
+}
+
+@code {
+    private string currentStateColorTheme = "light";
+
+    private async Task ToggleTheme()
+    {
+        string newTheme = currentStateColorTheme == "light" ? "dark" : "light";
+        currentStateColorTheme = newTheme;
+
+        await OnColorThemeChanged(newTheme); 
+    }
+
+    private async Task OnColorThemeChanged(string selectedTheme)
+    {
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzorcolortheme", selectedTheme);
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorbgColor");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorbgColor1");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorMenu");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorHeader");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "Vyzorbgimg");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorprimaryRGB");
+        await stateService.colorthemeFn(selectedTheme, true);
+        StateHasChanged();
+    }
+}
+
+@*switcher*@
+
+@code{ 
+
+    private bool _open;
+    private Anchor _anchor;
+    private string? _width, _height;
+
+    private void OpenDrawer(Anchor anchor)
+    {
+        _open = true;
+        _anchor = anchor;
+
+        switch (anchor)
+        {
+            case Anchor.Start:
+                _width = "300px";
+                _height = "100%";
+                break;
+            case Anchor.End:
+                _width = "27.5rem";
+                _height = "100%";
+                break;
+            case Anchor.Bottom:
+                _width = "100%";
+                _height = "200px";
+                break;
+            case Anchor.Top:
+                _width = "100%";
+                _height = "350px";
+                break;
+        }
+    }
+}
+
+@code {
+    string[] colors = new string[] { "#FFFFFF", "#000000", "#999999","#8b7eff" };
+    string primarycolor = "132,90,223";
+    public static string RgbToHex(int r, int g, int b)
+    {
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    public static (int R, int G, int B) HexToRgb(string hex)
+    {
+        // Remove the leading '#' if it exists
+        hex = hex.TrimStart('#');
+
+        // Ensure the hex string is 6 characters long
+        if (hex.Length != 6)
+        {
+            throw new ArgumentException("Invalid hex color code.");
+        }
+
+        // Parse the hex string into RGB values   
+        int r = int.Parse(hex.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+        int g = int.Parse(hex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+        int b = int.Parse(hex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+        return (r, g, b);
+    }
+
+    async void PrimaryClosedEvent(string value)
+    {
+        var rgbValue = HexToRgb(value);
+        var val = $"{rgbValue.R}, {rgbValue.G}, {rgbValue.B}";
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorprimaryRGB", val);
+        await stateService.themePrimaryFn(val);
+        primarycolor = val;
+        // isPrimaryOpened = false;
+        StateHasChanged(); // Force re-render
+    }
+    
+    private async Task PrimaryModal()
+    {
+        var parameters = new ColorPickerParameters
+        {
+            ColorSelected = primarycolor,
+        };
+        primarycolor = await ColorPickerService.ShowColorPicker(parameters);
+        var rgbValue = HexToRgb(primarycolor);
+        var val = $"{rgbValue.R}, {rgbValue.G}, {rgbValue.B}";
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorprimaryRGB", val);
+        await stateService.themePrimaryFn(val);
+        StateHasChanged(); 
+        primarycolor=val;
+    }
+
+    string Backgroundcolor = "132,90,223";
+    private async Task BackgroundModal()
+    {
+        var parameters = new ColorPickerParameters
+        {
+            ColorSelected = Backgroundcolor,
+        };
+        Backgroundcolor = await ColorPickerService.ShowColorPicker(parameters);
+        var rgbValue = HexToRgb(Backgroundcolor);
+        var val = $"{rgbValue.R}, {rgbValue.G}, {rgbValue.B}";
+        var val2 = $"{rgbValue.R + 14}, {rgbValue.G + 14}, {rgbValue.B + 14}";
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorbackgroundRGB", val);
+        await stateService.themeBackgroundFn(val, val2, true);
+        Backgroundcolor = val;
+        StateHasChanged();
+    }
+
+    
+}
+
+@code {
+    void TriggerAction(string actionValue)
+    {
+        // Invoke the event with the action value
+        ActionService?.TriggerAction(actionValue);
+    }
+    //theme color//
+    private string light = "light";
+    private string dark = "dark";
+    private async Task OnColorThemeChange(string newValue)
+    {
+        // Get the selected color theme after it has changed
+        string selectedTheme = newValue;
+
+        // Call the JS Interop method to store the selected theme in LocalStorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzorcolortheme", selectedTheme);
+
+        // Remove other items from LocalStorage if necessary
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorbgColor");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorbgColor1");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorMenu");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorHeader");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "Vyzorbgimg");
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzorprimaryRGB");
+
+        // If stateService is handling this logic, call it as well
+        await stateService.colorthemeFn(selectedTheme, true);
+
+        // Trigger a UI re-render
+        StateHasChanged();
+    }
+     //direction//
+    private string ltr = "ltr";
+    private string rtl = "rtl";
+    private async Task OndirectionChange(string newValue)
+    {
+       string val = newValue;
+       await stateService.directionFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //mavigation//
+    [Inject] private NavScrollService? scrollService { get; set; }
+    private string vertical = "vertical";
+    private string horizontal = "horizontal";
+    private async Task OnNavigationChange(string val) 
+    {
+        if(scrollService != null){
+            if(val== "vertical"){
+                scrollService.IsVertical = true;
+            }
+            else {
+                scrollService.IsVertical  = false;
+                await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "Vyzorverticalstyles");
+            }
+        }
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzornavstyles", val);
+        await stateService.navigationStylesFn(val, true);
+
+
+        TriggerAction(val);
+        StateHasChanged(); // Force re-render
+    }
+    //menu styles//
+    private string menuclick = "menu-click";
+    private string menuhover = "menu-hover";
+    private string iconclick = "icon-click";
+    private string iconhover = "icon-hover";
+    private async Task OnMenuStylesChange(string val)
+    {
+
+         if(scrollService != null){
+            scrollService.IsMenuType  = val;
+        }
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzormenuStyles", val);
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "Vyzorverticalstyles");
+        await stateService.menuStylesFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //sidemenu layout//
+    private string defaultmenu = "default-menu";
+    private string closedmenu = "closed-menu";
+    private string icontextmenu = "icontext-menu";
+    private string iconoverlay = "icon-overlay";
+    private string detached = "detached";
+    private string doublemenu = "doublemenu";
+    private async Task OnSidemenuLayoutChange(string val)
+    {
+
+          //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzorverticalstyles", val);
+        await JSRuntime.InvokeAsync<string>("interop.removeLocalStorageItem", "VyzormenuStyles");
+        await stateService.layoutStylesFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //pagestyle//
+    private string regular = "regular";
+    private string classic = "classic";
+    private string modern = "modern";
+    private string flat = "flat";
+    private async Task OnPageStylesChange(string val)
+    {
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorpageStyle", val);
+        await stateService.pageStyleFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //width styles//
+    private string defaultwidth = "default";
+    private string fullwidth = "fullwidth";
+    private string boxed = "boxed";
+    private async Task OnWidthStylesChange(string val)
+    {
+         //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorwidthStyles", val);
+        await stateService.widthStylessFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //menu position//
+    private string menufixed = "fixed";
+    private string menuscrollable = "scrollable";
+    private async Task OnMenuPositionChange(string val)
+    {
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzormenuposition", val);
+        await stateService.menuPositionFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //header position//
+    private string headerfixed = "fixed";
+    private string headerscrollable = "scrollable";
+    private async Task OnHeaderPositionChange(string val)
+    {
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzorheaderposition", val);
+        await stateService.headerPositionFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //menu color//
+     private string menulight = "light";
+     private string menudark = "dark";
+     private string menucolor = "color";
+     private string menugradient = "gradient";
+     private string menutransparent = "transparent";
+    private async Task OnMenuColorChange(string val)
+    {
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorMenu", val);
+        await stateService.menuColorFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //header color//
+    private string headerlight = "light";
+    private string headerdark = "dark";
+    private string headercolor = "color";
+    private string headergradient = "gradient";
+    private string headertransparent = "transparent";
+    private async Task OnHeaderColorChange(string val)
+    {
+       //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorHeader", val);
+        await stateService.headerColorFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //primary color//
+    private string primary1 = "42, 16, 164";
+    private string primary2 = "125, 0, 189";
+    private string primary3 = "4, 118, 141";
+    private string primary4 = "138, 0, 32";
+    private string primary5 = "9, 124, 103";
+    private async Task OnThemePrimaryChange(string val)
+    {
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorprimaryRGB", val);
+        await stateService.themePrimaryFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //background color//
+    private string themebackground1 = "0, 8, 52";
+    private string themebackground2 = "58, 0, 109";
+    private string themebackground3 = "0, 59, 70";
+    private string themebackground4 = "65, 0, 0";
+    private string themebackground5 = "1, 77, 46";
+    private async Task OnThemeBackgroundChange(string val)
+    {
+        string val2 = GetBodyBg2Color(val); 
+
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorbgColor", val);
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "VyzorbgColor1", val2);
+
+        await stateService.themeBackgroundFn(val, val2, true);
+
+        StateHasChanged();
+    }
+    private string GetBodyBg2Color(string val)
+    {
+        if (val == themebackground1)
+            return "14, 22, 66";
+        if (val == themebackground2)
+            return "72, 14, 123";
+        if (val == themebackground3)
+            return "14, 73, 84";
+        if (val == themebackground4)
+            return "79, 14, 14";
+        return "15, 91, 60"; 
+    }
+    //backgroundimage//
+    private string bgimg1 = "bgimg1";
+    private string bgimg2 = "bgimg2";
+    private string bgimg3 = "bgimg3";
+    private string bgimg4 = "bgimg4";
+    private string bgimg5 = "bgimg5";
+    private async Task OnBackgroundImageChange(string val)
+    {
+        //Localstorage
+        await JSRuntime.InvokeAsync<string>("interop.setLocalStorageItem", "Vyzorbgimg", val);
+        await stateService.backgroundImageFn(val);
+        StateHasChanged(); // Force re-render
+    }
+    //reset//
+    private async void reset(){
+        await stateService.reset();
+        primarycolor = "132,90,223";
+        Backgroundcolor = "132,90,223";
+        StateHasChanged(); // Force re-render
+    }
+    protected override void OnInitialized()
+    {
+        StateHasChanged(); // Force re-render
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        stateService.OnStateChanged += RefreshState;
+        await base.OnInitializedAsync();
+    }
+    private async void RefreshState()
+    {
+        // Trigger a re-render when the state changes
+        await InvokeAsync(StateHasChanged);
+    }
+
+}
+

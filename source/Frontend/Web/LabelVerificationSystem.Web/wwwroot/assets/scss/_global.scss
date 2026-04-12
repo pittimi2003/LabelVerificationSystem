@@ -1,0 +1,487 @@
+@use "variables";
+#carouselpremier1,
+#carouselpremier2 {
+  .slick-slide img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+}
+.crypto-swiper,
+.swiper-related-products {
+  .slick-track {
+    display: flex !important;
+    gap: 20px;
+  }
+}
+.landing-swiper {
+  .slick-track {
+    display: flex !important;
+    gap: 20px;
+  }
+}
+.landing-swiper1 {
+  .slick-track {
+    display: flex !important;
+    gap: 25px;
+  }
+}
+.ts-wrapper {
+  min-height: calc(1.75em + 1.04rem + var(--bs-border-width) * 2) !important;
+}
+
+#buy-crypto,
+#sell-crypto {
+  .input-group > .ts-wrapper {
+    .ts-control {
+      width: 75px !important;
+    }
+  }
+  .has-items .ts-control > input {
+    display: none !important;
+  }
+}
+#golem-price-graph,
+#iota-price-graph,
+#ripple-price-graph,
+#dash-price-graph,
+#etherium-price-graph,
+#bitcoin-price-graph {
+  overflow: hidden;
+}
+
+.ts-wrapper.multi .ts-control > div {
+  padding: 3px 8px !important;
+}
+
+.ts-wrapper.plugin-remove_button:not(.rtl) .item .remove {
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-inline-end: 0 solid rgba(255, 255, 255, 0.3) !important;
+}
+
+[dir="rtl"] {
+  .ts-wrapper.plugin-remove_button .item .remove {
+    border-inline-start: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-inline-end: 0px solid rgba(255, 255, 255, 0.3) !important;
+  }
+  .carousel-control-next-icon,
+  .carousel-control-prev-icon {
+    transform: rotate(180deg);
+  }
+}
+
+.blazorwizard-step {
+  font-weight: 500;
+  &:before {
+    font-family: "remixicon" !important;
+    padding: 0.5rem !important;
+    vertical-align: middle !important;
+    line-height: 1 !important;
+    border-radius: 50% !important;
+    display: inline-flex;
+    box-shadow: -1px 1px 2px 0px rgba(0, 0, 0, 0.17);
+    background-color: variables.$primary-005;
+    color: variables.$primary;
+  }
+  &.active {
+    &:before {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+  }
+}
+.blazorwizard-step.Shipping:before {
+  content: "\f231";
+}
+.blazorwizard-step.Personal:before {
+  content: "\f256";
+}
+.blazorwizard-step.Payment:before {
+  content: "\ea92";
+}
+.blazorwizard-step.Complete:before {
+  content: "\eb81";
+}
+
+.product-details-page,
+.testimonialSwiperService {
+  .slick-dots {
+    position: relative !important;
+    margin: 65px 0 0 0 !important;
+    inset-block-end: 52px !important;
+  }
+}
+.nft-details-page,
+.testimonialSwiperService {
+  .slick-dots {
+    position: relative !important;
+    margin: 65px 0 0 0 !important;
+    inset-block-end: 52px !important;
+  }
+}
+.swiper-related-products {
+  .slick-arrow {
+    color: variables.$white !important;
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    &::before {
+      color: variables.$white !important;
+    }
+  }
+}
+
+.slick-arrow {
+  width: 1.563rem !important;
+  height: 1.563rem !important;
+  color: variables.$default-text-color !important;
+  background-color: variables.$light !important;
+  border-radius: variables.$default-radius !important;
+  box-shadow: none !important;
+  &::before {
+    color: variables.$default-text-color !important;
+  }
+}
+
+.slick-arrow:after {
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+}
+
+.slick-prev,
+.stocks-slide .slick-next {
+  left: 25px !important;
+  right: auto !important;
+  &::before {
+    content: "\ea64" !important;
+    font-family: "remixicon" !important;
+  }
+}
+
+.slick-next,
+.stocks-slide .slick-prev {
+  right: 25px !important;
+  left: auto !important;
+  &::before {
+    content: "\ea6e" !important;
+    font-family: "remixicon" !important;
+  }
+}
+#security {
+  .ts-wrapper {
+    margin-bottom: 24px;
+  }
+}
+#carouselExampleSlidesOnly {
+  .slick-list {
+    border-radius: 0 !important;
+  }
+}
+.testimonialSwiper1,
+.testimonialSwiper2 {
+  .slick-track {
+    display: flex !important;
+    gap: 25px;
+  }
+}
+.companies-search-input1 {
+  &.input-group .ts-wrapper {
+    width: 20%;
+    .ts-control {
+      border-start-start-radius: 0px !important;
+      border-start-end-radius: 0px !important;
+      border-end-end-radius: 0px !important;
+      border-end-start-radius: 0px !important;
+    }
+  }
+}
+@media screen and (max-width: 622px) {
+  .companies-search-input1 {
+    &.input-group .ts-wrapper {
+      width: 100%;
+      margin-bottom: 0.5rem;
+      .ts-control {
+        border-start-start-radius: 0.25rem !important;
+        border-start-end-radius: 0.25rem !important;
+        border-end-end-radius: 0.25rem !important;
+        border-end-start-radius: 0.25rem !important;
+      }
+    }
+  }
+}
+.create-nft-item {
+  .filepond--root {
+    margin: 0 auto;
+  }
+}
+.WMBOS.loading {
+  .WMBOS-loading {
+    display: none !important;
+  }
+}
+.dropdown-input {
+  color: variables.$default-text-color;
+}
+.ql-editor.ql-blank::before {
+  color: variables.$default-text-color !important;
+}
+[dir="rtl"] {
+  #calendar2 {
+    .btn-group {
+      .btn {
+        i {
+          transform: rotate(180deg);
+        }
+      }
+    }
+  }
+  .markup svg {
+    transform: rotate(180deg) !important;
+  }
+  .ql-editor li > .ql-ui:before {
+    margin-right: -1.5em;
+    margin-left: 0.3em;
+    text-align: left;
+  }
+}
+.buy-crypto1 {
+  .form-control {
+    width: 65%;
+  }
+  .ts-wrapper:not(.form-control, .form-select).single {
+    .ts-control {
+      background-color: variables.$primary !important;
+      background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' height='24' viewBox='0 -960 960 960' width='24'><path fill='white' d='M480-360 280-560h400L480-360Z'/></svg>") !important;
+
+      > * {
+        color: #fff;
+      }
+    }
+  }
+}
+.jvm-tooltip {
+  display: none;
+}
+@media (min-width: 992px) {
+  [data-nav-layout="horizontal"] {
+    .app-sidebar {
+      .WMBOS-content {
+        overflow: hidden;
+      }
+      .os-content-glue {
+        height: 0rem !important;
+      }
+      .os-host-overflow {
+        overflow: visible !important;
+      }
+      .os-host-overflow > .os-padding {
+        overflow: visible;
+        position: static;
+      }
+      .os-viewport,
+      .os-content {
+        position: inherit;
+      }
+      .os-scrollbar {
+        display: none !important;
+      }
+    }
+    &[data-nav-style="icon-click"] .os-padding {
+      position: static;
+    }
+    &[data-nav-style="icon-hover"] .os-padding {
+      position: static;
+    }
+  }
+}
+
+@media (min-width: 992px) {
+  [data-toggled="menu-click-closed"],
+  [data-toggled="menu-hover-closed"],
+  [data-toggled="icon-click-closed"],
+  [data-toggled="icon-hover-closed"],
+  [data-toggled="icon-text-close"] {
+    &:not([data-nav-layout="horizontal"]) {
+      .main-sidebar {
+        .os-host {
+          padding-block-end: 5rem;
+        }
+        .os-host-textarea {
+          padding-block-end: 5rem;
+        }
+      }
+      .app-content {
+        min-height: calc(100vh + 50rem);
+      }
+      .app-sidebar {
+        .os-host {
+          height: auto;
+        }
+        .os-host-textarea {
+          height: auto;
+        }
+        .os-padding {
+          position: static !important;
+        }
+        .os-viewport {
+          position: inherit !important;
+          overflow: visible !important;
+        }
+        .os-content-glue {
+          height: 5rem !important;
+        }
+        .os-content {
+          width: auto !important;
+          position: inherit !important;
+          overflow: visible !important;
+        }
+      }
+    }
+    .app-sidebar {
+      .os-scrollbar {
+        display: none !important;
+      }
+    }
+  }
+  [data-nav-layout="vertical"] {
+    .main-menu {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+  }
+}
+@media (min-width: 992px) {
+  [data-nav-layout="horizontal"] {
+    &[data-nav-style="menu-click"],
+    &[data-nav-style="menu-hover"],
+    &[data-nav-style="icon-click"],
+    &[data-nav-style="icon-hover"] {
+      .app-sidebar {
+        .os-padding {
+          position: static;
+        }
+      }
+    }
+  }
+}
+// #buy-crypto,
+// #sell-crypto,.buy-sell-crypto-tab {
+//   .input-group > .ts-wrapper {
+//     width: 30% !important;
+//   }
+// }
+@media (max-width: 575.98px) {
+  .header-element.dropdown {
+    position: initial;
+  }
+}
+
+.stocks-swiper, .pos-orders-swiper, .related-jobs-swiper, .testimonial1-swiper {
+    .slick-track {
+        display: flex !important;
+        gap: 1rem !important;
+    }
+}
+#product-table table[theme="default"] thead  tr th  , #product-table tbody tr td {
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+}
+/****Quick Grid Table***/
+table[theme="default"] {
+    text-align: start !important;
+    font-size: 0.813rem !important;
+    font-weight: 500 !important;
+    border-collapse: collapse;
+    display: table;
+    margin: 0;
+    max-width: 100%;
+    overflow: auto;
+    padding: 0;
+    table-layout: fixed;
+    text-align: left;
+    width: 100%;
+    thead {
+      tr{
+        th {
+          cursor: pointer;
+          background-color: var(--custom-white) !important;
+          border: 1px solid var(--default-border) !important;
+          color: var(--default-text-color) !important;
+          padding: 0.75rem !important;
+          border-top: none;
+          box-sizing: border-box;
+          outline: none;
+          position: relative;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          user-select: none;
+          vertical-align: middle;
+          white-space: nowrap;
+        }
+      }
+    }
+    tbody{
+      tr{
+        td{
+          padding: 0.75rem !important;
+          
+    border: 1px solid variables.$default-border !important;
+        }
+      }
+      &:last-child tr {
+        td{
+          border-bottom: 0 !important;
+        }
+      }
+    }
+}
+
+.quickgrid[theme=default] button.col-title:hover, .quickgrid[theme=default] .col-options-button:hover{
+  background: transparent !important;
+}
+.quickgrid[theme=default] .sort-indicator{
+  opacity: 1 !important;  
+}
+/****Quick Grid Table***/
+
+//blazer calendar 
+// #calendar2 .monthly-task {
+//   height: 3vh !important;
+// }
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide.has-sub .slide-menu.active {
+    inset-inline-start: auto !important;
+    inset-inline-end: auto !important;
+}
+.os-theme-dark>.os-scrollbar>.os-scrollbar-track>.os-scrollbar-handle {
+    background: #00000014 !important;
+}
+[dir="rtl"] {
+  .offcanvas.offcanvas-end {
+    top: 0;
+    left: 0 !important;
+    right: auto !important;
+  } 
+  .form-check .form-check-input {
+      float: right;
+      margin-left: 0.5em;
+  }
+  .offcanvas-header .btn-close {
+      margin-right: auto !important;
+      margin-left: 0px !important;
+  }
+  .list-unstyled {
+    padding-right: 0 !important;
+    padding-left: auto !important;
+  }
+  .main-header-dropdown.dropdown-menu {
+    inset: 0px auto auto 0px !important
+  }
+}
+
+.vr {
+  display: inline-block;
+  align-self: stretch;
+  width: 1px;
+  min-height: 1em;
+  background-color: var(--default-border);
+  opacity: 1;
+}

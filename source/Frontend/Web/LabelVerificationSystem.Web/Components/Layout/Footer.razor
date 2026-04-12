@@ -1,0 +1,23 @@
+ <!-- Footer Start -->
+       <footer class="footer mt-auto py-3 text-center">
+           <div class="container">
+               <span class="text-muted"> Copyright © @currentYear<span id="year"></span> <a
+                       href="javascript:void(0);" class="text-dark fw-medium">Vyzor</a>.
+                   Designed with <span class="bi bi-heart-fill mud-error-text"></span> by <a href="https://spruko.com/" target="_blank">
+                       <span class="fw-medium mud-primary-text">Spruko</span>
+                   </a> All
+                   rights
+                   reserved
+               </span>
+           </div>
+       </footer>
+       <!-- Footer End -->
+
+@code {
+    private int currentYear;
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        currentYear = DateTime.Now.Year;
+    }
+}

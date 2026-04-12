@@ -1,0 +1,34 @@
+@page "/error401"
+@using MudBlazor
+@layout Components.Layout.CustomLayout
+@using System.Globalization
+@inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
+@using System.Collections.Generic
+
+
+        <div class="page error-bg" style="min-height: 100vh;">
+            <div class="error-page-background">
+                <MudImage Src="../assets/images/media/backgrounds/10.svg" alt="" />
+            </div>
+            <!-- Start::error-page -->
+            <MudGrid class="align-center justify-center h-100"  Spacing="0">
+                <MudItem xs="12" sm="12" md="7" lg="7" xl="7">
+                    <div class="text-center px-2">
+                        <div class="text-center mb-12">
+                            <MudImage Src="../assets/images/media/backgrounds/11.png" Class="w-sm-auto w-100 h-100" alt="" />
+                        </div>
+                        <span class="d-block fs-4 mud-primary-text fw-semibold">Oops! Something Went Wrong</span>
+                        <MudText class="error-text mb-0">401</MudText>
+                        <MudText class="fs-5 fw-normal mb-0">There was an issue with the page. Try again <br> later or contact
+                            support.</MudText>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </div>
+
+
+
+@code{
+
+
+}

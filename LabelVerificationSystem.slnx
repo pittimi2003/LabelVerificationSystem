@@ -1,0 +1,36 @@
+<Solution>
+  <Folder Name="/source/" />
+  <Folder Name="/source/AppHost/">
+    <Project Path="source/AppHost/LabelVerificationSystem.AppHost/LabelVerificationSystem.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/source/Backend/" />
+  <Folder Name="/source/Backend/Api/">
+    <Project Path="source/Backend/Api/LabelVerificationSystem.Api/LabelVerificationSystem.Api.csproj" />
+  </Folder>
+  <Folder Name="/source/Backend/Application/">
+    <Project Path="source/Backend/Application/LabelVerificationSystem.Application/LabelVerificationSystem.Application.csproj" />
+  </Folder>
+  <Folder Name="/source/Backend/Domain/">
+    <Project Path="source/Backend/Domain/LabelVerificationSystem.Domain/LabelVerificationSystem.Domain.csproj" />
+  </Folder>
+  <Folder Name="/source/Backend/Infrastructure/">
+    <Project Path="source/Backend/Infrastructure/LabelVerificationSystem.Infrastructure/LabelVerificationSystem.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/source/Frontend/" />
+  <Folder Name="/source/Frontend/Shared/">
+    <Project Path="source/Frontend/Shared/LabelVerificationSystem.Shared/LabelVerificationSystem.Shared.csproj" />
+  </Folder>
+  <Folder Name="/source/Frontend/Web/">
+    <Project Path="source/Frontend/Web/LabelVerificationSystem.Web/LabelVerificationSystem.Web.csproj" />
+  </Folder>
+  <Folder Name="/source/ServiceDefaults/">
+    <Project Path="source/ServiceDefaults/LabelVerificationSystem.ServiceDefaults/LabelVerificationSystem.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+  <Folder Name="/test/IntegrationTests/">
+    <Project Path="test/IntegrationTests/LabelVerificationSystem.IntegrationTests/LabelVerificationSystem.IntegrationTests.csproj" />
+  </Folder>
+  <Folder Name="/test/UnitTests/">
+    <Project Path="test/UnitTests/LabelVerificationSystem.UnitTests/LabelVerificationSystem.UnitTests.csproj" />
+  </Folder>
+</Solution>
