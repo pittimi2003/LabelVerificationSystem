@@ -79,15 +79,18 @@ Es la entidad base para:
 ## Origen funcional
 La propuesta inicial define gestión de partes, visualización del catálogo, carga por Excel y uso de partes como base para validaciones. :contentReference[oaicite:2]{index=2}
 
-## Atributos lógicos esperados
-Aún pendientes de definición exacta, pero conceptualmente una parte deberá tener al menos:
+## Atributos mínimos implementados en v1 de Carga de Excel
+- `Id`
+- `PartNumber`
+- `MinghuaDescription`
+- `Caducidad`
+- `Cco`
+- `CertificationEac`
+- `FirstFourNumbers`
+- `CreatedAtUtc`
 
-- identificador interno
-- número de parte
-- datos oficiales relevantes para validación
-- tipo de etiqueta
-- referencia a configuración o configuraciones aplicables
-- estado de vigencia o disponibilidad
+## Regla de unicidad implementada en v1
+- `PartNumber` es único (índice único).
 
 ## Relaciones esperadas
 - una parte puede estar asociada a una o varias configuraciones
@@ -166,27 +169,26 @@ Representa una operación de carga de archivo Excel.
 ## Origen funcional
 La propuesta inicial incluye carga de Excel, validación del archivo, procesamiento, almacenamiento y auditoría de cargas. :contentReference[oaicite:6]{index=6} :contentReference[oaicite:7]{index=7}
 
-## Atributos lógicos esperados
-- identificador interno
-- usuario que ejecutó la carga
-- fecha y hora de carga
-- nombre o referencia del archivo
-- estado de la carga
-- resumen de resultado
-- métricas de procesamiento
-- detalle o referencia a errores si aplica
+## Atributos mínimos implementados en v1 de Carga de Excel
+- `Id`
+- `OriginalFileName`
+- `StoredFilePath`
+- `UploadedAtUtc`
+- `Status`
+- `TotalRows`
+- `InsertedRows`
+- `RejectedRows`
 
 ## Relaciones esperadas
 - una carga pertenece a un usuario
 - una carga puede afectar múltiples partes
 - una carga puede generar eventos auditables
 
-## Decisiones pendientes
-Debe definirse:
-- si se almacenará el archivo físico
-- si se almacenará resumen por fila
-- si habrá detalle persistente de errores por fila
-- si la carga tendrá estado granular
+## Estado v1
+- El archivo físico original sí se almacena.
+- Se almacena resumen de la carga en `ExcelUpload`.
+- El detalle de errores por fila se devuelve en la respuesta API, pero no se persiste todavía.
+- El estado se maneja de forma básica (`Processed` / `ProcessedWithErrors`).
 
 ---
 

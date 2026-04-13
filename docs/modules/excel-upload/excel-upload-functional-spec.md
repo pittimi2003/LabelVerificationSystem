@@ -221,15 +221,11 @@ El sistema debe validar que el archivo recibido:
 - contenga las columnas requeridas
 
 ## Validación de columnas obligatorias
-Si falta una columna obligatoria:
+Si falta una columna obligatoria en el encabezado:
 
-- no se debe rechazar todo el archivo de forma silenciosa
-- deben rechazarse las filas afectadas o dejar constancia del problema en el resultado
-- el usuario debe recibir el motivo exacto del error
-
-> Nota:
-> Queda pendiente cerrar técnicamente si la ausencia de una columna obligatoria global debe impedir completamente el procesamiento o si debe tratarse como error general de carga.  
-> Funcionalmente, la instrucción actual es: **rechazar lo afectado y mostrar motivos al usuario**.
+- se rechaza toda la carga como archivo inválido
+- no se procesa ninguna fila
+- el usuario recibe el listado exacto de columnas faltantes
 
 ## Validación por fila
 Si una fila viene vacía, corrupta o con tipos de dato incorrectos:
@@ -252,31 +248,19 @@ Si una fila se considera duplicada dentro del mismo archivo:
 ## Duplicidad confirmada
 A nivel funcional, la duplicidad debe reportarse al usuario y la fila afectada no debe registrarse.
 
-## Criterio actual declarado
-Actualmente se indicó que la detección de existencia o actualización puede considerar todas las columnas.
+## Criterio implementado para v1
+- Duplicado contra sistema: mismo `Part Number`.
+- Duplicado dentro del archivo: mismo `Part Number` repetido en la carga actual.
+- En ambos casos, la fila se rechaza y se reporta error por fila.
 
-Sin embargo, para esta primera versión también quedó definido que:
-
+## Alcance v1 cerrado
 - el módulo es solo para creación
 - `Part Number` es el identificador principal de la parte
 
-## Decisión pendiente
-Debe cerrarse explícitamente cuál será el criterio definitivo de duplicidad operativa para la carga:
-
-### Opción A
-Duplicado por `Part Number`
-
-### Opción B
-Duplicado por combinación de todas las columnas relevantes
-
-### Opción C
-Dos niveles:
-- duplicidad funcional principal por `Part Number`
-- validación adicional por contenido completo
-
-**Estado actual:** pendiente de definición final.
-
-Mientras no se cierre esta regla, no debe implementarse una lógica inventada como si ya fuera definitiva.
+## Criterio de duplicidad vigente para v1
+- El criterio operativo vigente es `Part Number`.
+- Esta regla se considera cerrada para la versión v1 del módulo.
+- Cualquier cambio futuro deberá documentarse explícitamente antes de implementarse.
 
 ---
 

@@ -192,6 +192,31 @@ Este documento funciona como un **registro del estado actual con conciencia de l
 
 ---
 
+
+## Avance implementado: Carga de Excel v1 (backend mínimo)
+
+Se implementó el primer corte real del backend del módulo **Carga de Excel** con alcance mínimo funcional:
+
+- endpoint `POST /api/excel-uploads`
+- lectura de una sola hoja de Excel
+- validación de encabezados mínimos obligatorios
+- procesamiento fila por fila con carga parcial
+- inserción de nuevas partes únicamente
+- rechazo de filas inválidas o duplicadas por `Part Number`
+- respuesta con resumen y errores por fila
+- almacenamiento del archivo original
+- registro de historial básico de carga (`ExcelUpload`)
+- estrategia técnica provisional de inicialización de base de datos con `EnsureCreated()` (pendiente migrar a esquema formal de migraciones)
+
+No se implementó en esta versión:
+
+- actualización de partes existentes
+- cálculo de tipo de etiqueta
+- cálculo de configuración de lectura
+- procesamiento en background
+- persistencia detallada de errores por fila en base de datos
+
+
 ## Historial de cambios
 
 ### Versión inicial

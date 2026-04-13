@@ -1,0 +1,23 @@
+using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
+using LabelVerificationSystem.Infrastructure.ExcelUploads;
+using LabelVerificationSystem.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace LabelVerificationSystem.Infrastructure.DependencyInjection;
+
+public static class InfrastructureServiceCollectionExtensions
+{
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+                               ?? "Data Source=label-verification.db";
+
+        services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+        services.Configure<ExcelUploadStorageOptions>(configuration.GetSection(ExcelUploadStorageOptions.SectionName));
+        services.AddScoped<IExcelUploadService, ExcelUploadService>();
+
+        return services;
+    }
+}
