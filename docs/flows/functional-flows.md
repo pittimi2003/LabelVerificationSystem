@@ -1,0 +1,488 @@
+# Flujos Funcionales
+
+## Propósito de este documento
+
+Este documento describe los flujos funcionales del sistema con el nivel de definición actualmente disponible.
+
+Su objetivo es:
+
+- dejar explícito cómo se espera que opere el sistema
+- alinear frontend, backend y dominio sobre el mismo comportamiento
+- evitar interpretaciones inventadas o contradictorias
+- servir como base para futuros contratos API, modelo de datos, validaciones y pruebas
+
+Este documento es evolutivo.  
+Debe actualizarse a medida que cada módulo gane precisión funcional.
+
+---
+
+## Regla de lectura
+
+Los flujos aquí descritos deben interpretarse en tres niveles:
+
+### 1. Flujo base confirmado
+Comportamiento respaldado por la propuesta funcional inicial.
+
+### 2. Decisión actual del proyecto
+Comportamiento ya decidido durante la construcción del proyecto.
+
+### 3. Pendiente de formalización
+Puntos que todavía no tienen suficiente definición y deberán cerrarse después.
+
+No debe inventarse comportamiento fuera de estos tres niveles.
+
+---
+
+## Módulos con flujo funcional identificado
+
+A la fecha, el sistema tiene identificados estos módulos funcionales:
+
+- Carga y procesamiento de Excel
+- Gestión de partes
+- Verificación de etiquetas
+- Packing Lists
+- Administración de usuarios y roles
+- Auditoría / historial
+- Configuración general del sistema :contentReference[oaicite:2]{index=2}
+
+---
+
+# 1. Flujo de Carga de Excel
+
+## Estado del flujo
+**Primer módulo real a construir**
+
+## Objetivo
+Permitir la carga de un archivo Excel con matriz de partes para validar su estructura, procesar su contenido, calcular información derivada y registrar la información oficial en el sistema. La propuesta inicial define que este módulo incluye validación de formato y estructura, cálculo automático del tipo de etiqueta y de la configuración de lectura, además de auditoría de cargas y modificaciones. :contentReference[oaicite:3]{index=3}
+
+## Actores involucrados
+- Administrador
+- Supervisor :contentReference[oaicite:4]{index=4}
+
+## Disparador
+Un usuario autorizado inicia una carga de archivo Excel desde el sistema.
+
+## Precondiciones
+- El usuario debe estar autenticado.
+- El usuario debe tener permisos para gestionar partes.
+- Debe existir un mecanismo de carga de archivos en la aplicación.
+- El archivo debe ser de tipo Excel compatible con el formato admitido por el sistema.
+
+## Flujo base esperado
+1. El usuario selecciona un archivo Excel.
+2. El sistema recibe el archivo.
+3. El sistema valida que el archivo tenga el formato esperado.
+4. El sistema valida que la estructura del archivo sea correcta.
+5. El sistema procesa las filas válidas del archivo.
+6. El sistema calcula automáticamente el tipo de etiqueta.
+7. El sistema calcula automáticamente la configuración de lectura asociada.
+8. El sistema almacena la información procesada en la base de datos.
+9. El sistema registra la operación en auditoría o historial de carga.
+10. El sistema informa el resultado de la carga al usuario. :contentReference[oaicite:5]{index=5} :contentReference[oaicite:6]{index=6}
+
+## Resultado esperado
+- La información de partes queda registrada o actualizada en el sistema.
+- La carga queda registrada en historial o auditoría.
+- El usuario recibe confirmación o detalle de errores.
+
+## Errores esperables
+- Archivo inválido.
+- Estructura incorrecta.
+- Datos faltantes o incompatibles.
+- Filas no procesables.
+- Error de almacenamiento.
+- Error de cálculo de tipo de etiqueta.
+- Error de cálculo de configuración.
+
+## Pendiente de formalización
+- formato exacto del archivo admitido
+- columnas obligatorias
+- reglas de validación por columna
+- comportamiento ante filas parcialmente inválidas
+- política de inserción/actualización
+- qué se considera duplicado
+- cómo se reportan errores por fila
+- si la carga es transaccional total o parcial
+- cómo se registra la auditoría exacta
+- qué datos exactos componen la configuración calculada
+
+---
+
+# 2. Flujo de Gestión de Partes
+
+## Estado del flujo
+**Identificado en propuesta, pendiente de detalle funcional**
+
+## Objetivo
+Permitir la administración del catálogo oficial de partes del sistema.
+
+## Actores involucrados
+- Administrador
+- Supervisor :contentReference[oaicite:7]{index=7}
+
+## Capacidades esperadas
+- visualizar catálogo completo
+- registrar partes
+- editar partes
+- eliminar partes
+- consultar información de partes
+- usar las partes como base oficial para validaciones posteriores :contentReference[oaicite:8]{index=8}
+
+## Flujo base esperado
+1. El usuario autorizado accede al módulo de partes.
+2. El sistema muestra el catálogo disponible.
+3. El usuario puede crear, editar o eliminar una parte.
+4. El sistema valida la acción solicitada.
+5. El sistema persiste el cambio.
+6. El sistema registra auditoría cuando corresponda.
+
+## Resultado esperado
+- El catálogo queda actualizado conforme a las acciones permitidas.
+- La información oficial de partes queda disponible para otros módulos.
+
+## Pendiente de formalización
+- atributos exactos de una parte
+- validaciones exactas de alta y edición
+- restricciones de unicidad
+- política de eliminación
+- si existe baja lógica o física
+- relación exacta entre parte, configuración y tipo de etiqueta
+- eventos auditables exactos
+
+---
+
+# 3. Flujo de Verificación de Etiquetas
+
+## Estado del flujo
+**Identificado en propuesta, pendiente de detalle funcional**
+
+## Objetivo
+Validar una etiqueta física comparando la información escaneada contra los datos oficiales del sistema mediante un proceso de dos escaneos. La propuesta inicial define que el primer escaneo identifica automáticamente el número de parte y que el segundo escaneo compara la etiqueta completa contra la información oficial. :contentReference[oaicite:9]{index=9}
+
+## Actores involucrados
+- Operador :contentReference[oaicite:10]{index=10}
+
+## Disparador
+El operador inicia un proceso de verificación.
+
+## Precondiciones
+- El operador debe tener acceso al flujo de operación.
+- Debe existir una parte oficial registrada que pueda ser localizada por el primer escaneo.
+- Debe existir un mecanismo de captura desde lectora o entrada equivalente.
+- Deben existir datos oficiales disponibles para comparar la etiqueta.
+
+---
+
+## 3.1 Flujo de Primer Escaneo
+
+### Objetivo
+Identificar automáticamente la parte y preparar el sistema para el segundo escaneo.
+
+### Flujo base esperado
+1. El operador realiza el primer escaneo.
+2. El sistema recibe el valor escaneado.
+3. El sistema identifica automáticamente el número de parte.
+4. El sistema valida los campos clave requeridos en esta etapa.
+5. Si la parte existe:
+   - el sistema muestra la configuración requerida
+   - el sistema prepara el paso hacia el segundo escaneo
+6. Si la parte no existe:
+   - el sistema informa error al operador :contentReference[oaicite:11]{index=11}
+
+### Resultado esperado
+- Parte identificada y contexto preparado para segundo escaneo
+- o error de parte no encontrada
+
+### Pendiente de formalización
+- formato exacto del valor escaneado
+- campos clave exactos a validar
+- comportamiento exacto cuando hay coincidencias ambiguas
+- integración exacta con la lectora
+- si el cambio de configuración es automático, sugerido o asistido
+- tiempos y condiciones de expiración del contexto de primer escaneo
+
+---
+
+## 3.2 Flujo de Segundo Escaneo
+
+### Objetivo
+Leer la etiqueta completa y compararla contra la información oficial.
+
+### Flujo base esperado
+1. El operador realiza el segundo escaneo.
+2. El sistema recibe la lectura completa de la etiqueta.
+3. El sistema extrae todos los campos relevantes.
+4. El sistema compara esos campos contra la información oficial registrada para la parte identificada.
+5. El sistema determina si la etiqueta es correcta o errónea.
+6. El sistema informa el resultado.
+7. El sistema retorna a la configuración inicial de lectura de códigos de barras. :contentReference[oaicite:12]{index=12}
+
+### Resultado esperado
+- Etiqueta correcta
+- Etiqueta errónea
+
+### Pendiente de formalización
+- campos exactos que se leerán de la etiqueta
+- reglas exactas de comparación
+- tolerancias permitidas o no permitidas
+- política de error por campo
+- mensaje de resultado esperado por UI
+- detalle de la integración de retorno a configuración inicial
+
+---
+
+## 3.3 Flujo completo de verificación
+
+### Flujo base esperado
+1. Escaneo de código de barras.
+2. Identificación de parte y configuración.
+3. Cambio automático de configuración en lectora.
+4. Escaneo de etiqueta completa.
+5. Validación exacta.
+6. Resultado: correcta o errónea. :contentReference[oaicite:13]{index=13}
+
+### Pendiente de formalización
+- qué ocurre si el operador abandona el flujo a mitad del proceso
+- qué se audita de cada verificación
+- si se almacena historial de intentos fallidos
+- cómo se reinicia el proceso manualmente
+- tratamiento de reintentos
+- tiempos máximos entre primer y segundo escaneo
+
+---
+
+# 4. Flujo de Packing List
+
+## Estado del flujo
+**Identificado en propuesta, pendiente de detalle funcional**
+
+## Objetivo
+Permitir la creación, uso colaborativo y cierre de packing lists usando el mismo proceso de verificación de dos escaneos.
+
+## Actores involucrados
+- Operador
+- Supervisor
+- Administrador :contentReference[oaicite:14]{index=14}
+
+## Precondiciones
+- Debe existir el módulo de packing lists habilitado.
+- Debe existir un identificador o número de packing list.
+- Debe existir verificación operativa integrada al flujo.
+
+---
+
+## 4.1 Creación o unión a Packing List
+
+### Flujo base esperado
+1. El operador ingresa el número de packing list.
+2. El sistema verifica si ese packing list existe.
+3. Si existe:
+   - el operador se une al proceso existente
+4. Si no existe:
+   - el sistema crea un nuevo packing list con estado Abierto
+5. El sistema habilita la operación sobre ese packing list. :contentReference[oaicite:15]{index=15}
+
+### Pendiente de formalización
+- reglas exactas de unicidad del número
+- quién puede crear
+- si hay validaciones de formato del número
+- si existe límite de operadores simultáneos
+- qué datos se muestran al unirse
+
+---
+
+## 4.2 Escaneo dentro de Packing List
+
+### Flujo base esperado
+1. El operador inicia el escaneo dentro del packing list activo.
+2. El sistema usa el mismo proceso de verificación de dos escaneos.
+3. Si la etiqueta es correcta:
+   - se registra una línea en el packing list
+4. El sistema muestra en tiempo real las líneas acumuladas. :contentReference[oaicite:16]{index=16}
+
+### Resultado esperado
+- La línea queda registrada dentro del packing list si la verificación es correcta.
+
+### Pendiente de formalización
+- estructura exacta de la línea registrada
+- política ante etiquetas erróneas dentro del packing list
+- posibilidad de duplicados
+- actualizaciones en tiempo real
+- manejo de concurrencia entre operadores
+
+---
+
+## 4.3 Operaciones del Operador en Packing List
+
+### Flujo base esperado
+El operador puede:
+
+- agregar líneas mediante escaneo
+- eliminar líneas registradas
+- cerrar el packing list al finalizar :contentReference[oaicite:17]{index=17}
+
+### Pendiente de formalización
+- restricciones para eliminar líneas
+- qué validaciones existen antes del cierre
+- si el cierre requiere confirmación adicional
+- si hay permisos especiales sobre líneas ajenas
+
+---
+
+## 4.4 Operaciones de Supervisor / Administrador en Packing List
+
+### Flujo base esperado
+Supervisor y Administrador pueden:
+
+- monitorear el avance en tiempo real
+- visualizar operadores activos
+- exportar el packing list a Excel
+- reabrir el packing list, de forma opcional :contentReference[oaicite:18]{index=18}
+
+### Pendiente de formalización
+- criterios exactos para reapertura
+- formato de exportación
+- datos visibles en monitoreo
+- reglas de acceso por rol
+- visibilidad histórica de packing lists cerrados
+
+---
+
+## 4.5 Flujo completo de Packing List
+
+### Flujo base esperado
+1. Ingreso de número de packing list.
+2. Creación o unión al proceso.
+3. Escaneo 1 y configuración.
+4. Escaneo 2 y validación.
+5. Registro de línea correcta.
+6. Eliminación de líneas, si aplica.
+7. Cierre del packing list.
+8. Supervisión y exportación. :contentReference[oaicite:19]{index=19}
+
+---
+
+# 5. Flujo de Administración de Usuarios y Roles
+
+## Estado del flujo
+**Identificado en propuesta, pendiente de detalle funcional**
+
+## Objetivo
+Permitir la gestión de usuarios del sistema y su clasificación por roles.
+
+## Actores involucrados
+- Administrador :contentReference[oaicite:20]{index=20}
+
+## Flujo base esperado
+1. El administrador accede al módulo de usuarios.
+2. El sistema permite registrar, consultar y administrar usuarios.
+3. El sistema asocia un rol al usuario.
+4. El sistema aplica permisos según rol.
+
+## Roles base identificados
+- Operador
+- Supervisor
+- Administrador :contentReference[oaicite:21]{index=21}
+
+## Pendiente de formalización
+- mecanismo exacto de autenticación
+- alta, edición, baja y bloqueo de usuarios
+- permisos detallados por rol
+- política de contraseñas
+- auditoría de accesos
+- recuperación de cuenta
+- reglas de sesión
+
+---
+
+# 6. Flujo de Auditoría e Historial
+
+## Estado del flujo
+**Identificado en propuesta, pendiente de detalle funcional**
+
+## Objetivo
+Registrar eventos relevantes de operación, carga y administración para trazabilidad y control.
+
+## Fuentes funcionales identificadas
+- auditoría de cargas y modificaciones
+- historial de cargas de Excel
+- auditoría como responsabilidad del backend :contentReference[oaicite:22]{index=22} :contentReference[oaicite:23]{index=23}
+
+## Flujo base esperado
+1. Ocurre una acción relevante en el sistema.
+2. El sistema registra el evento correspondiente.
+3. Los usuarios autorizados pueden consultar el historial cuando aplique.
+
+## Pendiente de formalización
+- catálogo exacto de eventos auditables
+- estructura del evento
+- nivel de detalle almacenado
+- retención de datos
+- consulta y filtros
+- visibilidad por rol
+
+---
+
+# 7. Flujo de Configuración General
+
+## Estado del flujo
+**Identificado en propuesta, pendiente de detalle funcional**
+
+## Objetivo
+Permitir la administración de parámetros generales del sistema.
+
+## Actores involucrados
+- Administrador :contentReference[oaicite:24]{index=24}
+
+## Flujo base esperado
+1. El administrador accede al módulo de configuración general.
+2. El sistema presenta los parámetros configurables.
+3. El administrador actualiza valores permitidos.
+4. El sistema valida y persiste la configuración.
+
+## Pendiente de formalización
+- qué parámetros existen
+- impacto funcional de cada parámetro
+- validaciones por parámetro
+- auditoría de cambios
+- versión o historial de configuración
+
+---
+
+## Reglas generales aún pendientes
+
+Existen definiciones transversales que todavía deberán cerrarse y que impactarán a varios flujos:
+
+- contratos API
+- estructura del modelo de datos
+- reglas de errores de negocio
+- mensajes operativos al usuario
+- validaciones exactas por rol
+- estrategia de concurrencia
+- estrategia de auditoría
+- integración real con lectoras
+- criterios exactos de exportación
+- políticas de seguridad y autenticación
+
+---
+
+## Regla de evolución
+
+Este documento debe actualizarse cuando ocurra cualquiera de estas situaciones:
+
+- un módulo pase de flujo general a flujo detallado
+- se cierre una regla de negocio relevante
+- se creen contratos API que fijen comportamiento
+- se defina el modelo de datos
+- se valide una integración real con hardware
+- se incorporen nuevos estados, errores o decisiones operativas
+
+---
+
+## Historial
+
+### Versión inicial
+- Se documentan los flujos funcionales base a partir de la propuesta inicial.
+- Se identifica Carga de Excel como primer módulo real a construir.
+- Se describen los flujos principales sin inventar detalle no formalizado.
+- Se deja explícito qué partes del comportamiento siguen pendientes de definición.
