@@ -163,12 +163,36 @@ Consulta de una carga específica.
 - errores o advertencias
 - información de auditoría asociada si aplica
 
+## Implementación cerrada para Excel Upload v1
+- Endpoint implementado: `POST /api/excel-uploads`.
+- Tipo de request: `multipart/form-data` con campo `file`.
+- El procesamiento es en línea (sin background).
+- Se procesa una sola hoja, sin depender del nombre de la hoja.
+- Si faltan columnas mínimas obligatorias en el encabezado, la carga se rechaza como archivo inválido (HTTP 400).
+- La respuesta del `POST` devuelve resultado final de la carga con resumen y errores por fila.
+
+### Response de `POST /api/excel-uploads` (v1)
+- `uploadId`: identificador de la carga.
+- `fileName`: nombre original del archivo.
+- `totalRows`: filas leídas (sin encabezado).
+- `insertedRows`: filas insertadas como nuevas partes.
+- `rejectedRows`: filas rechazadas.
+- `rowErrors`: lista de errores por fila con:
+  - `rowNumber`
+  - `partNumber`
+  - `error`
+
+### Reglas funcionales cerradas reflejadas en el contrato
+- Solo inserta nuevas partes.
+- No actualiza partes existentes.
+- Duplicado contra sistema: mismo `Part Number`.
+- Carga parcial: las filas válidas se insertan y las inválidas/duplicadas se rechazan sin detener toda la carga.
+- El archivo original se conserva.
+- Se registra historial básico de carga desde v1.
+
 ## Decisiones pendientes
-- si la carga se procesa en línea o de forma diferida
-- si habrá detalle persistente por fila
-- si se almacenará el archivo físico
-- si la respuesta del `POST` devuelve resultado final o solo estado inicial
-- estructura exacta de errores de validación por fila
+- persistencia detallada de errores por fila en base de datos (v1 los devuelve en respuesta)
+- versionado formal del endpoint
 
 ---
 

@@ -94,17 +94,23 @@ Un usuario autorizado inicia una carga de archivo Excel desde el sistema.
 - Error de cálculo de tipo de etiqueta.
 - Error de cálculo de configuración.
 
+## Definición cerrada para v1 (implementada)
+- Se procesa una sola hoja y su nombre no importa.
+- Columnas mínimas obligatorias: `Part Number`, `Minghua description`, `CADUCIDAD`, `CCO`, `Certification EAC`, `4 FIRST NUMERS`.
+- Si falta una columna obligatoria en encabezado, se rechaza toda la carga como archivo inválido.
+- La carga es parcial a nivel de filas: las filas válidas se insertan y las inválidas/duplicadas se rechazan con error por fila.
+- Regla de duplicado contra sistema en v1: mismo `Part Number`.
+- El módulo v1 solo crea nuevas partes; no actualiza existentes.
+- El archivo original se conserva.
+- Se registra historial básico de cargas desde v1.
+- En v1 no se calcula tipo de etiqueta ni configuración de lectura.
+
 ## Pendiente de formalización
-- formato exacto del archivo admitido
-- columnas obligatorias
-- reglas de validación por columna
-- comportamiento ante filas parcialmente inválidas
-- política de inserción/actualización
-- qué se considera duplicado
-- cómo se reportan errores por fila
-- si la carga es transaccional total o parcial
-- cómo se registra la auditoría exacta
-- qué datos exactos componen la configuración calculada
+- reglas de validación avanzadas por columna
+- catálogo definitivo de estados de carga
+- persistencia detallada de errores por fila
+- cálculo de tipo de etiqueta
+- cálculo de configuración de lectura
 
 ---
 
