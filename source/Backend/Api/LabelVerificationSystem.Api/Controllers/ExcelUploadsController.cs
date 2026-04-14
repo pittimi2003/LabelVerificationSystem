@@ -1,3 +1,4 @@
+using LabelVerificationSystem.Api.Contracts;
 using LabelVerificationSystem.Application.Contracts.ExcelUploads;
 using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
 using Microsoft.AspNetCore.Mvc;
@@ -16,25 +17,26 @@ public sealed class ExcelUploadsController : ControllerBase
     }
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ExcelUploadResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ExcelUploadResult>> Upload([FromForm] IFormFile file, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ExcelUploadResult>> Upload([FromForm] ExcelUploadRequest request, CancellationToken cancellationToken)
     {
-        if (file is null || file.Length == 0)
+        if (request.File is null || request.File.Length == 0)
         {
-            return BadRequest(new { error = "El archivo es obligatorio." });
+            return BadRequest(new ApiErrorResponse("El archivo es obligatorio."));
         }
 
-        await using var stream = file.OpenReadStream();
+        await using var stream = request.File.OpenReadStream();
 
         try
         {
-            var result = await _excelUploadService.ProcessUploadAsync(stream, file.FileName, cancellationToken);
+            var result = await _excelUploadService.ProcessUploadAsync(stream, request.File.FileName, cancellationToken);
             return Ok(result);
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new ApiErrorResponse(ex.Message));
         }
     }
 }
