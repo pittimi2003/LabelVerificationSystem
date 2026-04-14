@@ -27,6 +27,7 @@ namespace LabelVerificationSystem.Web
             builder.Services.AddScoped<NavScrollService>();
             builder.Services.AddScoped<SessionService>();
             builder.Services.AddScoped<ScriptLoaderService>();
+            builder.Services.AddScoped<LabelVerificationSystem.Web.Components.ExcelUploads.ExcelUploadApiClient>();
 
             builder.Services.AddWMBOS();
             builder.Services.AddWMBSC();

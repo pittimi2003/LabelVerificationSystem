@@ -27,6 +27,15 @@ public class MenuDataService
                     active: false,
                     dirChange: false
                 ),
+                new MainMenuItems (
+                    path: "/excel-uploads",
+                    type: "link",
+                    icon: "",
+                    title: "Carga Excel v1",
+                    selected: false,
+                    active: false,
+                    dirChange: false
+                ),
             }
         ),
 
