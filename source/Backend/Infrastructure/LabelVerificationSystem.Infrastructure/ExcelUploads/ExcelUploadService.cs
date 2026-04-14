@@ -9,9 +9,10 @@ namespace LabelVerificationSystem.Infrastructure.ExcelUploads;
 
 public sealed class ExcelUploadService : IExcelUploadService
 {
-    private static readonly string[] RequiredHeaders =
+    private static readonly string[] RequiredHeaderNames =
     [
         "Part Number",
+        "Model",
         "Minghua description",
         "CADUCIDAD",
         "CCO",
@@ -60,14 +61,16 @@ public sealed class ExcelUploadService : IExcelUploadService
 
             for (var rowNumber = firstDataRow; rowNumber <= lastDataRow; rowNumber++)
             {
-                var rowPartNumber = GetCellValue(worksheet, rowNumber, headerMap["Part Number"]);
-                var rowDescription = GetCellValue(worksheet, rowNumber, headerMap["Minghua description"]);
-                var rowCaducidad = GetCellValue(worksheet, rowNumber, headerMap["CADUCIDAD"]);
-                var rowCco = GetCellValue(worksheet, rowNumber, headerMap["CCO"]);
-                var rowCertificationEac = GetCellValue(worksheet, rowNumber, headerMap["Certification EAC"]);
-                var rowFirstFourNumbers = GetCellValue(worksheet, rowNumber, headerMap["4 FIRST NUMERS"]);
+                var rowPartNumber = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Part Number")]);
+                var rowModel = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Model")]);
+                var rowDescription = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Minghua description")]);
+                var rowCaducidad = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("CADUCIDAD")]);
+                var rowCco = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("CCO")]);
+                var rowCertificationEac = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Certification EAC")]);
+                var rowFirstFourNumbers = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("4 FIRST NUMERS")]);
 
                 if (string.IsNullOrWhiteSpace(rowPartNumber) &&
+                    string.IsNullOrWhiteSpace(rowModel) &&
                     string.IsNullOrWhiteSpace(rowDescription) &&
                     string.IsNullOrWhiteSpace(rowCaducidad) &&
                     string.IsNullOrWhiteSpace(rowCco) &&
@@ -85,6 +88,7 @@ public sealed class ExcelUploadService : IExcelUploadService
                 }
 
                 if (string.IsNullOrWhiteSpace(rowDescription) ||
+                    string.IsNullOrWhiteSpace(rowModel) ||
                     string.IsNullOrWhiteSpace(rowCaducidad) ||
                     string.IsNullOrWhiteSpace(rowCco) ||
                     string.IsNullOrWhiteSpace(rowCertificationEac) ||
@@ -106,6 +110,7 @@ public sealed class ExcelUploadService : IExcelUploadService
                     {
                         Id = Guid.NewGuid(),
                         PartNumber = rowPartNumber,
+                        Model = rowModel,
                         MinghuaDescription = rowDescription,
                         Caducidad = rowCaducidad,
                         Cco = rowCco,
@@ -178,9 +183,12 @@ public sealed class ExcelUploadService : IExcelUploadService
         }
     }
 
-    private static void ValidateRequiredHeaders(Dictionary<string, int> headerMap)
+    private static void ValidateRequiredHeaders(IReadOnlyDictionary<string, int> headerMap)
     {
-        var missingHeaders = RequiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToArray();
+        var missingHeaders = RequiredHeaderNames
+            .Where(header => !headerMap.ContainsKey(NormalizeHeader(header)))
+            .ToArray();
+
         if (missingHeaders.Length > 0)
         {
             throw new GlobalValidationException($"Archivo inválido. Faltan columnas obligatorias: {string.Join(", ", missingHeaders)}.");
@@ -335,14 +343,27 @@ public sealed class ExcelUploadService : IExcelUploadService
 
         for (var columnIndex = 1; columnIndex <= lastColumn; columnIndex++)
         {
-            var header = worksheet.Cell(1, columnIndex).GetString().Trim();
-            if (!string.IsNullOrWhiteSpace(header))
+            var normalizedHeader = NormalizeHeader(worksheet.Cell(1, columnIndex).GetString());
+            if (!string.IsNullOrWhiteSpace(normalizedHeader))
             {
-                headerMap[header] = columnIndex;
+                headerMap[normalizedHeader] = columnIndex;
             }
         }
 
         return headerMap;
+    }
+
+    private static string NormalizeHeader(string header)
+    {
+        if (string.IsNullOrWhiteSpace(header))
+        {
+            return string.Empty;
+        }
+
+        return string.Join(' ', header
+            .Trim()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .ToUpperInvariant();
     }
 
     private static string GetCellValue(IXLWorksheet worksheet, int rowNumber, int columnNumber) =>
