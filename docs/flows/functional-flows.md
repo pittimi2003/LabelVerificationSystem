@@ -96,7 +96,8 @@ Un usuario autorizado inicia una carga de archivo Excel desde el sistema.
 
 ## Definición cerrada para v1 (implementada)
 - Se procesa una sola hoja y su nombre no importa.
-- Columnas mínimas obligatorias: `Part Number`, `Minghua description`, `CADUCIDAD`, `CCO`, `Certification EAC`, `4 FIRST NUMERS`.
+- La fila de encabezados se detecta por mejor coincidencia contra los encabezados obligatorios normalizados.
+- Columnas mínimas obligatorias: `Part Number`, `Model`, `Minghua description`, `CADUCIDAD`, `CCO`, `Certification EAC`, `4 FIRST NUMERS`.
 - Si falta una columna obligatoria en encabezado, se rechaza toda la carga como archivo inválido.
 - La carga es parcial a nivel de filas: las filas válidas se insertan y las inválidas/duplicadas se rechazan con error por fila.
 - Regla de duplicado contra sistema en v1: mismo `Part Number`.

@@ -4,6 +4,8 @@ using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
 using LabelVerificationSystem.Domain.Entities;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace LabelVerificationSystem.Infrastructure.ExcelUploads;
@@ -22,6 +24,14 @@ public sealed class ExcelUploadService : IExcelUploadService
     ];
     private static readonly IReadOnlyDictionary<string, string> RequiredHeadersByNormalizedName =
         RequiredHeaderNames.ToDictionary(NormalizeHeader, header => header, StringComparer.OrdinalIgnoreCase);
+    private static readonly string PartNumberHeader = NormalizeHeader("Part Number");
+    private static readonly string ModelHeader = NormalizeHeader("Model");
+    private static readonly string MinghuaDescriptionHeader = NormalizeHeader("Minghua description");
+    private static readonly string CaducidadHeader = NormalizeHeader("CADUCIDAD");
+    private static readonly string CcoHeader = NormalizeHeader("CCO");
+    private static readonly string CertificationEacHeader = NormalizeHeader("Certification EAC");
+    private static readonly string FirstFourNumbersHeader = NormalizeHeader("4 FIRST NUMERS");
+    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
 
     private readonly AppDbContext _dbContext;
     private readonly ExcelUploadStorageOptions _storageOptions;
@@ -46,8 +56,9 @@ public sealed class ExcelUploadService : IExcelUploadService
             var worksheet = workbook.Worksheets.FirstOrDefault()
                             ?? throw new GlobalValidationException("El archivo Excel no contiene hojas procesables.");
 
-            var headerMap = BuildHeaderMap(worksheet);
-            ValidateRequiredHeaders(headerMap);
+            var headerDetection = DetectHeaderRowAndBuildMap(worksheet);
+            ValidateRequiredHeaders(headerDetection);
+            var requiredHeaderColumns = BuildRequiredHeaderColumns(headerDetection.HeaderMap);
 
             var rowErrors = new List<ExcelUploadResultRowError>();
             var pendingRows = new List<PendingPartRow>();
@@ -58,19 +69,19 @@ public sealed class ExcelUploadService : IExcelUploadService
                 .ToHashSetAsync(StringComparer.OrdinalIgnoreCase, cancellationToken);
 
             var processedPartNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var firstDataRow = 2;
+            var firstDataRow = headerDetection.HeaderRowNumber + 1;
             var lastDataRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
-            var totalRows = Math.Max(0, lastDataRow - 1);
+            var totalRows = Math.Max(0, lastDataRow - headerDetection.HeaderRowNumber);
 
             for (var rowNumber = firstDataRow; rowNumber <= lastDataRow; rowNumber++)
             {
-                var rowPartNumber = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Part Number")]);
-                var rowModel = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Model")]);
-                var rowDescription = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Minghua description")]);
-                var rowCaducidad = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("CADUCIDAD")]);
-                var rowCco = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("CCO")]);
-                var rowCertificationEac = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("Certification EAC")]);
-                var rowFirstFourNumbers = GetCellValue(worksheet, rowNumber, headerMap[NormalizeHeader("4 FIRST NUMERS")]);
+                var rowPartNumber = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[PartNumberHeader]);
+                var rowModel = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[ModelHeader]);
+                var rowDescription = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[MinghuaDescriptionHeader]);
+                var rowCaducidad = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[CaducidadHeader]);
+                var rowCco = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[CcoHeader]);
+                var rowCertificationEac = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[CertificationEacHeader]);
+                var rowFirstFourNumbers = GetCellValue(worksheet, rowNumber, requiredHeaderColumns[FirstFourNumbersHeader]);
 
                 if (string.IsNullOrWhiteSpace(rowPartNumber) &&
                     string.IsNullOrWhiteSpace(rowModel) &&
@@ -186,8 +197,9 @@ public sealed class ExcelUploadService : IExcelUploadService
         }
     }
 
-    private static void ValidateRequiredHeaders(IReadOnlyDictionary<string, int> headerMap)
+    private static void ValidateRequiredHeaders(HeaderDetectionResult headerDetection)
     {
+        var headerMap = headerDetection.HeaderMap;
         var missingHeaders = RequiredHeadersByNormalizedName
             .Where(required => !headerMap.ContainsKey(required.Key))
             .Select(required => required.Value)
@@ -195,14 +207,24 @@ public sealed class ExcelUploadService : IExcelUploadService
 
         if (missingHeaders.Length > 0)
         {
-            var detectedHeaders = headerMap.Keys
-                .OrderBy(header => header)
+            var detectedHeaders = headerMap.Values
+                .OrderBy(header => header.ColumnNumber)
+                .Select(header => $"{header.DetectedHeader} (normalizado: {header.NormalizedHeader})")
                 .ToArray();
 
             throw new GlobalValidationException(
                 $"Archivo inválido. Faltan columnas obligatorias: {string.Join(", ", missingHeaders)}. " +
-                $"Encabezados detectados (normalizados): {string.Join(", ", detectedHeaders)}.");
+                $"Fila tomada como encabezado: {headerDetection.HeaderRowNumber}. " +
+                $"Encabezados detectados en esa fila: {string.Join(", ", detectedHeaders)}.");
         }
+    }
+
+    private static IReadOnlyDictionary<string, int> BuildRequiredHeaderColumns(IReadOnlyDictionary<string, HeaderColumnInfo> headerMap)
+    {
+        return RequiredHeadersByNormalizedName.Keys.ToDictionary(
+            normalizedRequiredHeader => normalizedRequiredHeader,
+            normalizedRequiredHeader => headerMap[normalizedRequiredHeader].ColumnNumber,
+            StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task<int> InsertWithDuplicateRetryAsync(
@@ -346,17 +368,53 @@ public sealed class ExcelUploadService : IExcelUploadService
         }
     }
 
-    private static Dictionary<string, int> BuildHeaderMap(IXLWorksheet worksheet)
+    private static HeaderDetectionResult DetectHeaderRowAndBuildMap(IXLWorksheet worksheet)
     {
-        var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var firstUsedRow = worksheet.FirstRowUsed()?.RowNumber() ?? 1;
+        var lastUsedRow = worksheet.LastRowUsed()?.RowNumber() ?? firstUsedRow;
+        var maxRowsToInspect = 50;
+        var lastCandidateRow = Math.Min(lastUsedRow, firstUsedRow + maxRowsToInspect - 1);
+
+        var bestHeaderRow = firstUsedRow;
+        var bestHeaderMap = BuildHeaderMap(worksheet, bestHeaderRow);
+        var bestMatchCount = CountRequiredHeaderMatches(bestHeaderMap);
+
+        for (var rowNumber = firstUsedRow + 1; rowNumber <= lastCandidateRow; rowNumber++)
+        {
+            var candidateHeaderMap = BuildHeaderMap(worksheet, rowNumber);
+            var candidateMatchCount = CountRequiredHeaderMatches(candidateHeaderMap);
+
+            if (candidateMatchCount > bestMatchCount)
+            {
+                bestHeaderRow = rowNumber;
+                bestHeaderMap = candidateHeaderMap;
+                bestMatchCount = candidateMatchCount;
+            }
+        }
+
+        return new HeaderDetectionResult(bestHeaderRow, bestHeaderMap, bestMatchCount);
+    }
+
+    private static int CountRequiredHeaderMatches(IReadOnlyDictionary<string, HeaderColumnInfo> headerMap)
+    {
+        return RequiredHeadersByNormalizedName.Keys.Count(headerMap.ContainsKey);
+    }
+
+    private static Dictionary<string, HeaderColumnInfo> BuildHeaderMap(IXLWorksheet worksheet, int headerRowNumber)
+    {
+        var headerMap = new Dictionary<string, HeaderColumnInfo>(StringComparer.OrdinalIgnoreCase);
         var lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 0;
 
         for (var columnIndex = 1; columnIndex <= lastColumn; columnIndex++)
         {
-            var normalizedHeader = NormalizeHeader(worksheet.Cell(1, columnIndex).GetString());
+            var rawHeader = worksheet.Cell(headerRowNumber, columnIndex).GetString();
+            var normalizedHeader = NormalizeHeader(rawHeader);
             if (!string.IsNullOrWhiteSpace(normalizedHeader))
             {
-                headerMap[normalizedHeader] = columnIndex;
+                var canonicalHeader = NormalizeSpacing(rawHeader);
+                headerMap.TryAdd(
+                    normalizedHeader,
+                    new HeaderColumnInfo(columnIndex, canonicalHeader, normalizedHeader));
             }
         }
 
@@ -370,16 +428,38 @@ public sealed class ExcelUploadService : IExcelUploadService
             return string.Empty;
         }
 
-        var headerWithReplacedNonBreakingSpaces = header
+        var canonicalSpacing = NormalizeSpacing(header);
+        var withoutDiacritics = RemoveDiacritics(canonicalSpacing);
+
+        return withoutDiacritics
+            .Trim()
+            .ToUpperInvariant();
+    }
+
+    private static string NormalizeSpacing(string value)
+    {
+        var headerWithReplacedNonBreakingSpaces = value
             .Replace('\u00A0', ' ')
             .Replace('\u202F', ' ')
             .Replace('\u2007', ' ');
 
-        var collapsedHeader = Regex.Replace(headerWithReplacedNonBreakingSpaces, @"\s+", " ");
+        return WhitespaceRegex.Replace(headerWithReplacedNonBreakingSpaces, " ").Trim();
+    }
 
-        return collapsedHeader
-            .Trim()
-            .ToUpperInvariant();
+    private static string RemoveDiacritics(string text)
+    {
+        var decomposed = text.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(decomposed.Length);
+
+        foreach (var character in decomposed)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormC);
     }
 
     private static string GetCellValue(IXLWorksheet worksheet, int rowNumber, int columnNumber) =>
@@ -396,6 +476,8 @@ public sealed class ExcelUploadService : IExcelUploadService
             x.RejectedRows);
 
     private sealed record PendingPartRow(int RowNumber, Part Part);
+    private sealed record HeaderColumnInfo(int ColumnNumber, string DetectedHeader, string NormalizedHeader);
+    private sealed record HeaderDetectionResult(int HeaderRowNumber, IReadOnlyDictionary<string, HeaderColumnInfo> HeaderMap, int MatchedRequiredHeaderCount);
 
     private sealed class GlobalValidationException : InvalidOperationException
     {
