@@ -28,36 +28,41 @@ namespace LabelVerificationSystem.Web
             builder.Services.AddScoped<NavScrollService>();
             builder.Services.AddScoped<SessionService>();
             builder.Services.AddScoped<ScriptLoaderService>();
-            builder.Services.AddScoped<LabelVerificationSystem.Web.Components.ExcelUploads.ExcelUploadApiClient>();
-
             builder.Services.AddWMBOS();
             builder.Services.AddWMBSC();
 
             var configuredApiBaseUrl = builder.Configuration[BackendApiHttpClientOptions.BaseUrlConfigurationKey];
-            var backendApiBaseUri = BuildBackendApiBaseUri(builder.HostEnvironment.BaseAddress, configuredApiBaseUrl);
+            var backendApiBaseUri = BuildBackendApiBaseUri(configuredApiBaseUrl);
 
             builder.Services.AddHttpClient(BackendApiHttpClientOptions.ClientName, client =>
             {
                 client.BaseAddress = backendApiBaseUri;
             });
+            builder.Services.AddScoped(sp =>
+            {
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.ClientName);
+                return new LabelVerificationSystem.Web.Components.ExcelUploads.ExcelUploadApiClient(backendApiClient);
+            });
 
             await builder.Build().RunAsync();
         }
 
-        private static Uri BuildBackendApiBaseUri(string hostBaseAddress, string? configuredApiBaseUrl)
+        private static Uri BuildBackendApiBaseUri(string? configuredApiBaseUrl)
         {
             if (string.IsNullOrWhiteSpace(configuredApiBaseUrl))
             {
-                return EnsureTrailingSlash(new Uri(hostBaseAddress));
+                throw new InvalidOperationException(
+                    $"Missing required configuration '{BackendApiHttpClientOptions.BaseUrlConfigurationKey}'. Set it to an absolute API URL, for example 'https://localhost:7131/'.");
             }
 
-            if (Uri.TryCreate(configuredApiBaseUrl, UriKind.Absolute, out var absoluteUri))
+            if (!Uri.TryCreate(configuredApiBaseUrl, UriKind.Absolute, out var absoluteUri))
             {
-                return EnsureTrailingSlash(absoluteUri);
+                throw new InvalidOperationException(
+                    $"Configuration '{BackendApiHttpClientOptions.BaseUrlConfigurationKey}' must be an absolute URL. Current value: '{configuredApiBaseUrl}'.");
             }
 
-            var hostBaseUri = new Uri(hostBaseAddress);
-            return EnsureTrailingSlash(new Uri(hostBaseUri, configuredApiBaseUrl));
+            return EnsureTrailingSlash(absoluteUri);
         }
 
         private static Uri EnsureTrailingSlash(Uri baseUri)
