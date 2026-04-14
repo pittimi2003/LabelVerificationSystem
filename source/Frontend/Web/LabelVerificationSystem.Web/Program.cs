@@ -1,9 +1,10 @@
+using ApexCharts;
 using BlazorColorPicker;
 using LabelVerificationSystem.Web.Components;
+using LabelVerificationSystem.Web.Components.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
-using ApexCharts;
 
 namespace LabelVerificationSystem.Web
 {
@@ -27,16 +28,42 @@ namespace LabelVerificationSystem.Web
             builder.Services.AddScoped<NavScrollService>();
             builder.Services.AddScoped<SessionService>();
             builder.Services.AddScoped<ScriptLoaderService>();
+            builder.Services.AddScoped<LabelVerificationSystem.Web.Components.ExcelUploads.ExcelUploadApiClient>();
 
             builder.Services.AddWMBOS();
             builder.Services.AddWMBSC();
 
-            builder.Services.AddScoped(sp => new HttpClient
+            var configuredApiBaseUrl = builder.Configuration[BackendApiHttpClientOptions.BaseUrlConfigurationKey];
+            var backendApiBaseUri = BuildBackendApiBaseUri(builder.HostEnvironment.BaseAddress, configuredApiBaseUrl);
+
+            builder.Services.AddHttpClient(BackendApiHttpClientOptions.ClientName, client =>
             {
-                BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+                client.BaseAddress = backendApiBaseUri;
             });
 
             await builder.Build().RunAsync();
+        }
+
+        private static Uri BuildBackendApiBaseUri(string hostBaseAddress, string? configuredApiBaseUrl)
+        {
+            if (string.IsNullOrWhiteSpace(configuredApiBaseUrl))
+            {
+                return EnsureTrailingSlash(new Uri(hostBaseAddress));
+            }
+
+            if (Uri.TryCreate(configuredApiBaseUrl, UriKind.Absolute, out var absoluteUri))
+            {
+                return EnsureTrailingSlash(absoluteUri);
+            }
+
+            var hostBaseUri = new Uri(hostBaseAddress);
+            return EnsureTrailingSlash(new Uri(hostBaseUri, configuredApiBaseUrl));
+        }
+
+        private static Uri EnsureTrailingSlash(Uri baseUri)
+        {
+            var value = baseUri.ToString();
+            return value.EndsWith('/') ? baseUri : new Uri($"{value}/");
         }
     }
 }

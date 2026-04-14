@@ -219,6 +219,19 @@ No se implementó en esta versión:
 - persistencia detallada de errores por fila en base de datos
 
 
+## Avance implementado: Carga de Excel v1 (frontend mínimo)
+
+Se implementó una pantalla frontend mínima para operar el módulo **Carga de Excel v1** sobre la API ya existente, manteniendo el shell actual de la aplicación:
+
+- página de carga en `/excel-uploads`
+- selección de archivo y envío por `POST /api/excel-uploads`
+- indicador de envío en progreso y mensajes de error/estado
+- visualización de resumen de resultado de carga
+- visualización de errores por fila (`rowNumber`, `partNumber`, `error`)
+- historial básico consumiendo `GET /api/excel-uploads`
+- acceso del módulo desde el menú actual
+
+
 ## Historial de cambios
 
 ### Versión inicial

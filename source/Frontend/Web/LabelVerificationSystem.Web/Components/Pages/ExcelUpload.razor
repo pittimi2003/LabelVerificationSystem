@@ -1,0 +1,213 @@
+@page "/excel-uploads"
+@using LabelVerificationSystem.Web.Components.ExcelUploads
+@inject ExcelUploadApiClient ExcelUploadApiClient
+
+<PageTitle>Carga de Excel v1</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-2">
+    <MudText Typo="Typo.h5">Carga de Excel v1</MudText>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadHistoryAsync">
+        Actualizar historial
+    </MudButton>
+</div>
+
+<MudPaper Class="pa-4 mb-4">
+    <MudText Typo="Typo.subtitle1" Class="mb-2">Subir archivo Excel</MudText>
+
+    <InputFile OnChange="OnFileSelected" accept=".xlsx" />
+
+    @if (!string.IsNullOrWhiteSpace(SelectedFileName))
+    {
+        <MudText Typo="Typo.body2" Class="mt-2">Archivo seleccionado: @SelectedFileName</MudText>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(FormMessage))
+    {
+        <MudAlert Severity="@FormMessageSeverity" Class="mt-3">@FormMessage</MudAlert>
+    }
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" Disabled="@IsLoading" OnClick="UploadAsync">
+        Cargar
+    </MudButton>
+
+    @if (IsLoading)
+    {
+        <div class="d-flex align-center gap-2 mt-3">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+            <MudText Typo="Typo.body2">Procesando carga...</MudText>
+        </div>
+    }
+</MudPaper>
+
+@if (LastResult is not null)
+{
+    <MudPaper Class="pa-4 mb-4">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Resumen de la carga</MudText>
+
+        <MudTable Dense="true" Hover="true" Elevation="0" Items="@SummaryRows">
+            <HeaderContent>
+                <MudTh>Campo</MudTh>
+                <MudTh>Valor</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Label</MudTd>
+                <MudTd>@context.Value</MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+
+    <MudPaper Class="pa-4 mb-4">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Errores por fila</MudText>
+
+        @if (LastResult.RowErrors.Count == 0)
+        {
+            <MudAlert Severity="Severity.Success">No se reportaron errores por fila.</MudAlert>
+        }
+        else
+        {
+            <MudTable Dense="true" Hover="true" Elevation="0" Items="@LastResult.RowErrors">
+                <HeaderContent>
+                    <MudTh>Fila</MudTh>
+                    <MudTh>Part Number</MudTh>
+                    <MudTh>Error</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.RowNumber</MudTd>
+                    <MudTd>@(string.IsNullOrWhiteSpace(context.PartNumber) ? "-" : context.PartNumber)</MudTd>
+                    <MudTd>@context.Error</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+}
+
+<MudPaper Class="pa-4">
+    <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
+
+    @if (IsHistoryLoading)
+    {
+        <div class="d-flex align-center gap-2">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+            <MudText Typo="Typo.body2">Cargando historial...</MudText>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(HistoryError))
+    {
+        <MudAlert Severity="Severity.Error">@HistoryError</MudAlert>
+    }
+    else if (HistoryItems.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info">No hay cargas registradas todavía.</MudAlert>
+    }
+    else
+    {
+        <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems">
+            <HeaderContent>
+                <MudTh>UploadId</MudTh>
+                <MudTh>Archivo</MudTh>
+                <MudTh>Fecha UTC</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Total</MudTh>
+                <MudTh>Insertadas</MudTh>
+                <MudTh>Rechazadas</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.UploadId</MudTd>
+                <MudTd>@context.OriginalFileName</MudTd>
+                <MudTd>@context.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                <MudTd>@context.Status</MudTd>
+                <MudTd>@context.TotalRows</MudTd>
+                <MudTd>@context.InsertedRows</MudTd>
+                <MudTd>@context.RejectedRows</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+@code {
+    private IBrowserFile? SelectedFile;
+    private string? SelectedFileName;
+    private string? FormMessage;
+    private Severity FormMessageSeverity = Severity.Info;
+    private bool IsLoading;
+    private bool IsHistoryLoading;
+    private string? HistoryError;
+
+    private ExcelUploadResultDto? LastResult;
+    private List<ExcelUploadHistoryItemDto> HistoryItems { get; set; } = [];
+
+    private IReadOnlyList<(string Label, string Value)> SummaryRows => LastResult is null
+        ? []
+        :
+        [
+            ("UploadId", LastResult.UploadId.ToString()),
+            ("Archivo", LastResult.FileName),
+            ("Total filas", LastResult.TotalRows.ToString()),
+            ("Insertadas", LastResult.InsertedRows.ToString()),
+            ("Rechazadas", LastResult.RejectedRows.ToString())
+        ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistoryAsync();
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs args)
+    {
+        SelectedFile = args.File;
+        SelectedFileName = SelectedFile?.Name;
+        FormMessage = null;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (SelectedFile is null)
+        {
+            SetFormMessage("Selecciona un archivo antes de cargar.", Severity.Warning);
+            return;
+        }
+
+        IsLoading = true;
+        FormMessage = null;
+
+        try
+        {
+            LastResult = await ExcelUploadApiClient.UploadAsync(SelectedFile, CancellationToken.None);
+            SetFormMessage("Carga completada.", Severity.Success);
+            await LoadHistoryAsync();
+        }
+        catch (Exception ex)
+        {
+            SetFormMessage(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        IsHistoryLoading = true;
+        HistoryError = null;
+
+        try
+        {
+            HistoryItems = (await ExcelUploadApiClient.GetHistoryAsync(CancellationToken.None)).ToList();
+        }
+        catch (Exception ex)
+        {
+            HistoryError = $"No se pudo cargar el historial: {ex.Message}";
+        }
+        finally
+        {
+            IsHistoryLoading = false;
+        }
+    }
+
+    private void SetFormMessage(string message, Severity severity)
+    {
+        FormMessage = message;
+        FormMessageSeverity = severity;
+    }
+}
