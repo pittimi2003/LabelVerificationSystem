@@ -82,6 +82,7 @@ La propuesta inicial define gestión de partes, visualización del catálogo, ca
 ## Atributos mínimos implementados en v1 de Carga de Excel
 - `Id`
 - `PartNumber`
+- `Model`
 - `MinghuaDescription`
 - `Caducidad`
 - `Cco`

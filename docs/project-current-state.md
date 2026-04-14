@@ -201,7 +201,8 @@ Se implementó el primer corte real del backend del módulo **Carga de Excel** c
 - endpoint `GET /api/excel-uploads`
 - endpoint `GET /api/excel-uploads/{id}`
 - lectura de una sola hoja de Excel
-- validación de encabezados mínimos obligatorios
+- detección de la fila real de encabezados por mejor coincidencia con columnas obligatorias normalizadas
+- validación de encabezados mínimos obligatorios con normalización robusta de texto
 - procesamiento fila por fila con carga parcial
 - inserción de nuevas partes únicamente
 - rechazo de filas inválidas o duplicadas por `Part Number`

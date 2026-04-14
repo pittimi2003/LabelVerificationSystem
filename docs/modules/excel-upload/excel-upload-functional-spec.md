@@ -126,6 +126,7 @@ Estas columnas visibles sirven como referencia de entrada actual, pero la defini
 Para esta primera versión, las columnas mínimas confirmadas son:
 
 - `Part Number`
+- `Model`
 - `Minghua description`
 - `CADUCIDAD`
 - `CCO`
@@ -193,21 +194,22 @@ El archivo Excel original cargado debe guardarse.
 3. El sistema recibe el archivo.
 4. El sistema valida que el archivo sea procesable como Excel.
 5. El sistema localiza la hoja de trabajo que debe procesarse.
-6. El sistema valida la existencia de las columnas requeridas.
-7. El sistema comienza a procesar las filas de datos.
-8. Para cada fila:
+6. El sistema detecta la fila de encabezados reales buscando la mejor coincidencia con los encabezados obligatorios.
+7. El sistema valida la existencia de las columnas requeridas sobre la fila detectada.
+8. El sistema comienza a procesar las filas de datos desde la fila siguiente al encabezado detectado.
+9. Para cada fila:
    - valida la estructura mínima requerida
    - valida tipos y contenido
    - detecta si la fila es duplicada
    - si la fila es válida, registra la parte
    - si la fila es inválida, genera error por fila y continúa
-9. El sistema guarda el archivo original cargado.
-10. El sistema genera el resultado final de la carga.
-11. El sistema muestra al usuario:
+10. El sistema guarda el archivo original cargado.
+11. El sistema genera el resultado final de la carga.
+12. El sistema muestra al usuario:
    - cuántas filas fueron registradas
    - el detalle de errores por fila
-12. El sistema registra la auditoría de la carga.
-13. La carga queda visible en el historial de cargas.
+13. El sistema registra la auditoría de la carga.
+14. La carga queda visible en el historial de cargas.
 
 ---
 
@@ -225,7 +227,14 @@ Si falta una columna obligatoria en el encabezado:
 
 - se rechaza toda la carga como archivo inválido
 - no se procesa ninguna fila
-- el usuario recibe el listado exacto de columnas faltantes
+- el usuario recibe el listado exacto de columnas faltantes, la fila tomada como encabezado y los encabezados realmente detectados en esa fila
+
+La validación de encabezados se realiza sobre una forma canónica normalizada para reducir falsos negativos por variaciones de formato:
+
+- trim en extremos
+- reemplazo de espacios no separables por espacios comunes
+- colapso de espacios internos múltiples en un solo espacio
+- comparación case-insensitive
 
 ## Validación por fila
 Si una fila viene vacía, corrupta o con tipos de dato incorrectos:
