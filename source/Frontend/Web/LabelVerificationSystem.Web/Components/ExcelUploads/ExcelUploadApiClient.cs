@@ -1,4 +1,3 @@
-using LabelVerificationSystem.Web.Components.Services;
 using Microsoft.AspNetCore.Components.Forms;
 using System.Net.Http.Json;
 
@@ -9,9 +8,9 @@ public sealed class ExcelUploadApiClient
     private const long MaxUploadSizeBytes = 50 * 1024 * 1024;
     private readonly HttpClient _httpClient;
 
-    public ExcelUploadApiClient(IHttpClientFactory httpClientFactory)
+    public ExcelUploadApiClient(HttpClient httpClient)
     {
-        _httpClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.ClientName);
+        _httpClient = httpClient;
     }
 
     public async Task<IReadOnlyList<ExcelUploadHistoryItemDto>> GetHistoryAsync(CancellationToken cancellationToken)

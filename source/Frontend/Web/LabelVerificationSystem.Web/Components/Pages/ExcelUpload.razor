@@ -14,7 +14,7 @@
 <MudPaper Class="pa-4 mb-4">
     <MudText Typo="Typo.subtitle1" Class="mb-2">Subir archivo Excel</MudText>
 
-    <InputFile OnChange="OnFileSelected" accept=".xlsx" />
+    <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" />
 
     @if (!string.IsNullOrWhiteSpace(SelectedFileName))
     {
