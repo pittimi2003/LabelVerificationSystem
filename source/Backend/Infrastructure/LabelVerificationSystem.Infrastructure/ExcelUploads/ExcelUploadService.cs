@@ -12,6 +12,7 @@ namespace LabelVerificationSystem.Infrastructure.ExcelUploads;
 
 public sealed class ExcelUploadService : IExcelUploadService
 {
+    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
     private static readonly string[] RequiredHeaderNames =
     [
         "Part Number",
@@ -31,7 +32,6 @@ public sealed class ExcelUploadService : IExcelUploadService
     private static readonly string CcoHeader = NormalizeHeader("CCO");
     private static readonly string CertificationEacHeader = NormalizeHeader("Certification EAC");
     private static readonly string FirstFourNumbersHeader = NormalizeHeader("4 FIRST NUMERS");
-    private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
 
     private readonly AppDbContext _dbContext;
     private readonly ExcelUploadStorageOptions _storageOptions;
@@ -436,14 +436,21 @@ public sealed class ExcelUploadService : IExcelUploadService
             .ToUpperInvariant();
     }
 
-    private static string NormalizeSpacing(string value)
+    private static string NormalizeSpacing(string? value)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
         var headerWithReplacedNonBreakingSpaces = value
             .Replace('\u00A0', ' ')
             .Replace('\u202F', ' ')
             .Replace('\u2007', ' ');
 
-        return WhitespaceRegex.Replace(headerWithReplacedNonBreakingSpaces, " ").Trim();
+        return (WhitespaceRegex ?? new Regex(@"\s+", RegexOptions.Compiled))
+            .Replace(headerWithReplacedNonBreakingSpaces, " ")
+            .Trim();
     }
 
     private static string RemoveDiacritics(string text)
