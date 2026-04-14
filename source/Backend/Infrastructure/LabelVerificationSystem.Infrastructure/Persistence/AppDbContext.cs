@@ -22,6 +22,7 @@ public sealed class AppDbContext : DbContext
             entity.ToTable("Parts");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.PartNumber).IsRequired();
+            entity.Property(x => x.Model).IsRequired();
             entity.Property(x => x.MinghuaDescription).IsRequired();
             entity.Property(x => x.Caducidad).IsRequired();
             entity.Property(x => x.Cco).IsRequired();
