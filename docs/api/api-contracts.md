@@ -164,12 +164,30 @@ Consulta de una carga específica.
 - información de auditoría asociada si aplica
 
 ## Implementación cerrada para Excel Upload v1
-- Endpoint implementado: `POST /api/excel-uploads`.
+- Endpoints implementados:
+  - `POST /api/excel-uploads`
+  - `GET /api/excel-uploads`
+  - `GET /api/excel-uploads/{id}`
 - Tipo de request: `multipart/form-data` con campo `file`.
 - El procesamiento es en línea (sin background).
 - Se procesa una sola hoja, sin depender del nombre de la hoja.
 - Si faltan columnas mínimas obligatorias en el encabezado, la carga se rechaza como archivo inválido (HTTP 400).
 - La respuesta del `POST` devuelve resultado final de la carga con resumen y errores por fila.
+
+### Response de `GET /api/excel-uploads` y `GET /api/excel-uploads/{id}` (v1)
+- `uploadId`: identificador de la carga.
+- `originalFileName`: nombre original del archivo cargado.
+- `uploadedAtUtc`: fecha/hora UTC de registro de la carga.
+- `status`: estado básico de la carga.
+- `totalRows`: filas leídas (sin encabezado).
+- `insertedRows`: filas insertadas como nuevas partes.
+- `rejectedRows`: filas rechazadas.
+
+### Status codes de historial (v1)
+- `GET /api/excel-uploads`: `200 OK`.
+- `GET /api/excel-uploads/{id}`:
+  - `200 OK` cuando la carga existe.
+  - `404 Not Found` cuando el id no existe.
 
 ### Response de `POST /api/excel-uploads` (v1)
 - `uploadId`: identificador de la carga.

@@ -148,6 +148,24 @@ public sealed class ExcelUploadService : IExcelUploadService
         }
     }
 
+    public async Task<IReadOnlyList<ExcelUploadHistoryItem>> GetHistoryAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.ExcelUploads
+            .AsNoTracking()
+            .OrderByDescending(x => x.UploadedAtUtc)
+            .Select(MapToHistoryItem())
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<ExcelUploadHistoryItem?> GetHistoryItemByIdAsync(Guid uploadId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.ExcelUploads
+            .AsNoTracking()
+            .Where(x => x.Id == uploadId)
+            .Select(MapToHistoryItem())
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     private static XLWorkbook OpenWorkbook(Stream fileStream)
     {
         try
@@ -329,6 +347,16 @@ public sealed class ExcelUploadService : IExcelUploadService
 
     private static string GetCellValue(IXLWorksheet worksheet, int rowNumber, int columnNumber) =>
         worksheet.Cell(rowNumber, columnNumber).GetString().Trim();
+
+    private static System.Linq.Expressions.Expression<Func<LabelVerificationSystem.Domain.Entities.ExcelUpload, ExcelUploadHistoryItem>> MapToHistoryItem() =>
+        x => new ExcelUploadHistoryItem(
+            x.Id,
+            x.OriginalFileName,
+            x.UploadedAtUtc,
+            x.Status,
+            x.TotalRows,
+            x.InsertedRows,
+            x.RejectedRows);
 
     private sealed record PendingPartRow(int RowNumber, Part Part);
 

@@ -103,6 +103,7 @@ Un usuario autorizado inicia una carga de archivo Excel desde el sistema.
 - El módulo v1 solo crea nuevas partes; no actualiza existentes.
 - El archivo original se conserva.
 - Se registra historial básico de cargas desde v1.
+- El historial básico puede consultarse por API en `GET /api/excel-uploads` y `GET /api/excel-uploads/{id}`.
 - En v1 no se calcula tipo de etiqueta ni configuración de lectura.
 
 ## Pendiente de formalización

@@ -198,6 +198,8 @@ Este documento funciona como un **registro del estado actual con conciencia de l
 Se implementó el primer corte real del backend del módulo **Carga de Excel** con alcance mínimo funcional:
 
 - endpoint `POST /api/excel-uploads`
+- endpoint `GET /api/excel-uploads`
+- endpoint `GET /api/excel-uploads/{id}`
 - lectura de una sola hoja de Excel
 - validación de encabezados mínimos obligatorios
 - procesamiento fila por fila con carga parcial
