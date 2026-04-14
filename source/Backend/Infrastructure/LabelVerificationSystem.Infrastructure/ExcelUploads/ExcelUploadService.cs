@@ -4,6 +4,7 @@ using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
 using LabelVerificationSystem.Domain.Entities;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace LabelVerificationSystem.Infrastructure.ExcelUploads;
 
@@ -19,6 +20,8 @@ public sealed class ExcelUploadService : IExcelUploadService
         "Certification EAC",
         "4 FIRST NUMERS"
     ];
+    private static readonly IReadOnlyDictionary<string, string> RequiredHeadersByNormalizedName =
+        RequiredHeaderNames.ToDictionary(NormalizeHeader, header => header, StringComparer.OrdinalIgnoreCase);
 
     private readonly AppDbContext _dbContext;
     private readonly ExcelUploadStorageOptions _storageOptions;
@@ -185,13 +188,20 @@ public sealed class ExcelUploadService : IExcelUploadService
 
     private static void ValidateRequiredHeaders(IReadOnlyDictionary<string, int> headerMap)
     {
-        var missingHeaders = RequiredHeaderNames
-            .Where(header => !headerMap.ContainsKey(NormalizeHeader(header)))
+        var missingHeaders = RequiredHeadersByNormalizedName
+            .Where(required => !headerMap.ContainsKey(required.Key))
+            .Select(required => required.Value)
             .ToArray();
 
         if (missingHeaders.Length > 0)
         {
-            throw new GlobalValidationException($"Archivo inválido. Faltan columnas obligatorias: {string.Join(", ", missingHeaders)}.");
+            var detectedHeaders = headerMap.Keys
+                .OrderBy(header => header)
+                .ToArray();
+
+            throw new GlobalValidationException(
+                $"Archivo inválido. Faltan columnas obligatorias: {string.Join(", ", missingHeaders)}. " +
+                $"Encabezados detectados (normalizados): {string.Join(", ", detectedHeaders)}.");
         }
     }
 
@@ -360,9 +370,15 @@ public sealed class ExcelUploadService : IExcelUploadService
             return string.Empty;
         }
 
-        return string.Join(' ', header
+        var headerWithReplacedNonBreakingSpaces = header
+            .Replace('\u00A0', ' ')
+            .Replace('\u202F', ' ')
+            .Replace('\u2007', ' ');
+
+        var collapsedHeader = Regex.Replace(headerWithReplacedNonBreakingSpaces, @"\s+", " ");
+
+        return collapsedHeader
             .Trim()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries))
             .ToUpperInvariant();
     }
 
