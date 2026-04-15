@@ -210,6 +210,18 @@ El archivo Excel original cargado debe guardarse.
 13. El sistema registra la auditoría de la carga.
 14. La carga queda visible en el historial de cargas.
 
+### Comportamiento de experiencia de usuario (frontend v1.3)
+
+Para la pantalla `/excel-uploads`, la experiencia de carga debe cumplir:
+
+- la selección de archivo se presenta como dropzone principal de ancho completo
+- la dropzone permite arrastrar/soltar y también clic para selección manual
+- no se expone un input nativo de archivo visible en la interfaz
+- al seleccionar archivo se muestra estado "listo para cargar", nombre y tamaño
+- el usuario puede quitar el archivo para dejar el formulario limpio antes de cargar
+- el botón `Cargar` se mantiene como acción final del bloque
+- al terminar una carga se limpia el estado de selección y se refresca historial automáticamente
+
 ---
 
 ## Validaciones del archivo

@@ -108,7 +108,7 @@ Un usuario autorizado inicia una carga de archivo Excel desde el sistema.
 - En v1 no se calcula tipo de etiqueta ni configuración de lectura.
 - Se persiste resultado por fila en `ExcelUploadRowResult` con estado `Inserted` o `Rejected`.
 - Cada parte insertada queda vinculada a la carga origen mediante `CreatedByExcelUploadId`.
-- UX frontend v1.2: selección con `MudFileUpload`, feedback por `Snackbar`, refresco automático de historial post-carga y panel lateral de detalle histórico con vista general y vista por fila.
+- UX frontend v1.3: `MudFileUpload` como dropzone principal de ancho completo (drag & drop + clic), feedback por `Snackbar`, limpieza post-carga, refresco automático de historial y panel lateral de detalle histórico con vista general y vista por fila.
 
 ## Pendiente de formalización
 - reglas de validación avanzadas por columna

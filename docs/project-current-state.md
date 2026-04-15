@@ -284,3 +284,17 @@ Para habilitar inspección histórica por fila se agregó un endpoint mínimo de
 - `GET /api/excel-uploads/{id}/details`
 
 Este cambio no modifica reglas funcionales de negocio de Carga de Excel v1/v1.1; sólo amplía consulta y experiencia de visualización.
+
+## Avance implementado: Carga de Excel v1.3 (refinamiento UX/UI y limpieza técnica)
+
+Se implementó una pasada fina sobre el bloque de carga de `/excel-uploads`, manteniendo la misma funcionalidad de negocio:
+
+- `MudFileUpload` como dropzone principal de ancho completo (drag & drop + clic para seleccionar)
+- ocultamiento del input nativo visible para una experiencia integrada con MudBlazor
+- estado visual del archivo seleccionado (nombre, tamaño y estado "listo para cargar")
+- acción clara para quitar archivo y preparar reemplazo desde la misma dropzone
+- botón `Cargar` mantenido como acción final del bloque
+- se mantiene limpieza post-carga y refresco automático de historial
+- limpieza técnica en el componente para evitar referencias residuales de refactor
+
+Este cambio no modifica contratos API ni reglas de procesamiento; sólo refina UX/UI y consistencia técnica del módulo.
