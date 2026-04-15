@@ -17,3 +17,33 @@
     border-style: solid;
     background-color: rgba(76, 175, 80, 0.08);
 }
+
+.upload-general-view .metric-card {
+    border-left: 4px solid transparent;
+}
+
+.upload-general-view .metric-card-total {
+    border-left-color: var(--mud-palette-primary);
+}
+
+.upload-general-view .metric-card-inserted {
+    border-left-color: var(--mud-palette-success);
+}
+
+.upload-general-view .metric-card-rejected {
+    border-left-color: var(--mud-palette-warning);
+}
+
+.upload-general-view .metric-card-quality {
+    border-left-color: var(--mud-palette-info);
+}
+
+.upload-general-view .error-group-container {
+    background-color: rgba(255, 152, 0, 0.03);
+}
+
+.status-chip {
+    min-width: 84px;
+    justify-content: center;
+    font-weight: 600;
+}

@@ -160,36 +160,130 @@
 
                 @if (DetailViewMode == "general")
                 {
-                    <MudPaper Class="pa-3" Outlined="true">
-                        <MudText Typo="Typo.subtitle2">Agrupación de errores</MudText>
-                        <MudDivider Class="my-2" />
-                        @if (ErrorGroups.Count == 0)
-                        {
-                            <MudText Typo="Typo.body2">No hubo errores por fila en esta carga.</MudText>
-                        }
-                        else
-                        {
-                            <MudTable Dense="true" Hover="true" Elevation="0" Items="@ErrorGroups">
-                                <HeaderContent>
-                                    <MudTh>Error code</MudTh>
-                                    <MudTh>Mensaje</MudTh>
-                                    <MudTh>Cantidad</MudTh>
-                                </HeaderContent>
-                                <RowTemplate>
-                                    <MudTd>@context.ErrorCode</MudTd>
-                                    <MudTd>@context.ErrorMessage</MudTd>
-                                    <MudTd>@context.Count</MudTd>
-                                </RowTemplate>
-                            </MudTable>
-                        }
+                    <MudPaper Class="pa-3 upload-general-view" Outlined="true">
+                        <MudStack Spacing="2">
+                            <MudText Typo="Typo.subtitle2">Vista general</MudText>
+                            <MudGrid>
+                                <MudItem xs="6">
+                                    <MudPaper Class="pa-3 metric-card metric-card-total" Outlined="true">
+                                        <MudText Typo="Typo.caption">Total filas</MudText>
+                                        <MudText Typo="Typo.h6">@SelectedDetail.TotalRows</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudPaper Class="pa-3 metric-card metric-card-inserted" Outlined="true">
+                                        <MudText Typo="Typo.caption">Insertadas</MudText>
+                                        <MudText Typo="Typo.h6">@SelectedDetail.InsertedRows</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudPaper Class="pa-3 metric-card metric-card-rejected" Outlined="true">
+                                        <MudText Typo="Typo.caption">Rechazadas</MudText>
+                                        <MudText Typo="Typo.h6">@SelectedDetail.RejectedRows</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudPaper Class="pa-3 metric-card metric-card-quality" Outlined="true">
+                                        <MudText Typo="Typo.caption">% éxito</MudText>
+                                        <MudText Typo="Typo.h6">@SuccessRate%</MudText>
+                                    </MudPaper>
+                                </MudItem>
+                            </MudGrid>
+
+                            <MudPaper Class="pa-3 error-group-container" Outlined="true">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Warning" />
+                                    <MudText Typo="Typo.subtitle2">Agrupación por ErrorCode</MudText>
+                                </MudStack>
+                                <MudDivider Class="my-2" />
+                                @if (ErrorGroups.Count == 0)
+                                {
+                                    <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined">
+                                        Esta carga no registró errores por fila.
+                                    </MudAlert>
+                                }
+                                else
+                                {
+                                    <MudTable Dense="true" Hover="true" Elevation="0" Items="@ErrorGroups">
+                                        <HeaderContent>
+                                            <MudTh>Error code</MudTh>
+                                            <MudTh>Mensaje</MudTh>
+                                            <MudTh>Cantidad</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd>
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">@context.ErrorCode</MudChip>
+                                            </MudTd>
+                                            <MudTd>@context.ErrorMessage</MudTd>
+                                            <MudTd><MudChip T="int" Size="Size.Small" Color="Color.Warning">@context.Count</MudChip></MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                }
+                            </MudPaper>
+                        </MudStack>
                     </MudPaper>
                 }
                 else
                 {
                     <MudPaper Class="pa-3" Outlined="true">
-                        <MudText Typo="Typo.subtitle2">Detalle por fila</MudText>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
+                            <MudText Typo="Typo.subtitle2">Detalle por fila</MudText>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="ClearRowFilters">
+                                Limpiar filtros
+                            </MudButton>
+                        </MudStack>
                         <MudDivider Class="my-2" />
-                        <MudTable Dense="true" Hover="true" Elevation="0" Items="@SelectedDetail.Rows">
+                        <MudGrid Class="mb-1">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField T="string"
+                                              Label="Filtrar por PartNumber"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Value="@PartNumberFilter"
+                                              ValueChanged="OnPartNumberFilterChanged"
+                                              Immediate="true"
+                                              Adornment="Adornment.Start"
+                                              AdornmentIcon="@Icons.Material.Filled.Search" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField T="string"
+                                              Label="Filtrar por Model"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Value="@ModelFilter"
+                                              ValueChanged="OnModelFilterChanged"
+                                              Immediate="true"
+                                              Adornment="Adornment.Start"
+                                              AdornmentIcon="@Icons.Material.Filled.Search" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudSelect T="string"
+                                           Label="Filtrar por Status"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Value="@StatusFilter"
+                                           ValueChanged="OnStatusFilterChanged">
+                                    <MudSelectItem Value="@AnyStatusValue">Todos</MudSelectItem>
+                                    @foreach (var status in StatusOptions)
+                                    {
+                                        <MudSelectItem Value="@status">@status</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" Class="d-flex align-center">
+                                <MudText Typo="Typo.caption" Class="mt-2">
+                                    Mostrando <b>@FilteredRows.Count</b> de <b>@SelectedDetail.Rows.Count</b> filas.
+                                </MudText>
+                            </MudItem>
+                        </MudGrid>
+
+                        <MudTable @ref="_rowDetailTable"
+                                  Dense="true"
+                                  Hover="true"
+                                  Elevation="0"
+                                  Items="@FilteredRows"
+                                  RowsPerPage="@RowsPerPage"
+                                  RowsPerPageChanged="OnRowsPerPageChanged">
                             <HeaderContent>
                                 <MudTh>Row</MudTh>
                                 <MudTh>Part Number</MudTh>
@@ -203,11 +297,19 @@
                                 <MudTd>@(string.IsNullOrWhiteSpace(context.PartNumber) ? "-" : context.PartNumber)</MudTd>
                                 <MudTd>@(string.IsNullOrWhiteSpace(context.Model) ? "-" : context.Model)</MudTd>
                                 <MudTd>
-                                    <MudChip T="string" Size="Size.Small" Color="@(context.Status.Equals("Inserted", StringComparison.OrdinalIgnoreCase) ? Color.Success : Color.Warning)" Variant="Variant.Outlined">@context.Status</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="@GetStatusVariant(context.Status)" Class="status-chip">
+                                        @context.Status
+                                    </MudChip>
                                 </MudTd>
                                 <MudTd>@(string.IsNullOrWhiteSpace(context.ErrorCode) ? "-" : context.ErrorCode)</MudTd>
                                 <MudTd>@(string.IsNullOrWhiteSpace(context.ErrorMessage) ? "-" : context.ErrorMessage)</MudTd>
                             </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager RowsPerPageString="Filas por página"
+                                               InfoFormat="{first_item}-{last_item} de {all_items}"
+                                               HidePageNumber="false"
+                                               PageSizeOptions="@PageSizeOptions" />
+                            </PagerContent>
                         </MudTable>
                     </MudPaper>
                 }
@@ -229,6 +331,14 @@
     private bool IsDetailLoading;
     private string DetailViewMode { get; set; } = "general";
     private ExcelUploadDetailDto? SelectedDetail;
+    private MudTable<ExcelUploadRowDetailDto>? _rowDetailTable;
+
+    private const string AnyStatusValue = "__ALL__";
+    private string PartNumberFilter { get; set; } = string.Empty;
+    private string ModelFilter { get; set; } = string.Empty;
+    private string StatusFilter { get; set; } = AnyStatusValue;
+    private int RowsPerPage { get; set; } = 10;
+    private readonly int[] PageSizeOptions = [10, 20, 50];
 
     private IReadOnlyList<(string Label, string Value)> SummaryRows => LastResult is null
         ? []
@@ -255,6 +365,21 @@
         .Select(group => new ErrorGroupVm(group.Key.Code!, group.Key.Message!, group.Count()))
         .OrderByDescending(x => x.Count)
         .ThenBy(x => x.ErrorCode)
+        .ToList() ?? [];
+
+    private string SuccessRate => SelectedDetail is null || SelectedDetail.TotalRows == 0
+        ? "0.0"
+        : ((double)SelectedDetail.InsertedRows / SelectedDetail.TotalRows * 100).ToString("0.0");
+
+    private IReadOnlyList<ExcelUploadRowDetailDto> FilteredRows => SelectedDetail?.Rows
+        .Where(MatchesRowFilters)
+        .ToList() ?? [];
+
+    private IReadOnlyList<string> StatusOptions => SelectedDetail?.Rows
+        .Select(r => NormalizeStatus(r.Status))
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
         .ToList() ?? [];
 
     protected override async Task OnInitializedAsync()
@@ -329,6 +454,7 @@
         DetailViewMode = "general";
         DetailTabIndex = 0;
         SelectedDetail = null;
+        ClearRowFilters();
 
         try
         {
@@ -363,6 +489,88 @@
         DetailTabIndex = index;
         DetailViewMode = index == 0 ? "general" : "rows";
     }
+
+    private void OnPartNumberFilterChanged(string? value)
+    {
+        PartNumberFilter = value ?? string.Empty;
+        _rowDetailTable?.NavigateTo(0);
+    }
+
+    private void OnModelFilterChanged(string? value)
+    {
+        ModelFilter = value ?? string.Empty;
+        _rowDetailTable?.NavigateTo(0);
+    }
+
+    private void OnStatusFilterChanged(string? value)
+    {
+        StatusFilter = string.IsNullOrWhiteSpace(value) ? AnyStatusValue : value;
+        _rowDetailTable?.NavigateTo(0);
+    }
+
+    private void OnRowsPerPageChanged(int value)
+    {
+        RowsPerPage = value;
+        _rowDetailTable?.NavigateTo(0);
+    }
+
+    private void ClearRowFilters()
+    {
+        PartNumberFilter = string.Empty;
+        ModelFilter = string.Empty;
+        StatusFilter = AnyStatusValue;
+        RowsPerPage = 10;
+        _rowDetailTable?.NavigateTo(0);
+    }
+
+    private bool MatchesRowFilters(ExcelUploadRowDetailDto row)
+    {
+        if (!string.IsNullOrWhiteSpace(PartNumberFilter) &&
+            (row.PartNumber?.Contains(PartNumberFilter, StringComparison.OrdinalIgnoreCase) is not true))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ModelFilter) &&
+            (row.Model?.Contains(ModelFilter, StringComparison.OrdinalIgnoreCase) is not true))
+        {
+            return false;
+        }
+
+        if (!string.Equals(StatusFilter, AnyStatusValue, StringComparison.Ordinal) &&
+            !string.Equals(NormalizeStatus(row.Status), StatusFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static Color GetStatusColor(string? status)
+    {
+        if (string.Equals(status, "Inserted", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.Success;
+        }
+
+        if (string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.Error;
+        }
+
+        if (string.Equals(status, "Warning", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.Warning;
+        }
+
+        return Color.Info;
+    }
+
+    private static Variant GetStatusVariant(string? status)
+        => string.Equals(status, "Inserted", StringComparison.OrdinalIgnoreCase) ? Variant.Filled : Variant.Outlined;
+
+    private static string NormalizeStatus(string? status)
+        => string.IsNullOrWhiteSpace(status) ? "Unknown" : status.Trim();
 
     private static string GetHumanReadableFileSize(long bytes)
     {
