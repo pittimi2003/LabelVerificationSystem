@@ -448,7 +448,7 @@ public sealed class ExcelUploadService : IExcelUploadService
             .Replace('\u202F', ' ')
             .Replace('\u2007', ' ');
 
-        return (WhitespaceRegex ?? new Regex(@"\s+", RegexOptions.Compiled))
+        return WhitespaceRegex
             .Replace(headerWithReplacedNonBreakingSpaces, " ")
             .Trim();
     }
