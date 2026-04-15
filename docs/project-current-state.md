@@ -266,3 +266,21 @@ Se implementó una pantalla frontend mínima para operar el módulo **Carga de E
 - Se confirma que todavía no existen formalmente contratos, flujos ni modelo de datos
 - Se confirma que dichos artefactos se crearán durante la implementación
 - Se fija como primer objetivo de implementación el módulo de **Carga de Excel**
+
+## Avance implementado: Carga de Excel v1.2 (iteración UX/UI frontend)
+
+Se implementó una iteración de mejora de experiencia de usuario en el frontend del módulo `/excel-uploads`:
+
+- control de selección de archivo migrado a `MudFileUpload`
+- feedback de operación migrado a `Snackbar`
+- limpieza de estado post-carga para permitir cargas sucesivas sin fricción
+- refresco automático del historial tras cada `POST /api/excel-uploads`
+- acción de detalle en la primera columna del grid de historial
+- panel lateral derecho para inspección de detalle de una carga
+- alternancia entre vista general y vista por fila dentro del detalle
+
+Para habilitar inspección histórica por fila se agregó un endpoint mínimo de detalle:
+
+- `GET /api/excel-uploads/{id}/details`
+
+Este cambio no modifica reglas funcionales de negocio de Carga de Excel v1/v1.1; sólo amplía consulta y experiencia de visualización.

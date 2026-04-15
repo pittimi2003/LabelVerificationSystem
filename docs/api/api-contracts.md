@@ -189,6 +189,24 @@ Consulta de una carga específica.
   - `200 OK` cuando la carga existe.
   - `404 Not Found` cuando el id no existe.
 
+### `GET /api/excel-uploads/{id}/details`
+Consulta detallada de una carga específica para UX de inspección histórica.
+
+#### Response (v1.2)
+- resumen de carga: `uploadId`, `originalFileName`, `uploadedAtUtc`, `status`, `totalRows`, `insertedRows`, `rejectedRows`
+- `rows`: detalle por fila persistida con:
+  - `rowNumber`
+  - `partNumber`
+  - `model`
+  - `status` (`Inserted` o `Rejected`)
+  - `errorCode`
+  - `errorMessage`
+
+### Status codes de detalle (v1.2)
+- `GET /api/excel-uploads/{id}/details`:
+  - `200 OK` cuando la carga existe.
+  - `404 Not Found` cuando el id no existe.
+
 ### Response de `POST /api/excel-uploads` (v1)
 - `uploadId`: identificador de la carga.
 - `fileName`: nombre original del archivo.
@@ -209,7 +227,6 @@ Consulta de una carga específica.
 - Se registra historial básico de carga desde v1.
 
 ## Decisiones pendientes
-- exposición de endpoint específico para consultar resultados por fila persistidos
 - versionado formal del endpoint
 
 ---

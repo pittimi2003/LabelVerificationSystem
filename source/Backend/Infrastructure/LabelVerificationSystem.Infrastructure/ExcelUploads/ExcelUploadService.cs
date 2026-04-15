@@ -221,6 +221,32 @@ public sealed class ExcelUploadService : IExcelUploadService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<ExcelUploadDetailItem?> GetUploadDetailByIdAsync(Guid uploadId, CancellationToken cancellationToken)
+    {
+        return await _dbContext.ExcelUploads
+            .AsNoTracking()
+            .Where(x => x.Id == uploadId)
+            .Select(x => new ExcelUploadDetailItem(
+                x.Id,
+                x.OriginalFileName,
+                x.UploadedAtUtc,
+                x.Status,
+                x.TotalRows,
+                x.InsertedRows,
+                x.RejectedRows,
+                x.RowResults
+                    .OrderBy(r => r.RowNumber)
+                    .Select(r => new ExcelUploadRowResultItem(
+                        r.RowNumber,
+                        r.PartNumber,
+                        r.Model,
+                        r.Status,
+                        r.ErrorCode,
+                        r.ErrorMessage))
+                    .ToList()))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     private static XLWorkbook OpenWorkbook(Stream fileStream)
     {
         try
