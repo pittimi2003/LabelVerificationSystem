@@ -13,6 +13,9 @@ namespace LabelVerificationSystem.Infrastructure.ExcelUploads;
 public sealed class ExcelUploadService : IExcelUploadService
 {
     private static readonly Regex WhitespaceRegex = new(@"\s+", RegexOptions.Compiled);
+    private const string RowStatusInserted = "Inserted";
+    private const string RowStatusRejected = "Rejected";
+
     private static readonly string[] RequiredHeaderNames =
     [
         "Part Number",
@@ -23,8 +26,10 @@ public sealed class ExcelUploadService : IExcelUploadService
         "Certification EAC",
         "4 FIRST NUMERS"
     ];
+
     private static readonly IReadOnlyDictionary<string, string> RequiredHeadersByNormalizedName =
         RequiredHeaderNames.ToDictionary(NormalizeHeader, header => header, StringComparer.OrdinalIgnoreCase);
+
     private static readonly string PartNumberHeader = NormalizeHeader("Part Number");
     private static readonly string ModelHeader = NormalizeHeader("Model");
     private static readonly string MinghuaDescriptionHeader = NormalizeHeader("Minghua description");
@@ -62,6 +67,7 @@ public sealed class ExcelUploadService : IExcelUploadService
 
             var rowErrors = new List<ExcelUploadResultRowError>();
             var pendingRows = new List<PendingPartRow>();
+            var rowResults = new List<ExcelUploadRowResult>();
 
             var existingPartNumbers = await _dbContext.Parts
                 .AsNoTracking()
@@ -91,51 +97,70 @@ public sealed class ExcelUploadService : IExcelUploadService
                     string.IsNullOrWhiteSpace(rowCertificationEac) &&
                     string.IsNullOrWhiteSpace(rowFirstFourNumbers))
                 {
-                    rowErrors.Add(new ExcelUploadResultRowError(rowNumber, string.Empty, "Fila vacía."));
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "EmptyRow", "Fila vacía.", rowErrors, rowResults, uploadId);
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(rowPartNumber))
                 {
-                    rowErrors.Add(new ExcelUploadResultRowError(rowNumber, string.Empty, "Part Number es obligatorio."));
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "MissingPartNumber", "Part Number es obligatorio.", rowErrors, rowResults, uploadId);
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(rowDescription) ||
                     string.IsNullOrWhiteSpace(rowModel) ||
-                    string.IsNullOrWhiteSpace(rowCaducidad) ||
                     string.IsNullOrWhiteSpace(rowCco) ||
-                    string.IsNullOrWhiteSpace(rowCertificationEac) ||
                     string.IsNullOrWhiteSpace(rowFirstFourNumbers))
                 {
-                    rowErrors.Add(new ExcelUploadResultRowError(rowNumber, rowPartNumber, "Faltan columnas mínimas obligatorias en la fila."));
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "MissingRequiredFields", "Faltan columnas mínimas obligatorias en la fila.", rowErrors, rowResults, uploadId);
+                    continue;
+                }
+
+                if (!TryParseCaducidad(rowCaducidad, out var caducidad, out var caducidadError))
+                {
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "InvalidCaducidad", caducidadError, rowErrors, rowResults, uploadId);
+                    continue;
+                }
+
+                if (!TryParseCertificationEac(rowCertificationEac, out var certificationEac, out var certificationError))
+                {
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "InvalidCertificationEac", certificationError, rowErrors, rowResults, uploadId);
+                    continue;
+                }
+
+                if (!TryParseFirstFourNumbers(rowFirstFourNumbers, out var firstFourNumbers, out var firstFourNumbersError))
+                {
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "InvalidFirstFourNumbers", firstFourNumbersError, rowErrors, rowResults, uploadId);
                     continue;
                 }
 
                 if (existingPartNumbers.Contains(rowPartNumber) || !processedPartNumbers.Add(rowPartNumber))
                 {
-                    rowErrors.Add(new ExcelUploadResultRowError(rowNumber, rowPartNumber, "Part Number duplicado."));
+                    RejectRow(rowNumber, rowPartNumber, rowModel, "DuplicatePartNumber", "Part Number duplicado.", rowErrors, rowResults, uploadId);
                     continue;
                 }
 
                 pendingRows.Add(new PendingPartRow(
                     rowNumber,
+                    rowPartNumber,
+                    rowModel,
                     new Part
                     {
                         Id = Guid.NewGuid(),
                         PartNumber = rowPartNumber,
                         Model = rowModel,
                         MinghuaDescription = rowDescription,
-                        Caducidad = rowCaducidad,
+                        Caducidad = caducidad,
                         Cco = rowCco,
-                        CertificationEac = rowCertificationEac,
-                        FirstFourNumbers = rowFirstFourNumbers,
+                        CertificationEac = certificationEac,
+                        FirstFourNumbers = firstFourNumbers,
+                        CreatedByExcelUploadId = uploadId,
                         CreatedAtUtc = DateTime.UtcNow
                     }));
             }
 
-            var insertedRows = await InsertWithDuplicateRetryAsync(pendingRows, rowErrors, cancellationToken);
-            var rejectedRows = rowErrors.Count;
+            var insertedRows = await InsertWithDuplicateRetryAsync(pendingRows, rowErrors, rowResults, uploadId, cancellationToken);
+            var rejectedRows = rowResults.Count(x => x.Status == RowStatusRejected);
             var status = rejectedRows > 0 ? "ProcessedWithErrors" : "Processed";
 
             await SaveUploadHistoryAsync(
@@ -146,6 +171,7 @@ public sealed class ExcelUploadService : IExcelUploadService
                 totalRows,
                 insertedRows,
                 rejectedRows,
+                rowResults,
                 cancellationToken);
 
             return new ExcelUploadResult(uploadId, originalFileName, totalRows, insertedRows, rejectedRows, rowErrors);
@@ -230,6 +256,8 @@ public sealed class ExcelUploadService : IExcelUploadService
     private async Task<int> InsertWithDuplicateRetryAsync(
         IReadOnlyCollection<PendingPartRow> pendingRows,
         ICollection<ExcelUploadResultRowError> rowErrors,
+        ICollection<ExcelUploadRowResult> rowResults,
+        Guid uploadId,
         CancellationToken cancellationToken)
     {
         var remaining = pendingRows.ToList();
@@ -242,6 +270,21 @@ public sealed class ExcelUploadService : IExcelUploadService
                 await _dbContext.Parts.AddRangeAsync(remaining.Select(x => x.Part), cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
                 insertedRows += remaining.Count;
+
+                foreach (var inserted in remaining)
+                {
+                    rowResults.Add(new ExcelUploadRowResult
+                    {
+                        Id = Guid.NewGuid(),
+                        ExcelUploadId = uploadId,
+                        RowNumber = inserted.RowNumber,
+                        PartNumber = inserted.PartNumber,
+                        Model = inserted.Model,
+                        Status = RowStatusInserted,
+                        CreatedAtUtc = DateTime.UtcNow
+                    });
+                }
+
                 break;
             }
             catch (DbUpdateException)
@@ -266,10 +309,15 @@ public sealed class ExcelUploadService : IExcelUploadService
                 var duplicatedNow = remaining.Where(x => nowExisting.Contains(x.Part.PartNumber)).ToList();
                 foreach (var duplicated in duplicatedNow)
                 {
-                    rowErrors.Add(new ExcelUploadResultRowError(
+                    RejectRow(
                         duplicated.RowNumber,
                         duplicated.Part.PartNumber,
-                        "Part Number duplicado (detectado al guardar)."));
+                        duplicated.Model,
+                        "DuplicatePartNumberAtSave",
+                        "Part Number duplicado (detectado al guardar).",
+                        rowErrors,
+                        rowResults,
+                        uploadId);
                 }
 
                 remaining = remaining.Where(x => !nowExisting.Contains(x.Part.PartNumber)).ToList();
@@ -302,6 +350,7 @@ public sealed class ExcelUploadService : IExcelUploadService
                 0,
                 0,
                 0,
+                [],
                 cancellationToken);
         }
         catch
@@ -319,6 +368,7 @@ public sealed class ExcelUploadService : IExcelUploadService
         int totalRows,
         int insertedRows,
         int rejectedRows,
+        IReadOnlyCollection<ExcelUploadRowResult> rowResults,
         CancellationToken cancellationToken)
     {
         _dbContext.ExcelUploads.Add(new ExcelUpload
@@ -330,7 +380,8 @@ public sealed class ExcelUploadService : IExcelUploadService
             Status = status,
             TotalRows = totalRows,
             InsertedRows = insertedRows,
-            RejectedRows = rejectedRows
+            RejectedRows = rejectedRows,
+            RowResults = rowResults.ToList()
         });
 
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -472,7 +523,103 @@ public sealed class ExcelUploadService : IExcelUploadService
     private static string GetCellValue(IXLWorksheet worksheet, int rowNumber, int columnNumber) =>
         worksheet.Cell(rowNumber, columnNumber).GetString().Trim();
 
-    private static System.Linq.Expressions.Expression<Func<LabelVerificationSystem.Domain.Entities.ExcelUpload, ExcelUploadHistoryItem>> MapToHistoryItem() =>
+    private static bool TryParseCaducidad(string rawValue, out int? value, out string error)
+    {
+        if (string.IsNullOrWhiteSpace(rawValue) || string.Equals(rawValue.Trim(), "NA", StringComparison.OrdinalIgnoreCase))
+        {
+            value = null;
+            error = string.Empty;
+            return true;
+        }
+
+        if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        {
+            value = parsed;
+            error = string.Empty;
+            return true;
+        }
+
+        value = null;
+        error = "CADUCIDAD debe ser un entero válido, 'NA' o vacío.";
+        return false;
+    }
+
+    private static bool TryParseCertificationEac(string rawValue, out bool? value, out string error)
+    {
+        if (string.IsNullOrWhiteSpace(rawValue) || string.Equals(rawValue.Trim(), "NA", StringComparison.OrdinalIgnoreCase))
+        {
+            value = null;
+            error = string.Empty;
+            return true;
+        }
+
+        if (string.Equals(rawValue.Trim(), "YES", StringComparison.OrdinalIgnoreCase))
+        {
+            value = true;
+            error = string.Empty;
+            return true;
+        }
+
+        if (string.Equals(rawValue.Trim(), "NO", StringComparison.OrdinalIgnoreCase))
+        {
+            value = false;
+            error = string.Empty;
+            return true;
+        }
+
+        value = null;
+        error = "Certification EAC debe ser YES, NO, NA o vacío.";
+        return false;
+    }
+
+    private static bool TryParseFirstFourNumbers(string rawValue, out int value, out string error)
+    {
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            value = default;
+            error = "4 FIRST NUMERS es obligatorio y debe ser un entero válido.";
+            return false;
+        }
+
+        if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        {
+            value = parsed;
+            error = string.Empty;
+            return true;
+        }
+
+        value = default;
+        error = "4 FIRST NUMERS debe ser un entero válido.";
+        return false;
+    }
+
+    private static void RejectRow(
+        int rowNumber,
+        string partNumber,
+        string model,
+        string errorCode,
+        string errorMessage,
+        ICollection<ExcelUploadResultRowError> rowErrors,
+        ICollection<ExcelUploadRowResult> rowResults,
+        Guid uploadId)
+    {
+        rowErrors.Add(new ExcelUploadResultRowError(rowNumber, partNumber, errorMessage));
+
+        rowResults.Add(new ExcelUploadRowResult
+        {
+            Id = Guid.NewGuid(),
+            ExcelUploadId = uploadId,
+            RowNumber = rowNumber,
+            PartNumber = partNumber,
+            Model = model,
+            Status = RowStatusRejected,
+            ErrorCode = errorCode,
+            ErrorMessage = errorMessage,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+    }
+
+    private static System.Linq.Expressions.Expression<Func<Domain.Entities.ExcelUpload, ExcelUploadHistoryItem>> MapToHistoryItem() =>
         x => new ExcelUploadHistoryItem(
             x.Id,
             x.OriginalFileName,
@@ -482,7 +629,7 @@ public sealed class ExcelUploadService : IExcelUploadService
             x.InsertedRows,
             x.RejectedRows);
 
-    private sealed record PendingPartRow(int RowNumber, Part Part);
+    private sealed record PendingPartRow(int RowNumber, string PartNumber, string Model, Part Part);
     private sealed record HeaderColumnInfo(int ColumnNumber, string DetectedHeader, string NormalizedHeader);
     private sealed record HeaderDetectionResult(int HeaderRowNumber, IReadOnlyDictionary<string, HeaderColumnInfo> HeaderMap, int MatchedRequiredHeaderCount);
 

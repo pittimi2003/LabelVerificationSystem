@@ -6,9 +6,11 @@ public sealed class Part
     public string PartNumber { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
     public string MinghuaDescription { get; set; } = string.Empty;
-    public string Caducidad { get; set; } = string.Empty;
+    public int? Caducidad { get; set; }
     public string Cco { get; set; } = string.Empty;
-    public string CertificationEac { get; set; } = string.Empty;
-    public string FirstFourNumbers { get; set; } = string.Empty;
+    public bool? CertificationEac { get; set; }
+    public int FirstFourNumbers { get; set; }
+    public Guid? CreatedByExcelUploadId { get; set; }
+    public ExcelUpload? CreatedByExcelUpload { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }
