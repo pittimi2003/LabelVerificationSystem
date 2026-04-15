@@ -234,29 +234,31 @@
                         </MudStack>
                         <MudDivider Class="my-2" />
                         <MudGrid Class="mb-1">
-                            <MudItem xs="12" sm="6">
+                            <MudItem xs="12" sm="4">
+                                <MudSelect T="string"
+                                           Label="Campo"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Value="@SelectedSearchField"
+                                           ValueChanged="OnSelectedSearchFieldChanged">
+                                    @foreach (var option in SearchFieldOptions)
+                                    {
+                                        <MudSelectItem Value="@option.Value">@option.Label</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="8">
                                 <MudTextField T="string"
-                                              Label="Filtrar por PartNumber"
+                                              Label="@($"Buscar por {SelectedSearchFieldLabel}")"
                                               Variant="Variant.Outlined"
                                               Margin="Margin.Dense"
-                                              Value="@PartNumberFilter"
-                                              ValueChanged="OnPartNumberFilterChanged"
+                                              Value="@SearchTextFilter"
+                                              ValueChanged="OnSearchTextFilterChanged"
                                               Immediate="true"
                                               Adornment="Adornment.Start"
                                               AdornmentIcon="@Icons.Material.Filled.Search" />
                             </MudItem>
-                            <MudItem xs="12" sm="6">
-                                <MudTextField T="string"
-                                              Label="Filtrar por Model"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              Value="@ModelFilter"
-                                              ValueChanged="OnModelFilterChanged"
-                                              Immediate="true"
-                                              Adornment="Adornment.Start"
-                                              AdornmentIcon="@Icons.Material.Filled.Search" />
-                            </MudItem>
-                            <MudItem xs="12" sm="6">
+                            <MudItem xs="12" sm="4">
                                 <MudSelect T="string"
                                            Label="Filtrar por Status"
                                            Variant="Variant.Outlined"
@@ -264,13 +266,13 @@
                                            Value="@StatusFilter"
                                            ValueChanged="OnStatusFilterChanged">
                                     <MudSelectItem Value="@AnyStatusValue">Todos</MudSelectItem>
-                                    @foreach (var status in StatusOptions)
+                                    @foreach (var status in RowStatusOptions)
                                     {
                                         <MudSelectItem Value="@status">@status</MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudItem>
-                            <MudItem xs="12" sm="6" Class="d-flex align-center">
+                            <MudItem xs="12" sm="8" Class="d-flex align-center">
                                 <MudText Typo="Typo.caption" Class="mt-2">
                                     Mostrando <b>@FilteredRows.Count</b> de <b>@SelectedDetail.Rows.Count</b> filas.
                                 </MudText>
@@ -334,11 +336,20 @@
     private MudTable<ExcelUploadRowDetailDto>? _rowDetailTable;
 
     private const string AnyStatusValue = "__ALL__";
-    private string PartNumberFilter { get; set; } = string.Empty;
-    private string ModelFilter { get; set; } = string.Empty;
+    private const string SearchFieldPartNumber = "part-number";
+    private const string SearchFieldModel = "model";
+    private readonly IReadOnlyList<(string Label, string Value)> SearchFieldOptions =
+    [
+        ("Part Number", SearchFieldPartNumber),
+        ("Model", SearchFieldModel)
+    ];
+
+    private readonly IReadOnlyList<string> RowStatusOptions = ["Inserted", "Rejected"];
+    private string SelectedSearchField { get; set; } = SearchFieldPartNumber;
+    private string SearchTextFilter { get; set; } = string.Empty;
     private string StatusFilter { get; set; } = AnyStatusValue;
-    private int RowsPerPage { get; set; } = 10;
-    private readonly int[] PageSizeOptions = [10, 20, 50];
+    private int RowsPerPage { get; set; } = 5;
+    private readonly int[] PageSizeOptions = [5, 10, 20];
 
     private IReadOnlyList<(string Label, string Value)> SummaryRows => LastResult is null
         ? []
@@ -375,12 +386,8 @@
         .Where(MatchesRowFilters)
         .ToList() ?? [];
 
-    private IReadOnlyList<string> StatusOptions => SelectedDetail?.Rows
-        .Select(r => NormalizeStatus(r.Status))
-        .Where(s => !string.IsNullOrWhiteSpace(s))
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
-        .ToList() ?? [];
+    private string SelectedSearchFieldLabel => SearchFieldOptions
+        .FirstOrDefault(option => option.Value == SelectedSearchField).Label ?? "Part Number";
 
     protected override async Task OnInitializedAsync()
     {
@@ -490,15 +497,15 @@
         DetailViewMode = index == 0 ? "general" : "rows";
     }
 
-    private void OnPartNumberFilterChanged(string? value)
+    private void OnSelectedSearchFieldChanged(string? value)
     {
-        PartNumberFilter = value ?? string.Empty;
+        SelectedSearchField = string.IsNullOrWhiteSpace(value) ? SearchFieldPartNumber : value;
         _rowDetailTable?.NavigateTo(0);
     }
 
-    private void OnModelFilterChanged(string? value)
+    private void OnSearchTextFilterChanged(string? value)
     {
-        ModelFilter = value ?? string.Empty;
+        SearchTextFilter = value ?? string.Empty;
         _rowDetailTable?.NavigateTo(0);
     }
 
@@ -516,23 +523,16 @@
 
     private void ClearRowFilters()
     {
-        PartNumberFilter = string.Empty;
-        ModelFilter = string.Empty;
+        SelectedSearchField = SearchFieldPartNumber;
+        SearchTextFilter = string.Empty;
         StatusFilter = AnyStatusValue;
-        RowsPerPage = 10;
+        RowsPerPage = 5;
         _rowDetailTable?.NavigateTo(0);
     }
 
     private bool MatchesRowFilters(ExcelUploadRowDetailDto row)
     {
-        if (!string.IsNullOrWhiteSpace(PartNumberFilter) &&
-            (row.PartNumber?.Contains(PartNumberFilter, StringComparison.OrdinalIgnoreCase) is not true))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrWhiteSpace(ModelFilter) &&
-            (row.Model?.Contains(ModelFilter, StringComparison.OrdinalIgnoreCase) is not true))
+        if (!MatchesSearchFilter(row))
         {
             return false;
         }
@@ -544,6 +544,20 @@
         }
 
         return true;
+    }
+
+    private bool MatchesSearchFilter(ExcelUploadRowDetailDto row)
+    {
+        if (string.IsNullOrWhiteSpace(SearchTextFilter))
+        {
+            return true;
+        }
+
+        return SelectedSearchField switch
+        {
+            SearchFieldModel => row.Model?.Contains(SearchTextFilter, StringComparison.OrdinalIgnoreCase) is true,
+            _ => row.PartNumber?.Contains(SearchTextFilter, StringComparison.OrdinalIgnoreCase) is true
+        };
     }
 
     private static Color GetStatusColor(string? status)
