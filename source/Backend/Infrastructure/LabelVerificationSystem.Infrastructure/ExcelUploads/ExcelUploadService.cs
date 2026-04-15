@@ -287,7 +287,7 @@ public sealed class ExcelUploadService : IExcelUploadService
 
                 break;
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
                 foreach (var entry in _dbContext.ChangeTracker.Entries<Part>().Where(x => x.State == EntityState.Added))
                 {
@@ -303,7 +303,9 @@ public sealed class ExcelUploadService : IExcelUploadService
 
                 if (nowExisting.Count == 0)
                 {
-                    throw new InvalidOperationException("No se pudo guardar la carga por un conflicto de concurrencia no resoluble.");
+                    throw new InvalidOperationException(
+                        $"No se pudo guardar la carga por un error de integridad de base de datos al insertar Parts. Detalle: {GetInnermostExceptionMessage(ex)}",
+                        ex);
                 }
 
                 var duplicatedNow = remaining.Where(x => nowExisting.Contains(x.Part.PartNumber)).ToList();
@@ -417,6 +419,17 @@ public sealed class ExcelUploadService : IExcelUploadService
         {
             // Intencionalmente vacío: no se relanza para no ocultar error principal.
         }
+    }
+
+    private static string GetInnermostExceptionMessage(Exception exception)
+    {
+        var current = exception;
+        while (current.InnerException is not null)
+        {
+            current = current.InnerException;
+        }
+
+        return current.Message;
     }
 
     private static HeaderDetectionResult DetectHeaderRowAndBuildMap(IXLWorksheet worksheet)
