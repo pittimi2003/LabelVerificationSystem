@@ -23,21 +23,51 @@
                                FilesChanged="OnFileSelected"
                                Accept=".xlsx,.xls"
                                Disabled="@IsLoading"
-                               Hidden="false">
+                               Hidden="true"
+                               InputClass="d-none">
                     <ActivatorContent>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" StartIcon="@Icons.Material.Filled.UploadFile">
-                            Seleccionar archivo
-                        </MudButton>
+                        <MudPaper Class="@DropzoneClass" Outlined="true" Width="100%">
+                            <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1" Class="py-6 px-4">
+                                <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" Color="Color.Primary" />
+                                <MudText Typo="Typo.subtitle1">Arrastra el archivo aquí</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">o haz clic para seleccionarlo</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text">Formatos permitidos: .xlsx, .xls</MudChip>
+                            </MudStack>
+                        </MudPaper>
                     </ActivatorContent>
-                    <SelectedTemplate Context="selectedFile">
-                        @if (selectedFile is not null)
-                        {
-                            <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Description">
-                                @selectedFile.Name (@(selectedFile.Size / 1024) KB)
-                            </MudChip>
-                        }
-                    </SelectedTemplate>
                 </MudFileUpload>
+
+                @if (SelectedFile is null)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
+                        Aún no has seleccionado un archivo.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudPaper Class="pa-3" Outlined="true">
+                        <MudStack Spacing="2">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Info" />
+                                    <MudText Typo="Typo.body1">@SelectedFile.Name</MudText>
+                                </MudStack>
+                                <MudChip T="string" Color="Color.Success" Variant="Variant.Filled">Listo para cargar</MudChip>
+                            </MudStack>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Tamaño: @GetHumanReadableFileSize(SelectedFile.Size)</MudText>
+
+                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="flex-wrap">
+                                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.SwapHoriz">
+                                    Para reemplazarlo, haz clic en la zona superior
+                                </MudChip>
+                                <MudButton Variant="Variant.Text" Color="Color.Error" Disabled="@IsLoading" OnClick="ClearSelectedFile" StartIcon="@Icons.Material.Filled.DeleteOutline">
+                                    Quitar archivo
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </MudPaper>
+                }
 
                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsLoading" OnClick="UploadAsync" StartIcon="@Icons.Material.Filled.CloudUpload">
                     Cargar
@@ -281,6 +311,10 @@
             ("Rechazadas", LastResult.RejectedRows.ToString())
         ];
 
+    private string DropzoneClass => SelectedFile is null
+        ? "excel-upload-dropzone"
+        : "excel-upload-dropzone excel-upload-dropzone-selected";
+
     private IReadOnlyList<ErrorGroupVm> ErrorGroups => SelectedDetail?.Rows
         .Where(r => !string.IsNullOrWhiteSpace(r.ErrorCode) || !string.IsNullOrWhiteSpace(r.ErrorMessage))
         .GroupBy(r => new
@@ -301,6 +335,12 @@
     private void OnFileSelected(IBrowserFile? file)
     {
         SelectedFile = file;
+    }
+
+    private void ClearSelectedFile()
+    {
+        SelectedFile = null;
+        FileUploadResetKey++;
     }
 
     private async Task UploadAsync()
@@ -392,6 +432,21 @@
     {
         DetailTabIndex = index;
         DetailViewMode = index == 0 ? "general" : "rows";
+    }
+
+    private static string GetHumanReadableFileSize(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        double size = bytes;
+        int unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.Length - 1)
+        {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return $"{size:0.##} {units[unitIndex]}";
     }
 
     private sealed record ErrorGroupVm(string ErrorCode, string ErrorMessage, int Count);

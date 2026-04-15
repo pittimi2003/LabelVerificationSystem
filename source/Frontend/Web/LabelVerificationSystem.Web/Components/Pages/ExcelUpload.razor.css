@@ -1,0 +1,19 @@
+.excel-upload-dropzone {
+    width: 100%;
+    border: 2px dashed var(--mud-palette-primary);
+    border-radius: 12px;
+    background-color: rgba(89, 74, 226, 0.04);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.excel-upload-dropzone:hover {
+    border-color: var(--mud-palette-primary-darken);
+    background-color: rgba(89, 74, 226, 0.08);
+    box-shadow: 0 0 0 3px rgba(89, 74, 226, 0.08);
+}
+
+.excel-upload-dropzone-selected {
+    border-style: solid;
+    background-color: rgba(76, 175, 80, 0.08);
+}
