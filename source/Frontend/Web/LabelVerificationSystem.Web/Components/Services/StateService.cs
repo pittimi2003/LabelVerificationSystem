@@ -512,7 +512,7 @@ public class StateService
         // resetting the menu Color
         await headerColorFn("transparent");
 
-        _sessionService.DeleteAppStateFromSession();
+        await _sessionService.DeleteAppStateFromSession();
 
         NotifyStateChanged();
     }
@@ -532,7 +532,7 @@ public class StateService
         await directionFn("ltr");
         await menuColorFn("transparent");
         _currentState.ThemePrimary = "";
-        _sessionService.DeleteAppStateFromSession();
+        await _sessionService.DeleteAppStateFromSession();
         NotifyStateChanged();
     }
     public async Task retrieveFromLocalStorage()
