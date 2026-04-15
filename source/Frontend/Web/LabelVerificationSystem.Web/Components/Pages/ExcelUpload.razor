@@ -526,32 +526,36 @@
 
     private bool MatchesRowFilters(ExcelUploadRowDetailDto row)
     {
-        if (!MatchesSearchFilter(row))
-        {
-            return false;
-        }
+        var matchesSearch = MatchesSearchFilter(row);
+        var matchesStatus = MatchesStatusFilter(row);
 
-        if (!string.Equals(StatusFilter, AnyStatusValue, StringComparison.Ordinal) &&
-            !string.Equals(NormalizeStatus(row.Status), StatusFilter, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return true;
+        return matchesSearch && matchesStatus;
     }
 
     private bool MatchesSearchFilter(ExcelUploadRowDetailDto row)
     {
-        if (string.IsNullOrWhiteSpace(SearchTextFilter))
+        var normalizedSearchText = SearchTextFilter.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedSearchText))
         {
             return true;
         }
 
         return SelectedSearchField switch
         {
-            SearchFieldModel => row.Model?.Contains(SearchTextFilter, StringComparison.OrdinalIgnoreCase) is true,
-            _ => row.PartNumber?.Contains(SearchTextFilter, StringComparison.OrdinalIgnoreCase) is true
+            SearchFieldModel => row.Model?.Contains(normalizedSearchText, StringComparison.OrdinalIgnoreCase) is true,
+            _ => row.PartNumber?.Contains(normalizedSearchText, StringComparison.OrdinalIgnoreCase) is true
         };
+    }
+
+    private bool MatchesStatusFilter(ExcelUploadRowDetailDto row)
+    {
+        var normalizedStatusFilter = NormalizeStatusFilter(StatusFilter);
+        if (string.Equals(normalizedStatusFilter, AnyStatusValue, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return string.Equals(NormalizeStatus(row.Status), normalizedStatusFilter, StringComparison.OrdinalIgnoreCase);
     }
 
     private static Color GetStatusColor(string? status)
@@ -576,6 +580,9 @@
 
     private static Variant GetStatusVariant(string? status)
         => string.Equals(status, "Inserted", StringComparison.OrdinalIgnoreCase) ? Variant.Filled : Variant.Outlined;
+
+    private static string NormalizeStatusFilter(string? statusFilter)
+        => string.IsNullOrWhiteSpace(statusFilter) ? AnyStatusValue : statusFilter.Trim();
 
     private static string NormalizeStatus(string? status)
         => string.IsNullOrWhiteSpace(status) ? "Unknown" : status.Trim();
