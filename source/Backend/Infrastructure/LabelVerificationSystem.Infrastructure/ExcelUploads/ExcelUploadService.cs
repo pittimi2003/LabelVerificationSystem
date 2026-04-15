@@ -51,10 +51,14 @@ public sealed class ExcelUploadService : IExcelUploadService
     {
         var uploadId = Guid.NewGuid();
         string? persistedFilePath = null;
+        var uploadCreated = false;
 
         try
         {
             persistedFilePath = await SaveOriginalFileAsync(uploadId, fileStream, originalFileName, cancellationToken);
+            await CreateUploadAsync(uploadId, originalFileName, persistedFilePath, cancellationToken);
+            uploadCreated = true;
+
             fileStream.Position = 0;
 
             using var workbook = OpenWorkbook(fileStream);
@@ -159,36 +163,42 @@ public sealed class ExcelUploadService : IExcelUploadService
                     }));
             }
 
-            var insertedRows = await InsertWithDuplicateRetryAsync(pendingRows, rowErrors, rowResults, uploadId, cancellationToken);
-            var rejectedRows = rowResults.Count(x => x.Status == RowStatusRejected);
-            var status = rejectedRows > 0 ? "ProcessedWithErrors" : "Processed";
+            var insertedRows = 0;
+            var rejectedRows = 0;
+            var status = "Processed";
 
-            await SaveUploadHistoryAsync(
-                uploadId,
-                originalFileName,
-                persistedFilePath,
-                status,
-                totalRows,
-                insertedRows,
-                rejectedRows,
-                rowResults,
-                cancellationToken);
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                insertedRows = await InsertWithDuplicateRetryAsync(pendingRows, rowErrors, rowResults, uploadId, cancellationToken);
+                rejectedRows = rowResults.Count(x => x.Status == RowStatusRejected);
+                status = rejectedRows > 0 ? "ProcessedWithErrors" : "Processed";
+
+                await SaveRowResultsAsync(rowResults, cancellationToken);
+                await UpdateUploadMetricsAsync(uploadId, status, totalRows, insertedRows, rejectedRows, cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
 
             return new ExcelUploadResult(uploadId, originalFileName, totalRows, insertedRows, rejectedRows, rowErrors);
         }
         catch (GlobalValidationException ex)
         {
-            await HandleGlobalFailureAsync(uploadId, originalFileName, persistedFilePath, "FailedValidation", ex.Message, cancellationToken);
+            await HandleGlobalFailureAsync(uploadId, originalFileName, persistedFilePath, uploadCreated, "FailedValidation", ex.Message, cancellationToken);
             throw new InvalidOperationException(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
-            await HandleGlobalFailureAsync(uploadId, originalFileName, persistedFilePath, "FailedProcessing", ex.Message, cancellationToken);
+            await HandleGlobalFailureAsync(uploadId, originalFileName, persistedFilePath, uploadCreated, "FailedProcessing", ex.Message, cancellationToken);
             throw;
         }
         catch (Exception ex)
         {
-            await HandleGlobalFailureAsync(uploadId, originalFileName, persistedFilePath, "FailedUnexpected", ex.Message, cancellationToken);
+            await HandleGlobalFailureAsync(uploadId, originalFileName, persistedFilePath, uploadCreated, "FailedUnexpected", ex.Message, cancellationToken);
             throw new InvalidOperationException("Ocurrió un error inesperado durante la carga de Excel.");
         }
     }
@@ -333,6 +343,7 @@ public sealed class ExcelUploadService : IExcelUploadService
         Guid uploadId,
         string originalFileName,
         string? persistedFilePath,
+        bool uploadCreated,
         string failureStatus,
         string errorMessage,
         CancellationToken cancellationToken)
@@ -344,16 +355,15 @@ public sealed class ExcelUploadService : IExcelUploadService
 
         try
         {
-            await SaveUploadHistoryAsync(
-                uploadId,
-                originalFileName,
-                persistedFilePath,
-                failureStatus,
-                0,
-                0,
-                0,
-                [],
-                cancellationToken);
+            if (uploadCreated)
+            {
+                await UpdateUploadMetricsAsync(uploadId, failureStatus, 0, 0, 0, cancellationToken);
+            }
+            else
+            {
+                await CreateUploadAsync(uploadId, originalFileName, persistedFilePath, cancellationToken);
+                await UpdateUploadMetricsAsync(uploadId, failureStatus, 0, 0, 0, cancellationToken);
+            }
         }
         catch
         {
@@ -362,15 +372,10 @@ public sealed class ExcelUploadService : IExcelUploadService
         }
     }
 
-    private async Task SaveUploadHistoryAsync(
+    private async Task CreateUploadAsync(
         Guid uploadId,
         string originalFileName,
         string storedFilePath,
-        string status,
-        int totalRows,
-        int insertedRows,
-        int rejectedRows,
-        IReadOnlyCollection<ExcelUploadRowResult> rowResults,
         CancellationToken cancellationToken)
     {
         _dbContext.ExcelUploads.Add(new ExcelUpload
@@ -379,12 +384,41 @@ public sealed class ExcelUploadService : IExcelUploadService
             OriginalFileName = originalFileName,
             StoredFilePath = storedFilePath,
             UploadedAtUtc = DateTime.UtcNow,
-            Status = status,
-            TotalRows = totalRows,
-            InsertedRows = insertedRows,
-            RejectedRows = rejectedRows,
-            RowResults = rowResults.ToList()
+            Status = "Processing",
+            TotalRows = 0,
+            InsertedRows = 0,
+            RejectedRows = 0
         });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SaveRowResultsAsync(IReadOnlyCollection<ExcelUploadRowResult> rowResults, CancellationToken cancellationToken)
+    {
+        if (rowResults.Count == 0)
+        {
+            return;
+        }
+
+        await _dbContext.ExcelUploadRowResults.AddRangeAsync(rowResults, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task UpdateUploadMetricsAsync(
+        Guid uploadId,
+        string status,
+        int totalRows,
+        int insertedRows,
+        int rejectedRows,
+        CancellationToken cancellationToken)
+    {
+        var upload = await _dbContext.ExcelUploads.FirstOrDefaultAsync(x => x.Id == uploadId, cancellationToken)
+            ?? throw new InvalidOperationException($"No se encontró el registro de carga {uploadId} para actualizar estado.");
+
+        upload.Status = status;
+        upload.TotalRows = totalRows;
+        upload.InsertedRows = insertedRows;
+        upload.RejectedRows = rejectedRows;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
