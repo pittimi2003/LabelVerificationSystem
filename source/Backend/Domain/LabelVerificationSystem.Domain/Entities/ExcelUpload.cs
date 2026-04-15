@@ -10,4 +10,6 @@ public sealed class ExcelUpload
     public int TotalRows { get; set; }
     public int InsertedRows { get; set; }
     public int RejectedRows { get; set; }
+    public ICollection<Part> CreatedParts { get; set; } = new List<Part>();
+    public ICollection<ExcelUploadRowResult> RowResults { get; set; } = new List<ExcelUploadRowResult>();
 }

@@ -64,7 +64,6 @@ Esta versión no incluye todavía:
 - actualización masiva de registros existentes
 - reglas definitivas de cálculo de tipo de etiqueta
 - reglas definitivas de cálculo de configuración de lectura
-- persistencia del detalle de errores por fila en base de datos
 - definición cerrada de todos los campos del modelo de parte
 
 ---
@@ -242,6 +241,21 @@ Si una fila viene vacía, corrupta o con tipos de dato incorrectos:
 - se marca error por fila
 - se continúa con el resto del archivo
 
+### Reglas de parseo de tipos cerradas
+- `CADUCIDAD`:
+  - `NA` o vacío => `null`
+  - entero válido => `int`
+  - otro valor => fila rechazada
+- `Certification EAC`:
+  - `YES` => `true`
+  - `NO` => `false`
+  - `NA` o vacío => `null`
+  - otro valor => fila rechazada
+- `4 FIRST NUMERS`:
+  - obligatorio
+  - debe parsear a entero
+  - si no parsea => fila rechazada
+
 ## Duplicados dentro del Excel
 Si una fila se considera duplicada dentro del mismo archivo:
 
@@ -276,10 +290,10 @@ A nivel funcional, la duplicidad debe reportarse al usuario y la fila afectada n
 ## Reglas de persistencia
 
 ## Registros válidos
-Toda fila válida debe registrarse como nueva parte en base de datos.
+Toda fila válida debe registrarse como nueva parte en base de datos y como resultado `Inserted` en `ExcelUploadRowResult`.
 
 ## Registros inválidos
-Toda fila inválida debe rechazarse sin interrumpir el resto del procesamiento.
+Toda fila inválida debe rechazarse sin interrumpir el resto del procesamiento y registrarse como `Rejected` en `ExcelUploadRowResult` con `ErrorCode` y `ErrorMessage`.
 
 ## Actualización
 La actualización de registros existentes no se hará en este módulo.
@@ -291,7 +305,7 @@ El archivo original cargado debe almacenarse.
 El detalle de errores por fila:
 
 - debe mostrarse al usuario en el momento de la carga
-- no se requiere persistirlo en base de datos en esta primera versión
+- debe persistirse por fila en `ExcelUploadRowResult` para trazabilidad histórica
 
 ---
 

@@ -79,15 +79,16 @@ Es la entidad base para:
 ## Origen funcional
 La propuesta inicial define gestión de partes, visualización del catálogo, carga por Excel y uso de partes como base para validaciones. :contentReference[oaicite:2]{index=2}
 
-## Atributos mínimos implementados en v1 de Carga de Excel
+## Atributos mínimos implementados en v1.1 de Carga de Excel
 - `Id`
 - `PartNumber`
 - `Model`
 - `MinghuaDescription`
-- `Caducidad`
+- `Caducidad` (`int?`)
 - `Cco`
-- `CertificationEac`
-- `FirstFourNumbers`
+- `CertificationEac` (`bool?`)
+- `FirstFourNumbers` (`int`)
+- `CreatedByExcelUploadId` (`Guid?`)
 - `CreatedAtUtc`
 
 ## Regla de unicidad implementada en v1
@@ -96,7 +97,8 @@ La propuesta inicial define gestión de partes, visualización del catálogo, ca
 ## Relaciones esperadas
 - una parte puede estar asociada a una o varias configuraciones
 - una parte puede participar en múltiples verificaciones
-- una parte puede originarse o actualizarse a partir de una carga de Excel
+- una parte puede originarse a partir de una carga de Excel
+- una parte puede vincularse explícitamente a la carga que la creó mediante `CreatedByExcelUploadId`
 - una parte puede aparecer en múltiples líneas de packing list
 
 ---
@@ -185,10 +187,10 @@ La propuesta inicial incluye carga de Excel, validación del archivo, procesamie
 - una carga puede afectar múltiples partes
 - una carga puede generar eventos auditables
 
-## Estado v1
+## Estado v1.1
 - El archivo físico original sí se almacena.
 - Se almacena resumen de la carga en `ExcelUpload`.
-- El detalle de errores por fila se devuelve en la respuesta API, pero no se persiste todavía.
+- Se persiste detalle por fila en `ExcelUploadRowResult` con estado y error cuando aplica.
 - El estado se maneja de forma básica (`Processed` / `ProcessedWithErrors`).
 
 ---
@@ -340,7 +342,18 @@ Podría separarse si se desea gestión formal de roles y permisos.
 Podría existir si se necesita persistir discrepancias específicas por campo en una verificación.
 
 ### ExcelUploadRowResult
-Podría existir si se necesita trazabilidad detallada por fila procesada en la carga de Excel.
+Entidad implementada para trazabilidad detallada por fila procesada en la carga de Excel.
+
+Atributos implementados:
+- `Id`
+- `ExcelUploadId`
+- `RowNumber`
+- `PartNumber`
+- `Model`
+- `Status` (`Inserted` / `Rejected`)
+- `ErrorCode`
+- `ErrorMessage`
+- `CreatedAtUtc`
 
 ### SystemConfiguration
 Podría existir para representar configuración general persistente del sistema.
@@ -362,6 +375,14 @@ Estas entidades no forman parte todavía del núcleo obligatorio del modelo actu
 ## Relación: User -> Verification
 - un usuario puede ejecutar muchas verificaciones
 - una verificación pertenece a un usuario
+
+## Relación: ExcelUpload -> ExcelUploadRowResult
+- una carga tiene muchos resultados por fila
+- un resultado por fila pertenece a una sola carga
+
+## Relación: ExcelUpload -> Part
+- una carga puede crear múltiples partes
+- una parte puede registrar la carga origen en `CreatedByExcelUploadId`
 
 ## Relación: Part -> Verification
 - una parte puede aparecer en muchas verificaciones

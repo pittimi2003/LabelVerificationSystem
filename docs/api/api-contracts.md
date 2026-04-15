@@ -209,7 +209,7 @@ Consulta de una carga específica.
 - Se registra historial básico de carga desde v1.
 
 ## Decisiones pendientes
-- persistencia detallada de errores por fila en base de datos (v1 los devuelve en respuesta)
+- exposición de endpoint específico para consultar resultados por fila persistidos
 - versionado formal del endpoint
 
 ---

@@ -12,6 +12,7 @@ public sealed class AppDbContext : DbContext
 
     public DbSet<Part> Parts => Set<Part>();
     public DbSet<ExcelUpload> ExcelUploads => Set<ExcelUpload>();
+    public DbSet<ExcelUploadRowResult> ExcelUploadRowResults => Set<ExcelUploadRowResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,12 +25,15 @@ public sealed class AppDbContext : DbContext
             entity.Property(x => x.PartNumber).IsRequired();
             entity.Property(x => x.Model).IsRequired();
             entity.Property(x => x.MinghuaDescription).IsRequired();
-            entity.Property(x => x.Caducidad).IsRequired();
             entity.Property(x => x.Cco).IsRequired();
-            entity.Property(x => x.CertificationEac).IsRequired();
             entity.Property(x => x.FirstFourNumbers).IsRequired();
             entity.Property(x => x.CreatedAtUtc).IsRequired();
             entity.HasIndex(x => x.PartNumber).IsUnique();
+
+            entity.HasOne(x => x.CreatedByExcelUpload)
+                .WithMany(x => x.CreatedParts)
+                .HasForeignKey(x => x.CreatedByExcelUploadId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<ExcelUpload>(entity =>
@@ -43,6 +47,24 @@ public sealed class AppDbContext : DbContext
             entity.Property(x => x.TotalRows).IsRequired();
             entity.Property(x => x.InsertedRows).IsRequired();
             entity.Property(x => x.RejectedRows).IsRequired();
+        });
+
+        modelBuilder.Entity<ExcelUploadRowResult>(entity =>
+        {
+            entity.ToTable("ExcelUploadRowResults");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.RowNumber).IsRequired();
+            entity.Property(x => x.PartNumber).IsRequired();
+            entity.Property(x => x.Model).IsRequired();
+            entity.Property(x => x.Status).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+
+            entity.HasOne(x => x.ExcelUpload)
+                .WithMany(x => x.RowResults)
+                .HasForeignKey(x => x.ExcelUploadId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(x => new { x.ExcelUploadId, x.RowNumber });
         });
     }
 }

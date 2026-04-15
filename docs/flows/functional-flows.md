@@ -106,13 +106,19 @@ Un usuario autorizado inicia una carga de archivo Excel desde el sistema.
 - Se registra historial básico de cargas desde v1.
 - El historial básico puede consultarse por API en `GET /api/excel-uploads` y `GET /api/excel-uploads/{id}`.
 - En v1 no se calcula tipo de etiqueta ni configuración de lectura.
+- Se persiste resultado por fila en `ExcelUploadRowResult` con estado `Inserted` o `Rejected`.
+- Cada parte insertada queda vinculada a la carga origen mediante `CreatedByExcelUploadId`.
 
 ## Pendiente de formalización
 - reglas de validación avanzadas por columna
 - catálogo definitivo de estados de carga
-- persistencia detallada de errores por fila
 - cálculo de tipo de etiqueta
 - cálculo de configuración de lectura
+
+## Reglas de parseo cerradas en la iteración de trazabilidad
+- `CADUCIDAD`: `NA`/vacío => `null`; entero válido => `int`; otro valor => rechazo de fila.
+- `Certification EAC`: `YES` => `true`; `NO` => `false`; `NA`/vacío => `null`; otro valor => rechazo de fila.
+- `4 FIRST NUMERS`: obligatorio y entero; si no parsea => rechazo de fila.
 
 ---
 

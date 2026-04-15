@@ -217,8 +217,30 @@ No se implementó en esta versión:
 - cálculo de tipo de etiqueta
 - cálculo de configuración de lectura
 - procesamiento en background
-- persistencia detallada de errores por fila en base de datos
 
+
+
+
+## Avance implementado: Carga de Excel v1.1 (trazabilidad persistente por fila)
+
+Se implementó una iteración incremental del backend de **Carga de Excel** centrada en trazabilidad real y mejora del modelo de persistencia:
+
+- nueva entidad persistente `ExcelUploadRowResult` para registrar resultado por fila (`Inserted`/`Rejected`)
+- persistencia de `ErrorCode` y `ErrorMessage` por fila rechazada
+- vínculo explícito `Part.CreatedByExcelUploadId` para trazar qué carga creó cada parte
+- persistencia de relación `ExcelUpload -> RowResults` y `ExcelUpload -> CreatedParts`
+- corrección de tipos de `Part`:
+  - `Caducidad` de texto a `int?`
+  - `CertificationEac` de texto a `bool?`
+  - `FirstFourNumbers` de texto a `int`
+- ajuste de parseo por fila:
+  - `Caducidad`: `NA`/vacío => `null`; entero válido => `int`; otro valor => fila rechazada
+  - `Certification EAC`: `YES` => `true`; `NO` => `false`; `NA`/vacío => `null`; otro valor => fila rechazada
+  - `4 FIRST NUMERS`: obligatorio y entero; si falla parseo => fila rechazada
+- se mantiene `EnsureCreated()` como estrategia técnica provisional
+
+Para bases SQLite locales ya existentes, los cambios de esquema **no se aplican automáticamente** con `EnsureCreated()`.
+Se requiere recrear la base local (o eliminar el archivo SQLite actual) y volver a iniciar la API para que se cree el nuevo esquema completo.
 
 ## Avance implementado: Carga de Excel v1 (frontend mínimo)
 
