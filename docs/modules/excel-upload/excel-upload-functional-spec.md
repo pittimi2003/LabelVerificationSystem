@@ -222,6 +222,24 @@ Para la pantalla `/excel-uploads`, la experiencia de carga debe cumplir:
 - el botón `Cargar` se mantiene como acción final del bloque
 - al terminar una carga se limpia el estado de selección y se refresca historial automáticamente
 
+### Comportamiento de experiencia de usuario (frontend v1.4)
+
+En el drawer de detalle de carga (`/excel-uploads`) se mantiene la estructura funcional existente (vista general + vista por fila), y se refuerza usabilidad para cargas grandes:
+
+- en **vista por fila** se habilitan filtros combinables por:
+  - `PartNumber`
+  - `Model`
+  - `Status`
+- se agrega acción explícita **Limpiar filtros** para volver al estado inicial sin cerrar el drawer
+- se agrega paginación local en frontend con tamaños de página:
+  - 10
+  - 20
+  - 50
+- el `Status` por fila se presenta con chips consistentes por color/estilo para escaneo rápido
+- en **vista general** se mejora la agrupación visual de métricas
+- la agrupación de errores por `ErrorCode` se presenta destacada
+- cuando no hay errores por fila se muestra un estado vacío limpio (mensaje positivo, no tabla vacía)
+
 ---
 
 ## Validaciones del archivo
