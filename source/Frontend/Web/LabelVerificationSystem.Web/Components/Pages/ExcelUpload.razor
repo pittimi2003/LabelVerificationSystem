@@ -273,7 +273,8 @@
                             </MudItem>
                         </MudGrid>
 
-                        <MudTable @ref="_rowDetailTable"
+                        <MudTable @key="_rowTableRenderKey"
+                                  @ref="_rowDetailTable"
                                   Dense="true"
                                   Hover="true"
                                   Elevation="0"
@@ -344,6 +345,8 @@
     private string StatusFilter { get; set; } = AnyStatusValue;
     private int RowsPerPage { get; set; } = 5;
     private readonly int[] PageSizeOptions = [5, 10, 20];
+    private List<ExcelUploadRowDetailDto> _filteredRows = [];
+    private int _rowTableRenderKey;
 
     private IReadOnlyList<(string Label, string Value)> SummaryRows => LastResult is null
         ? []
@@ -376,9 +379,7 @@
         ? "0.0"
         : ((double)SelectedDetail.InsertedRows / SelectedDetail.TotalRows * 100).ToString("0.0");
 
-    private IReadOnlyList<ExcelUploadRowDetailDto> FilteredRows => SelectedDetail?.Rows
-        .Where(MatchesRowFilters)
-        .ToList() ?? [];
+    private IReadOnlyList<ExcelUploadRowDetailDto> FilteredRows => _filteredRows;
 
     private string SelectedSearchFieldLabel => SearchFieldOptions
         .FirstOrDefault(option => option.Value == SelectedSearchField).Label ?? "Part Number";
@@ -460,6 +461,7 @@
         try
         {
             SelectedDetail = await ExcelUploadApiClient.GetDetailAsync(uploadId, CancellationToken.None);
+            RecomputeFilteredRows(resetPagination: true);
 
             if (SelectedDetail is null)
             {
@@ -494,25 +496,25 @@
     private void OnSelectedSearchFieldChanged(string? value)
     {
         SelectedSearchField = string.IsNullOrWhiteSpace(value) ? SearchFieldPartNumber : value;
-        _rowDetailTable?.NavigateTo(0);
+        RecomputeFilteredRows(resetPagination: true);
     }
 
     private void OnSearchTextFilterChanged(string? value)
     {
         SearchTextFilter = value ?? string.Empty;
-        _rowDetailTable?.NavigateTo(0);
+        RecomputeFilteredRows(resetPagination: true);
     }
 
     private void OnStatusFilterChanged(string? value)
     {
         StatusFilter = string.IsNullOrWhiteSpace(value) ? AnyStatusValue : value;
-        _rowDetailTable?.NavigateTo(0);
+        RecomputeFilteredRows(resetPagination: true);
     }
 
     private void OnRowsPerPageChanged(int value)
     {
         RowsPerPage = value;
-        _rowDetailTable?.NavigateTo(0);
+        RecomputeFilteredRows(resetPagination: true);
     }
 
     private void ClearRowFilters()
@@ -521,6 +523,21 @@
         SearchTextFilter = string.Empty;
         StatusFilter = AnyStatusValue;
         RowsPerPage = 5;
+        RecomputeFilteredRows(resetPagination: true);
+    }
+
+    private void RecomputeFilteredRows(bool resetPagination)
+    {
+        _filteredRows = SelectedDetail?.Rows
+            .Where(MatchesRowFilters)
+            .ToList() ?? [];
+
+        if (!resetPagination)
+        {
+            return;
+        }
+
+        _rowTableRenderKey++;
         _rowDetailTable?.NavigateTo(0);
     }
 
