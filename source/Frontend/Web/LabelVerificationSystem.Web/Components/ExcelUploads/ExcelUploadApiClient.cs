@@ -19,6 +19,12 @@ public sealed class ExcelUploadApiClient
         return history ?? [];
     }
 
+
+    public async Task<ExcelUploadDetailDto?> GetDetailAsync(Guid uploadId, CancellationToken cancellationToken)
+    {
+        return await _httpClient.GetFromJsonAsync<ExcelUploadDetailDto>($"api/excel-uploads/{uploadId}/details", cancellationToken);
+    }
+
     public async Task<ExcelUploadResultDto> UploadAsync(IBrowserFile file, CancellationToken cancellationToken)
     {
         using var content = new MultipartFormDataContent();

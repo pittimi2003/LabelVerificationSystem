@@ -460,3 +460,19 @@ Los siguientes puntos quedan expresamente pendientes y no deben asumirse como ya
 - Se establece el guardado del archivo original.
 - Se establece historial de cargas desde la primera versión.
 - Se dejan expresamente marcados los puntos todavía pendientes de definición.
+
+## Avance implementado: UX/UI de Carga de Excel v1.2 (frontend)
+
+Se implementó una iteración de mejora de experiencia de uso del módulo en `/excel-uploads` sin cambiar reglas de negocio del procesamiento:
+
+- selección de archivo migrada a `MudFileUpload` para consistencia visual con el stack MudBlazor
+- mensajería de estado migrada de alertas embebidas a `Snackbar` (éxito, error, warning, info)
+- limpieza post-carga del control de archivo para permitir cargas consecutivas inmediatas
+- refresco automático del historial al terminar cada carga (se mantiene refresco manual)
+- columna de acción al inicio del grid de historial para abrir inspección de detalle
+- panel lateral derecho (drawer) para detalle histórico de una carga
+- selector de vista dentro del panel:
+  - **Vista General**: resumen + métricas + agrupación de errores
+  - **Vista por fila**: tabla con `rowNumber`, `partNumber`, `model`, `status`, `errorCode`, `errorMessage`
+
+Esta iteración mantiene las reglas funcionales cerradas de v1/v1.1 (solo inserción de nuevas partes, carga parcial, errores por fila, una sola hoja, duplicado por `Part Number`, `Model` obligatorio y validación robusta de encabezados).

@@ -1,140 +1,274 @@
 @page "/excel-uploads"
 @using LabelVerificationSystem.Web.Components.ExcelUploads
 @inject ExcelUploadApiClient ExcelUploadApiClient
+@inject ISnackbar Snackbar
 
 <PageTitle>Carga de Excel v1</PageTitle>
 
-<div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-2">
-    <MudText Typo="Typo.h5">Carga de Excel v1</MudText>
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadHistoryAsync">
-        Actualizar historial
-    </MudButton>
-</div>
-
-<MudPaper Class="pa-4 mb-4">
-    <MudText Typo="Typo.subtitle1" Class="mb-2">Subir archivo Excel</MudText>
-
-    <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" />
-
-    @if (!string.IsNullOrWhiteSpace(SelectedFileName))
-    {
-        <MudText Typo="Typo.body2" Class="mt-2">Archivo seleccionado: @SelectedFileName</MudText>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(FormMessage))
-    {
-        <MudAlert Severity="@FormMessageSeverity" Class="mt-3">@FormMessage</MudAlert>
-    }
-
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" Disabled="@IsLoading" OnClick="UploadAsync">
-        Cargar
-    </MudButton>
-
-    @if (IsLoading)
-    {
-        <div class="d-flex align-center gap-2 mt-3">
-            <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
-            <MudText Typo="Typo.body2">Procesando carga...</MudText>
+<MudDrawerContainer>
+    <MudMainContent>
+        <div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-2">
+            <MudText Typo="Typo.h5">Carga de Excel v1</MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadHistoryAsync" StartIcon="@Icons.Material.Filled.Refresh">
+                Actualizar historial
+            </MudButton>
         </div>
-    }
-</MudPaper>
 
-@if (LastResult is not null)
-{
-    <MudPaper Class="pa-4 mb-4">
-        <MudText Typo="Typo.subtitle1" Class="mb-2">Resumen de la carga</MudText>
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.subtitle1">Subir archivo Excel</MudText>
 
-        <MudTable Dense="true" Hover="true" Elevation="0" Items="@SummaryRows">
-            <HeaderContent>
-                <MudTh>Campo</MudTh>
-                <MudTh>Valor</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Label</MudTd>
-                <MudTd>@context.Value</MudTd>
-            </RowTemplate>
-        </MudTable>
-    </MudPaper>
+                <MudFileUpload T="IBrowserFile"
+                               @key="@FileUploadResetKey"
+                               FilesChanged="OnFileSelected"
+                               Accept=".xlsx,.xls"
+                               Disabled="@IsLoading"
+                               Hidden="false">
+                    <ActivatorContent>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" StartIcon="@Icons.Material.Filled.UploadFile">
+                            Seleccionar archivo
+                        </MudButton>
+                    </ActivatorContent>
+                    <SelectedTemplate Context="selectedFile">
+                        @if (selectedFile is not null)
+                        {
+                            <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Description">
+                                @selectedFile.Name (@(selectedFile.Size / 1024) KB)
+                            </MudChip>
+                        }
+                    </SelectedTemplate>
+                </MudFileUpload>
 
-    <MudPaper Class="pa-4 mb-4">
-        <MudText Typo="Typo.subtitle1" Class="mb-2">Errores por fila</MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsLoading" OnClick="UploadAsync" StartIcon="@Icons.Material.Filled.CloudUpload">
+                    Cargar
+                </MudButton>
 
-        @if (LastResult.RowErrors.Count == 0)
+                @if (IsLoading)
+                {
+                    <div class="d-flex align-center gap-2 mt-1">
+                        <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                        <MudText Typo="Typo.body2">Procesando carga...</MudText>
+                    </div>
+                }
+            </MudStack>
+        </MudPaper>
+
+        @if (LastResult is not null)
         {
-            <MudAlert Severity="Severity.Success">No se reportaron errores por fila.</MudAlert>
-        }
-        else
-        {
-            <MudTable Dense="true" Hover="true" Elevation="0" Items="@LastResult.RowErrors">
-                <HeaderContent>
-                    <MudTh>Fila</MudTh>
-                    <MudTh>Part Number</MudTh>
-                    <MudTh>Error</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>@context.RowNumber</MudTd>
-                    <MudTd>@(string.IsNullOrWhiteSpace(context.PartNumber) ? "-" : context.PartNumber)</MudTd>
-                    <MudTd>@context.Error</MudTd>
-                </RowTemplate>
-            </MudTable>
-        }
-    </MudPaper>
-}
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Resumen de la última carga</MudText>
+                <MudTable Dense="true" Hover="true" Elevation="0" Items="@SummaryRows">
+                    <HeaderContent>
+                        <MudTh>Campo</MudTh>
+                        <MudTh>Valor</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Label</MudTd>
+                        <MudTd>@context.Value</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
 
-<MudPaper Class="pa-4">
-    <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
+            <MudPaper Class="pa-4 mb-4" Outlined="true">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                    <MudText Typo="Typo.subtitle1">Errores por fila (última carga)</MudText>
+                    <MudChip T="string" Color="@(LastResult.RowErrors.Count == 0 ? Color.Success : Color.Warning)" Variant="Variant.Filled">
+                        @if (LastResult.RowErrors.Count == 0)
+                        {
+                            <text>Sin errores</text>
+                        }
+                        else
+                        {
+                            <text>@LastResult.RowErrors.Count error(es)</text>
+                        }
+                    </MudChip>
+                </MudStack>
 
-    @if (IsHistoryLoading)
-    {
-        <div class="d-flex align-center gap-2">
-            <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
-            <MudText Typo="Typo.body2">Cargando historial...</MudText>
+                @if (LastResult.RowErrors.Count == 0)
+                {
+                    <MudText Typo="Typo.body2">No se reportaron errores por fila.</MudText>
+                }
+                else
+                {
+                    <MudTable Dense="true" Hover="true" Elevation="0" Items="@LastResult.RowErrors">
+                        <HeaderContent>
+                            <MudTh>Fila</MudTh>
+                            <MudTh>Part Number</MudTh>
+                            <MudTh>Error</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.RowNumber</MudTd>
+                            <MudTd>@(string.IsNullOrWhiteSpace(context.PartNumber) ? "-" : context.PartNumber)</MudTd>
+                            <MudTd>@context.Error</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudPaper>
+        }
+
+        <MudPaper Class="pa-4" Outlined="true">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
+
+            @if (IsHistoryLoading)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Cargando historial...</MudText>
+                </div>
+            }
+            else if (HistoryItems.Count == 0)
+            {
+                <MudText Typo="Typo.body2">No hay cargas registradas todavía.</MudText>
+            }
+            else
+            {
+                <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems">
+                    <HeaderContent>
+                        <MudTh>Acción</MudTh>
+                        <MudTh>UploadId</MudTh>
+                        <MudTh>Archivo</MudTh>
+                        <MudTh>Fecha UTC</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Total</MudTh>
+                        <MudTh>Insertadas</MudTh>
+                        <MudTh>Rechazadas</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudTooltip Text="Ver detalle">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Primary" OnClick="() => OpenDetailAsync(context.UploadId)" />
+                            </MudTooltip>
+                        </MudTd>
+                        <MudTd>@context.UploadId</MudTd>
+                        <MudTd>@context.OriginalFileName</MudTd>
+                        <MudTd>@context.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="@(context.RejectedRows > 0 ? Color.Warning : Color.Success)" Variant="Variant.Outlined">@context.Status</MudChip>
+                        </MudTd>
+                        <MudTd>@context.TotalRows</MudTd>
+                        <MudTd>@context.InsertedRows</MudTd>
+                        <MudTd>@context.RejectedRows</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+    </MudMainContent>
+
+    <MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6">
+        <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+            <MudText Typo="Typo.h6">Detalle de carga Excel</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CloseDetailDrawer" />
+        </MudDrawerHeader>
+
+        <div class="pa-4">
+            @if (IsDetailLoading)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Cargando detalle...</MudText>
+                </div>
+            }
+            else if (SelectedDetail is null)
+            {
+                <MudText Typo="Typo.body2">No hay detalle para mostrar.</MudText>
+            }
+            else
+            {
+                <MudStack Spacing="2">
+                    <MudPaper Class="pa-3" Outlined="true">
+                        <MudText Typo="Typo.subtitle2">Resumen</MudText>
+                        <MudDivider Class="my-2" />
+                        <MudGrid>
+                            <MudItem xs="12"><MudText Typo="Typo.body2"><b>Archivo:</b> @SelectedDetail.OriginalFileName</MudText></MudItem>
+                            <MudItem xs="12"><MudText Typo="Typo.body2"><b>Fecha UTC:</b> @SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudText></MudItem>
+                            <MudItem xs="6"><MudChip T="string" Color="@(SelectedDetail.RejectedRows > 0 ? Color.Warning : Color.Success)">Estado: @SelectedDetail.Status</MudChip></MudItem>
+                            <MudItem xs="6"><MudText Typo="Typo.body2"><b>UploadId:</b> @SelectedDetail.UploadId</MudText></MudItem>
+                        </MudGrid>
+                    </MudPaper>
+
+                    <MudGrid>
+                        <MudItem xs="4"><MudPaper Class="pa-3" Outlined="true"><MudText Typo="Typo.caption">Total</MudText><MudText Typo="Typo.h6">@SelectedDetail.TotalRows</MudText></MudPaper></MudItem>
+                        <MudItem xs="4"><MudPaper Class="pa-3" Outlined="true"><MudText Typo="Typo.caption">Insertadas</MudText><MudText Typo="Typo.h6" Class="text-success">@SelectedDetail.InsertedRows</MudText></MudPaper></MudItem>
+                        <MudItem xs="4"><MudPaper Class="pa-3" Outlined="true"><MudText Typo="Typo.caption">Rechazadas</MudText><MudText Typo="Typo.h6" Class="text-warning">@SelectedDetail.RejectedRows</MudText></MudPaper></MudItem>
+                    </MudGrid>
+
+                    <MudTabs Elevation="0" Rounded="true" PanelClass="pt-3" ActivePanelIndex="@DetailTabIndex" ActivePanelIndexChanged="OnDetailTabIndexChanged">
+                        <MudTabPanel Text="Vista General" />
+                        <MudTabPanel Text="Vista por fila" />
+                    </MudTabs>
+
+                    @if (DetailViewMode == "general")
+                    {
+                        <MudPaper Class="pa-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2">Agrupación de errores</MudText>
+                            <MudDivider Class="my-2" />
+                            @if (ErrorGroups.Count == 0)
+                            {
+                                <MudText Typo="Typo.body2">No hubo errores por fila en esta carga.</MudText>
+                            }
+                            else
+                            {
+                                <MudTable Dense="true" Hover="true" Elevation="0" Items="@ErrorGroups">
+                                    <HeaderContent>
+                                        <MudTh>Error code</MudTh>
+                                        <MudTh>Mensaje</MudTh>
+                                        <MudTh>Cantidad</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd>@context.ErrorCode</MudTd>
+                                        <MudTd>@context.ErrorMessage</MudTd>
+                                        <MudTd>@context.Count</MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                            }
+                        </MudPaper>
+                    }
+                    else
+                    {
+                        <MudPaper Class="pa-3" Outlined="true">
+                            <MudText Typo="Typo.subtitle2">Detalle por fila</MudText>
+                            <MudDivider Class="my-2" />
+                            <MudTable Dense="true" Hover="true" Elevation="0" Items="@SelectedDetail.Rows">
+                                <HeaderContent>
+                                    <MudTh>Row</MudTh>
+                                    <MudTh>Part Number</MudTh>
+                                    <MudTh>Model</MudTh>
+                                    <MudTh>Status</MudTh>
+                                    <MudTh>Error code</MudTh>
+                                    <MudTh>Error message</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.RowNumber</MudTd>
+                                    <MudTd>@(string.IsNullOrWhiteSpace(context.PartNumber) ? "-" : context.PartNumber)</MudTd>
+                                    <MudTd>@(string.IsNullOrWhiteSpace(context.Model) ? "-" : context.Model)</MudTd>
+                                    <MudTd>
+                                        <MudChip T="string" Size="Size.Small" Color="@(context.Status.Equals("Inserted", StringComparison.OrdinalIgnoreCase) ? Color.Success : Color.Warning)" Variant="Variant.Outlined">@context.Status</MudChip>
+                                    </MudTd>
+                                    <MudTd>@(string.IsNullOrWhiteSpace(context.ErrorCode) ? "-" : context.ErrorCode)</MudTd>
+                                    <MudTd>@(string.IsNullOrWhiteSpace(context.ErrorMessage) ? "-" : context.ErrorMessage)</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudPaper>
+                    }
+                </MudStack>
+            }
         </div>
-    }
-    else if (!string.IsNullOrWhiteSpace(HistoryError))
-    {
-        <MudAlert Severity="Severity.Error">@HistoryError</MudAlert>
-    }
-    else if (HistoryItems.Count == 0)
-    {
-        <MudAlert Severity="Severity.Info">No hay cargas registradas todavía.</MudAlert>
-    }
-    else
-    {
-        <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems">
-            <HeaderContent>
-                <MudTh>UploadId</MudTh>
-                <MudTh>Archivo</MudTh>
-                <MudTh>Fecha UTC</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Total</MudTh>
-                <MudTh>Insertadas</MudTh>
-                <MudTh>Rechazadas</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.UploadId</MudTd>
-                <MudTd>@context.OriginalFileName</MudTd>
-                <MudTd>@context.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
-                <MudTd>@context.Status</MudTd>
-                <MudTd>@context.TotalRows</MudTd>
-                <MudTd>@context.InsertedRows</MudTd>
-                <MudTd>@context.RejectedRows</MudTd>
-            </RowTemplate>
-        </MudTable>
-    }
-</MudPaper>
+    </MudDrawer>
+</MudDrawerContainer>
 
 @code {
     private IBrowserFile? SelectedFile;
-    private string? SelectedFileName;
-    private string? FormMessage;
-    private Severity FormMessageSeverity = Severity.Info;
     private bool IsLoading;
     private bool IsHistoryLoading;
-    private string? HistoryError;
+    private int FileUploadResetKey;
 
     private ExcelUploadResultDto? LastResult;
     private List<ExcelUploadHistoryItemDto> HistoryItems { get; set; } = [];
+
+    private bool IsDetailDrawerOpen;
+    private bool IsDetailLoading;
+    private string DetailViewMode { get; set; } = "general";
+    private ExcelUploadDetailDto? SelectedDetail;
 
     private IReadOnlyList<(string Label, string Value)> SummaryRows => LastResult is null
         ? []
@@ -147,38 +281,51 @@
             ("Rechazadas", LastResult.RejectedRows.ToString())
         ];
 
+    private IReadOnlyList<ErrorGroupVm> ErrorGroups => SelectedDetail?.Rows
+        .Where(r => !string.IsNullOrWhiteSpace(r.ErrorCode) || !string.IsNullOrWhiteSpace(r.ErrorMessage))
+        .GroupBy(r => new
+        {
+            Code = string.IsNullOrWhiteSpace(r.ErrorCode) ? "Unknown" : r.ErrorCode,
+            Message = string.IsNullOrWhiteSpace(r.ErrorMessage) ? "Sin detalle" : r.ErrorMessage
+        })
+        .Select(group => new ErrorGroupVm(group.Key.Code!, group.Key.Message!, group.Count()))
+        .OrderByDescending(x => x.Count)
+        .ThenBy(x => x.ErrorCode)
+        .ToList() ?? [];
+
     protected override async Task OnInitializedAsync()
     {
         await LoadHistoryAsync();
     }
 
-    private void OnFileSelected(InputFileChangeEventArgs args)
+    private void OnFileSelected(IBrowserFile? file)
     {
-        SelectedFile = args.File;
-        SelectedFileName = SelectedFile?.Name;
-        FormMessage = null;
+        SelectedFile = file;
     }
 
     private async Task UploadAsync()
     {
         if (SelectedFile is null)
         {
-            SetFormMessage("Selecciona un archivo antes de cargar.", Severity.Warning);
+            Snackbar.Add("Selecciona un archivo antes de cargar.", Severity.Warning);
             return;
         }
 
         IsLoading = true;
-        FormMessage = null;
 
         try
         {
             LastResult = await ExcelUploadApiClient.UploadAsync(SelectedFile, CancellationToken.None);
-            SetFormMessage("Carga completada.", Severity.Success);
+            Snackbar.Add("Carga completada correctamente.", Severity.Success);
+
+            SelectedFile = null;
+            FileUploadResetKey++;
+
             await LoadHistoryAsync();
         }
         catch (Exception ex)
         {
-            SetFormMessage(ex.Message, Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
         }
         finally
         {
@@ -189,7 +336,6 @@
     private async Task LoadHistoryAsync()
     {
         IsHistoryLoading = true;
-        HistoryError = null;
 
         try
         {
@@ -197,7 +343,8 @@
         }
         catch (Exception ex)
         {
-            HistoryError = $"No se pudo cargar el historial: {ex.Message}";
+            HistoryItems = [];
+            Snackbar.Add($"No se pudo cargar el historial: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -205,9 +352,47 @@
         }
     }
 
-    private void SetFormMessage(string message, Severity severity)
+    private async Task OpenDetailAsync(Guid uploadId)
     {
-        FormMessage = message;
-        FormMessageSeverity = severity;
+        IsDetailDrawerOpen = true;
+        IsDetailLoading = true;
+        DetailViewMode = "general";
+        DetailTabIndex = 0;
+        SelectedDetail = null;
+
+        try
+        {
+            SelectedDetail = await ExcelUploadApiClient.GetDetailAsync(uploadId, CancellationToken.None);
+
+            if (SelectedDetail is null)
+            {
+                Snackbar.Add("No se encontró el detalle de la carga seleccionada.", Severity.Warning);
+                IsDetailDrawerOpen = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el detalle: {ex.Message}", Severity.Error);
+            IsDetailDrawerOpen = false;
+        }
+        finally
+        {
+            IsDetailLoading = false;
+        }
     }
+
+    private void CloseDetailDrawer()
+    {
+        IsDetailDrawerOpen = false;
+    }
+
+    private int DetailTabIndex { get; set; }
+
+    private void OnDetailTabIndexChanged(int index)
+    {
+        DetailTabIndex = index;
+        DetailViewMode = index == 0 ? "general" : "rows";
+    }
+
+    private sealed record ErrorGroupVm(string ErrorCode, string ErrorMessage, int Count);
 }

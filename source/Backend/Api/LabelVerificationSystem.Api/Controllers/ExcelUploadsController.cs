@@ -33,6 +33,16 @@ public sealed class ExcelUploadsController : ControllerBase
         return historyItem is null ? NotFound() : Ok(historyItem);
     }
 
+
+    [HttpGet("{id:guid}/details")]
+    [ProducesResponseType(typeof(ExcelUploadDetailItem), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ExcelUploadDetailItem>> GetDetailById(Guid id, CancellationToken cancellationToken)
+    {
+        var detail = await _excelUploadService.GetUploadDetailByIdAsync(id, cancellationToken);
+        return detail is null ? NotFound() : Ok(detail);
+    }
+
     [HttpPost]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ExcelUploadResult), StatusCodes.Status200OK)]
