@@ -362,7 +362,7 @@ Podría existir para representar configuración general persistente del sistema.
 
 ### Entidades propuestas para estabilidad de sesión (auth por tokens)
 
-> Estado: diseño técnico propuesto y documentado. No implementado todavía.
+> Estado: implementado en backend fase 1 con migración EF (`AuthSessions`, `RefreshTokens`).
 
 #### AuthSession
 Propósito: representar una sesión lógica autenticada (`sid`) para trazabilidad, revocación y control de cadena de refresh tokens.
@@ -427,7 +427,7 @@ Decisión abierta:
 - Logout debe revocar sesión activa y tokens refresh no expirados asociados.
 
 ### Decisiones abiertas explícitas
-- TTL final de refresh token.
+- TTL de refresh token parametrizado en configuración (`Authentication:RefreshToken:TtlMinutes`, valor operativo actual: 1440).
 - Límite de sesiones simultáneas por usuario.
 - Estrategia de limpieza (purga) de tokens expirados/revocados.
 
