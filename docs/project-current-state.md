@@ -179,10 +179,10 @@ Se cerró a nivel de diseño documental el modelo técnico de sesión para auten
 - Requisito de single-flight en frontend para evitar refresh concurrente.
 - Modo bypass configurable (`Authentication:Bypass:Enabled`) con restricción de entorno autorizado.
 
-### Aún no implementado (explícito)
-- Lógica completa de backend de autenticación.
-- Lógica completa de frontend para sesión/refresh.
-- Persistencia física final de entidades de sesión (tablas/campos) en base de datos.
+### Estado de implementación (actualizado)
+- Backend de autenticación fase 1 implementado.
+- Frontend de sesión auth fase 1 implementado (login, `/me`, refresh proactivo, restauración y logout).
+- Persistencia física de entidades de sesión implementada en base de datos (`AuthSession`, `RefreshToken`).
 
 ### Decisiones abiertas explícitas
 - TTL exacto del refresh token.
@@ -337,6 +337,26 @@ Se implementó una mejora incremental en el drawer de detalle de `/excel-uploads
 Este cambio se apoya en el endpoint ya implementado `GET /api/excel-uploads/{id}/details` y no introduce contratos nuevos.
 
 
+## Avance implementado: Autenticación frontend fase 1 (Blazor WASM)
+
+Se implementó la gestión robusta de sesión en frontend, alineada con contratos backend ya activos:
+
+- servicio central de sesión/auth con estado en memoria + persistencia en `sessionStorage`
+- login real contra `POST /api/auth/login`
+- carga de identidad canónica contra `GET /api/auth/me`
+- refresh automático proactivo en ventana de 3 minutos previos al vencimiento
+- restauración de sesión al recargar aplicación
+- política single-flight para evitar refresh concurrentes
+- integración del cliente nombrado `BackendApi` con handler de autorización
+- logout limpio contra `POST /api/auth/logout`
+- manejo consistente de `401/403` con redirección controlada
+- integración de bypass desde frontend mediante bootstrap de `/api/auth/me` (sin inventar endpoint adicional)
+
+### Decisión explícita de almacenamiento cliente en esta fase
+- Se usa `sessionStorage` para persistir snapshot de sesión durante la vida de la pestaña.
+- Límite conocido: la sesión no se restaura al cerrar completamente la pestaña/navegador.
+- Decisión final de endurecimiento (cookie HttpOnly u otra estrategia) permanece abierta para cierre de seguridad de producción.
+
 ## Avance implementado: Autenticación backend fase 1
 
 Se implementó el primer corte real del backend de autenticación en API .NET, manteniendo arquitectura vigente:
@@ -359,5 +379,5 @@ Se implementó el primer corte real del backend de autenticación en API .NET, m
 ### Decisiones abiertas que permanecen
 
 - política final de sesiones simultáneas por usuario
-- estrategia de almacenamiento cliente de refresh token
+- estrategia final de almacenamiento cliente de refresh token para endurecimiento productivo
 - política de purga de sesiones/tokens expirados o revocados
