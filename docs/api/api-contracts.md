@@ -85,9 +85,234 @@ Pendiente de definición.
 Mientras no se defina otra estrategia, se asume una única versión activa no versionada explícitamente.
 
 ## Autenticación
-Pendiente de definición detallada.
+Definida a nivel de contrato para implementación posterior.
 
-La propuesta contempla gestión de usuarios y roles, pero aún no existe contrato formal de autenticación. :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
+La propuesta contempla gestión de usuarios y roles y, desde este documento, se establece el contrato HTTP inicial para autenticación sin asumir endpoints ya implementados. :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
+
+### Contrato propuesto de autenticación (.NET API + Blazor WebAssembly)
+
+> Estado de implementación actual confirmado: en backend solo existen controladores de `ExcelUploads` y `WeatherForecast`; no hay endpoints de autenticación implementados todavía.
+
+#### Objetivos del contrato
+- sesión robusta y estable para frontend Blazor WebAssembly
+- access token de corta vida (20 minutos)
+- renovación anticipada con refresh token desde 3 minutos antes del vencimiento
+- soporte de modo configurable de bypass (acceso automático sin usuarios)
+- contrato explícito para exponer identidad/claims del usuario autenticado a UI
+
+#### Parámetros de sesión (normativos)
+- `access_token_ttl`: **20 minutos** (`1200` segundos)
+- ventana de renovación recomendada: iniciar refresh cuando `expiresAtUtc - nowUtc <= 3 minutos`
+- `refresh_token_ttl`: **pendiente de cierre** (se recomienda mayor a access token; decisión de seguridad a cerrar en implementación)
+- rotación de refresh token: **obligatoria** en cada renovación exitosa
+- tolerancia de reloj (clock skew): hasta `60` segundos en validación de expiración
+
+#### Endpoints propuestos
+
+### `POST /api/auth/login`
+Autentica credenciales y crea sesión inicial.
+
+#### Request DTO
+```json
+{
+  "usernameOrEmail": "string",
+  "password": "string",
+  "rememberMe": false,
+  "clientInfo": {
+    "app": "BlazorWasm",
+    "deviceId": "string-opcional"
+  }
+}
+```
+
+#### Response DTO (200)
+```json
+{
+  "accessToken": "jwt-string",
+  "tokenType": "Bearer",
+  "expiresAtUtc": "2026-04-16T18:25:00Z",
+  "expiresInSeconds": 1200,
+  "refreshToken": "opaque-token",
+  "refreshExpiresAtUtc": "2026-04-17T18:25:00Z",
+  "user": {
+    "userId": "guid|string",
+    "username": "string",
+    "displayName": "string",
+    "email": "string",
+    "roles": ["Operator"],
+    "permissions": ["excel.upload.create"]
+  }
+}
+```
+
+#### Códigos esperados
+- `200 OK`: autenticación exitosa
+- `400 Bad Request`: payload inválido
+- `401 Unauthorized`: credenciales inválidas o usuario inactivo/bloqueado
+- `429 Too Many Requests`: throttling por intentos fallidos
+
+#### Reglas de validación
+- `usernameOrEmail` requerido, trim, longitud `3..256`
+- `password` requerido, longitud mínima `8`
+- `clientInfo.app` opcional pero si se envía debe ser `BlazorWasm` en esta etapa
+
+---
+
+### `POST /api/auth/refresh`
+Renueva sesión con refresh token (rotación obligatoria).
+
+#### Request DTO
+```json
+{
+  "refreshToken": "opaque-token"
+}
+```
+
+#### Response DTO (200)
+Misma estructura de `POST /api/auth/login`, con nuevos `accessToken` y `refreshToken`.
+
+#### Códigos esperados
+- `200 OK`: renovación exitosa
+- `400 Bad Request`: payload inválido
+- `401 Unauthorized`: refresh token inválido, revocado, expirado o no reconocido
+- `409 Conflict`: token ya usado (detección de replay)
+
+#### Reglas de validación
+- `refreshToken` requerido, no vacío
+- cada refresh token solo puede usarse una vez (one-time use)
+- si se detecta replay, invalidar cadena de sesión asociada
+
+---
+
+### `POST /api/auth/logout`
+Revoca la sesión activa (refresh token actual y/o cadena de sesión).
+
+#### Request DTO
+```json
+{
+  "refreshToken": "opaque-token-opcional"
+}
+```
+
+#### Response DTO
+Sin payload (`204`).
+
+#### Códigos esperados
+- `204 No Content`: cierre exitoso (idempotente)
+- `401 Unauthorized`: access token ausente o inválido cuando la política requiera autenticación
+
+---
+
+### `GET /api/auth/me`
+Devuelve información del usuario autenticado para bootstrap de UI y autorización cliente.
+
+#### Request
+Sin body. Requiere `Authorization: Bearer <access_token>`.
+
+#### Response DTO (200)
+```json
+{
+  "isAuthenticated": true,
+  "authenticationMode": "User",
+  "user": {
+    "userId": "guid|string",
+    "username": "string",
+    "displayName": "string",
+    "email": "string",
+    "roles": ["Operator"],
+    "permissions": ["excel.upload.create"]
+  },
+  "session": {
+    "expiresAtUtc": "2026-04-16T18:25:00Z",
+    "refreshRecommendedAtUtc": "2026-04-16T18:22:00Z",
+    "serverUtcNow": "2026-04-16T18:05:00Z"
+  }
+}
+```
+
+#### Códigos esperados
+- `200 OK`: token válido
+- `401 Unauthorized`: token inválido/expirado/ausente
+
+---
+
+### `POST /api/auth/password/reset-request`
+Solicita recuperación de contraseña (envío de token/código fuera de banda).
+
+#### Request DTO
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+#### Response DTO (202)
+```json
+{
+  "message": "If the account exists, reset instructions were sent."
+}
+```
+
+#### Códigos esperados
+- `202 Accepted`: respuesta neutral (no filtra existencia de usuario)
+- `400 Bad Request`: formato inválido de email
+- `429 Too Many Requests`: rate limit
+
+---
+
+### `POST /api/auth/password/reset-confirm`
+Confirma cambio de contraseña con token de recuperación.
+
+#### Request DTO
+```json
+{
+  "resetToken": "string",
+  "newPassword": "string",
+  "confirmPassword": "string"
+}
+```
+
+#### Response DTO
+Sin payload (`204`).
+
+#### Códigos esperados
+- `204 No Content`: cambio exitoso
+- `400 Bad Request`: payload inválido o contraseñas no coinciden
+- `401 Unauthorized`: token inválido/expirado
+
+#### Reglas de validación
+- `newPassword` y `confirmPassword` requeridos y deben coincidir
+- política mínima: longitud `>= 8`, al menos 1 letra y 1 número
+- `resetToken` requerido, no vacío
+
+#### Nota de alineación UI
+Estos endpoints se alinean con la base de UI existente en `Pages/Authentication` (login/reset password) y permiten conectar esos flujos sin redefinir rutas al implementar backend.
+
+---
+
+#### Exposición de información del usuario autenticado
+- En cada access token se recomienda incluir claims mínimos: `sub`, `name`, `email`, `role` (múltiple), `permission` (múltiple), `sid`, `jti`, `exp`.
+- El endpoint `GET /api/auth/me` es la fuente canónica para bootstrap de sesión en Blazor WASM tras recarga de página.
+- En frontend, almacenar access token en memoria y refresh token con estrategia definida por seguridad (preferir cookie `HttpOnly` si arquitectura lo permite; si no, almacenamiento protegido con mitigaciones y expiración estricta).
+
+#### Modo bypass configurable (acceso automático sin usuarios)
+- Agregar flag de configuración de backend (nombre sugerido): `Authentication:Bypass:Enabled`.
+- Cuando `Enabled=true`:
+  - los endpoints protegidos aceptan identidad sintética de sistema (por ejemplo `username = "system-bypass"`).
+  - `GET /api/auth/me` responde `authenticationMode = "Bypass"` e incluye usuario virtual y roles/permisos definidos por configuración.
+  - `POST /api/auth/login` y `POST /api/auth/refresh` pueden:
+    - devolver sesión virtual (`200`) sin credenciales, o
+    - responder `409 Conflict` indicando que el modo bypass sustituye login tradicional.
+  - la estrategia seleccionada debe ser única y documentada en implementación.
+- Restricción obligatoria: bypass solo permitido en ambientes explícitamente autorizados por configuración (por ejemplo `Development`/`Local`), nunca habilitado por defecto.
+- Auditoría: toda operación en bypass debe registrar marca explícita `authMode=Bypass`.
+
+#### Requisitos de robustez de sesión
+- renovación anticipada: frontend debe intentar refresh al entrar en la ventana de 3 minutos previos a expiración.
+- single-flight refresh en frontend: evitar múltiples refresh concurrentes.
+- retry acotado con backoff ante fallos transitorios de red.
+- cierre de sesión automático al fallar refresh por `401`/`409`.
+- revocación de cadena de refresh ante sospecha de replay.
 
 ---
 
