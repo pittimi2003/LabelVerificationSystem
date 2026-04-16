@@ -468,7 +468,7 @@ Permitir la administración de parámetros generales del sistema.
 # 8. Flujo de Sesión y Autenticación por Tokens
 
 ## Estado del flujo
-**Implementación backend fase 1 completada para `/api/auth/login|refresh|logout|me`; integración frontend completa pendiente**
+**Implementación backend fase 1 + integración frontend de sesión (fase 1) completadas para `/api/auth/login|refresh|logout|me`**
 
 ## Objetivo
 Garantizar sesión estable en Blazor WebAssembly usando access token corto y refresh token rotativo, con soporte de bypass controlado por configuración.
@@ -482,6 +482,8 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 - UI de `Pages/Authentication` se mantiene como shell actual para login/reset.
 - Access token con TTL de 20 minutos.
 - Ventana de refresh proactivo de 3 minutos antes de vencimiento.
+- Frontend Blazor WASM con servicio de sesión, restauración en recarga, refresh proactivo y single-flight implementados.
+- Integración HTTP vía cliente nombrado `BackendApi` con inyección de bearer y manejo consistente de `401/403`.
 
 ## 8.1 Inicio de sesión (modo usuario)
 1. Usuario envía credenciales a `POST /api/auth/login`.
@@ -526,7 +528,7 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 - Retry acotado solo para fallos transitorios de red/5xx.
 
 ## Decisiones abiertas explícitas
-- Estrategia final de almacenamiento seguro de refresh token en cliente.
+- Estrategia final de almacenamiento seguro de refresh token en cliente (cookie HttpOnly u otro mecanismo endurecido para producción).
 - Política de sesiones simultáneas por usuario.
 - Definir si bypass emitirá sesión virtual en una fase futura o se mantiene el comportamiento `409` actual.
 

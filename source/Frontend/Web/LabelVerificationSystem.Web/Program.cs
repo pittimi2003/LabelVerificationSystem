@@ -1,6 +1,7 @@
 using ApexCharts;
 using BlazorColorPicker;
 using LabelVerificationSystem.Web.Components;
+using LabelVerificationSystem.Web.Components.Auth;
 using LabelVerificationSystem.Web.Components.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -28,16 +29,25 @@ namespace LabelVerificationSystem.Web
             builder.Services.AddScoped<NavScrollService>();
             builder.Services.AddScoped<SessionService>();
             builder.Services.AddScoped<ScriptLoaderService>();
+            builder.Services.AddScoped<AuthSessionStorage>();
+            builder.Services.AddScoped<AuthApiClient>();
+            builder.Services.AddScoped<AuthSessionService>();
+            builder.Services.AddScoped<BackendApiAuthHandler>();
             builder.Services.AddWMBOS();
             builder.Services.AddWMBSC();
 
             var configuredApiBaseUrl = builder.Configuration[BackendApiHttpClientOptions.BaseUrlConfigurationKey];
             var backendApiBaseUri = BuildBackendApiBaseUri(configuredApiBaseUrl);
 
-            builder.Services.AddHttpClient(BackendApiHttpClientOptions.ClientName, client =>
+            builder.Services.AddHttpClient(BackendApiHttpClientOptions.RawClientName, client =>
             {
                 client.BaseAddress = backendApiBaseUri;
             });
+
+            builder.Services.AddHttpClient(BackendApiHttpClientOptions.ClientName, client =>
+            {
+                client.BaseAddress = backendApiBaseUri;
+            }).AddHttpMessageHandler<BackendApiAuthHandler>();
             builder.Services.AddScoped(sp =>
             {
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();

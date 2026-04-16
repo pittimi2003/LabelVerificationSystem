@@ -92,6 +92,7 @@ La propuesta contempla gestión de usuarios y roles y, desde este documento, se 
 ### Contrato propuesto de autenticación (.NET API + Blazor WebAssembly)
 
 > Estado de implementación actual confirmado (fase backend auth 1): endpoints `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` implementados.
+> Estado frontend fase 1: login, bootstrap con `/api/auth/me`, refresh proactivo (3 minutos), restauración en recarga, single-flight y logout implementados en Blazor WASM.
 
 #### Objetivos del contrato
 - sesión robusta y estable para frontend Blazor WebAssembly
@@ -297,7 +298,8 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 #### Exposición de información del usuario autenticado
 - En cada access token se recomienda incluir claims mínimos: `sub`, `name`, `email`, `role` (múltiple), `permission` (múltiple), `sid`, `jti`, `exp`.
 - El endpoint `GET /api/auth/me` es la fuente canónica para bootstrap de sesión en Blazor WASM tras recarga de página.
-- En frontend, almacenar access token en memoria y refresh token con estrategia definida por seguridad (preferir cookie `HttpOnly` si arquitectura lo permite; si no, almacenamiento protegido con mitigaciones y expiración estricta).
+- Implementación frontend fase 1: snapshot de sesión (incluyendo refresh token) persistido en `sessionStorage` y access token aplicado al cliente `BackendApi` por handler de autorización.
+- Decisión de hardening pendiente: migrar refresh token a cookie `HttpOnly` (u opción equivalente) cuando infraestructura y estrategia CSRF estén cerradas.
 
 #### Modo bypass configurable (acceso automático sin usuarios)
 - Agregar flag de configuración de backend (nombre sugerido): `Authentication:Bypass:Enabled`.

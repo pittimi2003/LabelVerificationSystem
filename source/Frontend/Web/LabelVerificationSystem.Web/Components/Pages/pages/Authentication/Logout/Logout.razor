@@ -1,0 +1,11 @@
+@page "/logout"
+@inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
+
+<MudProgressCircular Class="ma-8" Color="Color.Primary" Indeterminate="true" />
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthSessionService.LogoutAsync();
+    }
+}

@@ -1,0 +1,78 @@
+@page "/signin"
+@page "/signin-basic"
+@inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Sign In</PageTitle>
+
+<div class="authentication bg-white authentication-cover-main mx-0">
+    <MudGrid Spacing="0" class="auth-grid">
+        <MudItem xs="12" md="6" class="d-flex align-center justify-center px-5 py-8">
+            <MudPaper Class="w-100" Elevation="0" Style="max-width: 420px;">
+                <MudText Typo="Typo.h4" Class="mb-1">Iniciar sesión</MudText>
+                <MudText Typo="Typo.body2" Class="mb-6 text-muted">Usa tu usuario configurado en backend.</MudText>
+
+                <MudTextField @bind-Value="_username" Label="Usuario o email" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                <MudTextField @bind-Value="_password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+
+                @if (!string.IsNullOrWhiteSpace(_error))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@_error</MudAlert>
+                }
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="mt-4" Disabled="_isSubmitting" OnClick="SubmitAsync">
+                    @_submitText
+                </MudButton>
+
+                <MudText Typo="Typo.body2" Class="mt-4">
+                    ¿Olvidaste tu password? <MudLink Href="/reset-password">Reset password</MudLink>
+                </MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6" class="d-none d-md-flex align-center justify-center bg-light">
+            <MudText Typo="Typo.h5" Class="px-8 text-center">LabelVerificationSystem · Autenticación fase 1</MudText>
+        </MudItem>
+    </MudGrid>
+</div>
+
+@code {
+    private string _username = string.Empty;
+    private string _password = string.Empty;
+    private bool _isSubmitting;
+    private string? _error;
+
+    private string _submitText => _isSubmitting ? "Ingresando..." : "Ingresar";
+
+    protected override void OnInitialized()
+    {
+        if (AuthSessionService.Current.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _isSubmitting = true;
+        _error = null;
+
+        try
+        {
+            await AuthSessionService.LoginAsync(_username.Trim(), _password, rememberMe: false);
+            NavigationManager.NavigateTo("/");
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception)
+        {
+            _error = "No se pudo iniciar sesión. Intenta nuevamente.";
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}
