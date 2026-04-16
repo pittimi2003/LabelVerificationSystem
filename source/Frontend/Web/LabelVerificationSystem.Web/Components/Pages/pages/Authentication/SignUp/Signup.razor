@@ -1,0 +1,104 @@
+@page "/signup"
+@using MudBlazor
+@using System.Globalization
+@layout Components.Layout.CustomLayout
+@inject Microsoft.AspNetCore.Components.NavigationManager NavigationManager
+@using System.Collections.Generic
+
+        <div class="authentication bg-white authentication-cover-main mx-0">
+            <MudGrid Spacing="0" class="auth-grid">
+                <MudItem xs="12" sm="12" md="12"  lg="9"  xl="9">
+                    <MudGrid class="justify-center align-center h-100">
+                        <MudItem xs="12" sm="8" md="6" lg="5" xl="4">
+                            <MudCard class="custom-card border-0 shadow-none my-4">
+                                <MudCardContent class="pa-12 p-sm-12">
+                                    <div>
+                                        <MudText Typo="Typo.h4" class="mb-1 fw-semibold">Create your account</MudText>
+                                        <MudText class="mb-4 text-muted fw-normal">Please enter valid credentials</MudText>
+                                    </div>
+                                    <MudGrid class="gy-3">
+                                        <MudItem xs="12" sm="12" md="12" lg="12" xl="12">
+                                            <label for="signin-email" class="form-label text-default">User Name</label>
+                                            <MudInput Value="@("Tom Phillip")" Underline="false" Class="form-control" Placeholder="Enter Email" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="12" md="12" lg="12" xl="12">
+                                            <label for="signin-email" class="form-label text-default">Email</label>
+                                            <MudInput Value="@("tomphillip21@gmail.com")" Underline="false" Class="form-control" Placeholder="Enter Email" />
+                                        </MudItem>
+                                        <MudItem xs="12" sm="12" md="12" lg="12" xl="12" class="mb-2">
+                                            <label for="signin-password" class="form-label text-default d-block">Password</label>
+                                            <div class="position-relative">
+                                                <MudTextField 
+                                                    @bind-Value="Password1" 
+                                                    Label="" 
+                                                    Underline="false" 
+                                                    Class="form-control form-control-lg"
+                                                    Variant="Variant.Text" 
+                                                    InputType="@PasswordInput" 
+                                                    Adornment="Adornment.End" 
+                                                    AdornmentIcon="@PasswordInputIcon" 
+                                                    OnAdornmentClick="TogglePasswordVisibility" 
+                                                    AdornmentAriaLabel="Show Password" Placeholder="Password" />
+                                            </div>
+                                        </MudItem>
+                                    </MudGrid>
+                                    <div class="d-grid mt-3">
+                                        <MudButton Class="mud-fixed-white-text" Variant="Variant.Filled" Color="Color.Primary" href="/index">Sign In</MudButton>
+                                    </div>                                    
+                                    <div class="text-center mt-3 fw-medium">
+                                        Already have a account? <MudLink Href="/signin-basic" class="mud-primary-text">Sign in Here</MudLink>
+                                    </div>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    </MudGrid>
+                </MudItem>
+                <MudItem xs="12" sm="12" md="12" lg="3"  xl="3" class="d-lg-block d-none px-0">
+                    <div class="authentication-cover overflow-hidden">
+                        <div class="authentication-cover-logo">
+                        <MudLink Href="/index">
+                            <MudImage Src="../assets/images/brand-logos/toggle-logo.png" alt="" class="desktop-dark" /> 
+                        </MudLink>
+                        </div>
+                        <div class="authentication-cover-background">
+                            <MudImage Src="../assets/images/media/backgrounds/9.png" alt="" /> 
+                        </div>
+                        <div class="authentication-cover-content relative z-10">
+                            <div class="pa-15">
+                                <MudText Typo="Typo.h3" class="fw-semibold lh-base mb-1">Welcome to Dashboard</MudText>
+                                <MudText class="mb-0 text-muted fw-medium">Manage your website and content with ease using our powerful admin tools.</MudText>
+                            </div>
+                            <div>
+                                <MudImage Src="../assets/images/media/media-72.png" alt="" class="img-fluid" /> 
+                            </div>
+                        </div>
+                    </div>
+                </MudItem>
+            </MudGrid>
+        </div>
+
+@code{
+
+    public string? Password1 { get; set; } = "12345678";
+
+    bool isShowPassword;
+    InputType PasswordInput = InputType.Password;
+    string PasswordInputIcon = "ri-eye-off-line fs-14 mb-1";
+
+    void TogglePasswordVisibility()
+    {
+        if (isShowPassword)
+        {
+            isShowPassword = false;
+            PasswordInputIcon = "ri-eye-off-line fs-14 mb-1";
+            PasswordInput = InputType.Password;
+        }
+        else
+        {
+            isShowPassword = true;
+            PasswordInputIcon = "ri-eye-line fs-14 mb-1";
+            PasswordInput = InputType.Text;
+        }
+    }
+
+}
