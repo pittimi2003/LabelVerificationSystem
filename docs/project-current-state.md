@@ -298,3 +298,16 @@ Se implementó una pasada fina sobre el bloque de carga de `/excel-uploads`, man
 - limpieza técnica en el componente para evitar referencias residuales de refactor
 
 Este cambio no modifica contratos API ni reglas de procesamiento; sólo refina UX/UI y consistencia técnica del módulo.
+
+## Avance implementado: Carga de Excel v1.4 (filtros y paginación en detalle por fila)
+
+Se implementó una mejora incremental en el drawer de detalle de `/excel-uploads`, enfocada en navegación de cargas grandes sin modificar reglas de negocio:
+
+- filtro por texto con selector de campo (`Part Number` o `Model`)
+- filtro por `Status` de fila (`Inserted`/`Rejected`)
+- acción `Limpiar filtros` para volver al estado inicial
+- paginación local en la tabla de vista por fila con tamaños 5, 10 y 20
+- chips de `Status` por fila con estilo consistente
+- mantenimiento de vista general y vista por fila dentro del mismo drawer
+
+Este cambio se apoya en el endpoint ya implementado `GET /api/excel-uploads/{id}/details` y no introduce contratos nuevos.
