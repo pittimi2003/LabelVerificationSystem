@@ -360,6 +360,77 @@ Podría existir para representar configuración general persistente del sistema.
 
 `ExcelUploadRowResult` ya forma parte del modelo implementado de Carga de Excel; el resto de entidades de esta sección se mantienen en observación.
 
+### Entidades propuestas para estabilidad de sesión (auth por tokens)
+
+> Estado: diseño técnico propuesto y documentado. No implementado todavía.
+
+#### AuthSession
+Propósito: representar una sesión lógica autenticada (`sid`) para trazabilidad, revocación y control de cadena de refresh tokens.
+
+Campos propuestos mínimos:
+- `Id` (`Guid`) — identificador interno de sesión.
+- `SessionId` (`string`, único) — valor expuesto como claim `sid`.
+- `UserId` (`Guid|string`, nullable en bypass según decisión final).
+- `AuthMode` (`string`) — `User` / `Bypass`.
+- `CreatedAtUtc` (`datetime`).
+- `LastActivityAtUtc` (`datetime`, nullable).
+- `RevokedAtUtc` (`datetime`, nullable).
+- `RevocationReason` (`string`, nullable).
+- `CreatedByIp` (`string`, nullable).
+- `CreatedByUserAgent` (`string`, nullable).
+
+Justificación técnica:
+- permite revocación por sesión sin depender sólo del vencimiento de access token.
+- permite invalidar cadena completa ante replay/reuse.
+- mejora trazabilidad de auditoría de accesos y estabilidad operativa.
+
+#### RefreshToken
+Propósito: persistir refresh tokens rotables de un solo uso asociados a `AuthSession`.
+
+Campos propuestos mínimos:
+- `Id` (`Guid`).
+- `SessionId` (`Guid`, FK a `AuthSession.Id`).
+- `TokenHash` (`string`, único).
+- `CreatedAtUtc` (`datetime`).
+- `ExpiresAtUtc` (`datetime`).
+- `UsedAtUtc` (`datetime`, nullable).
+- `ReplacedByTokenId` (`Guid`, nullable, FK a `RefreshToken.Id`).
+- `RevokedAtUtc` (`datetime`, nullable).
+- `RevocationReason` (`string`, nullable).
+- `CreatedByIp` (`string`, nullable).
+- `CreatedByUserAgent` (`string`, nullable).
+
+Justificación técnica:
+- habilita rotación obligatoria y relación de cadena (`token A -> token B`).
+- habilita detección de reuse (`UsedAtUtc` no null) y respuesta `409`.
+- habilita revocación selectiva o total por sesión.
+
+#### AuthEvent (opcional si no se reutiliza `AuditLog`)
+Propósito: registrar eventos de seguridad de autenticación con granularidad operativa.
+
+Campos propuestos mínimos:
+- `Id`, `OccurredAtUtc`, `SessionId`, `UserId`, `EventType`, `Result`, `Detail`.
+
+Decisión abierta:
+- reutilizar `AuditLog` existente con tipificación `Auth.*` o crear tabla dedicada `AuthEvent`.
+
+### Índices recomendados (si aplica diseño físico)
+- `AuthSession(SessionId)` único.
+- `AuthSession(UserId, RevokedAtUtc)` para consultas de sesiones activas.
+- `RefreshToken(TokenHash)` único.
+- `RefreshToken(SessionId, ExpiresAtUtc)`.
+- `RefreshToken(SessionId, UsedAtUtc, RevokedAtUtc)`.
+
+### Reglas de integridad recomendadas
+- Un refresh token usado o revocado no puede volver a quedar activo.
+- Reuse detectado en refresh token consumido debe revocar `AuthSession` completa.
+- Logout debe revocar sesión activa y tokens refresh no expirados asociados.
+
+### Decisiones abiertas explícitas
+- TTL final de refresh token.
+- Límite de sesiones simultáneas por usuario.
+- Estrategia de limpieza (purga) de tokens expirados/revocados.
+
 ---
 
 ## Relaciones principales del modelo

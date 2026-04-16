@@ -166,6 +166,30 @@ En esta etapa, las siguientes áreas permanecen abiertas y deberán aclararse pr
 
 Estas áreas abiertas son esperables para la fase actual del proyecto.
 
+## Decisión documentada en esta iteración: modelo técnico de sesión auth
+
+Se cerró a nivel de diseño documental el modelo técnico de sesión para autenticación por tokens, manteniendo la arquitectura backend actual y la UI existente como shell.
+
+### Confirmado
+- Se mantiene contrato de autenticación en `docs/api/api-contracts.md` como base de trabajo.
+- Access token con TTL de 20 minutos.
+- Refresh proactivo 3 minutos antes de expiración.
+- Rotación obligatoria de refresh token.
+- Detección de replay/reuse con invalidación de cadena de sesión.
+- Requisito de single-flight en frontend para evitar refresh concurrente.
+- Modo bypass configurable (`Authentication:Bypass:Enabled`) con restricción de entorno autorizado.
+
+### Aún no implementado (explícito)
+- Lógica completa de backend de autenticación.
+- Lógica completa de frontend para sesión/refresh.
+- Persistencia física final de entidades de sesión (tablas/campos) en base de datos.
+
+### Decisiones abiertas explícitas
+- TTL exacto del refresh token.
+- Algoritmo/firma final de JWT y política de llaves.
+- Estrategia final de almacenamiento cliente para refresh token.
+- Política de sesiones simultáneas por usuario.
+
 ---
 
 ## Regla de documentación

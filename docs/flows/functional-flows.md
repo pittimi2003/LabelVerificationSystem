@@ -465,6 +465,74 @@ Permitir la administración de parámetros generales del sistema.
 
 ---
 
+# 8. Flujo de Sesión y Autenticación por Tokens
+
+## Estado del flujo
+**Definido a nivel técnico de contrato; implementación completa pendiente**
+
+## Objetivo
+Garantizar sesión estable en Blazor WebAssembly usando access token corto y refresh token rotativo, con soporte de bypass controlado por configuración.
+
+## Actores involucrados
+- Usuario real (Operador/Supervisor/Administrador)
+- Sistema en modo bypass (`Authentication:Bypass:Enabled`)
+
+## Precondiciones
+- Contratos de `/api/auth/*` vigentes según `docs/api/api-contracts.md`.
+- UI de `Pages/Authentication` se mantiene como shell actual para login/reset.
+- Access token con TTL de 20 minutos.
+- Ventana de refresh proactivo de 3 minutos antes de vencimiento.
+
+## 8.1 Inicio de sesión (modo usuario)
+1. Usuario envía credenciales a `POST /api/auth/login`.
+2. Backend valida y crea sesión lógica (`sid`).
+3. Backend emite access token + refresh token.
+4. Frontend hidrata estado autenticado y consume `GET /api/auth/me` como fuente canónica.
+
+## 8.2 Continuidad de sesión (refresh proactivo)
+1. Frontend monitorea expiración del access token.
+2. Al entrar en ventana `<= 3 minutos`, ejecuta `POST /api/auth/refresh`.
+3. Backend valida refresh token, rota token y devuelve nuevo par.
+4. Frontend actualiza credenciales sin interrumpir la navegación (objetivo de estabilidad de sesión).
+
+## 8.3 Restauración al recargar aplicación
+1. App carga estado local de sesión.
+2. Si token está próximo a vencer, intenta refresh antes de bootstrap de UI.
+3. Si refresh/validación resulta exitosa, llama `/api/auth/me` y reconstruye contexto.
+4. Si falla con `401/409`, limpia sesión y redirige a login (o bypass si está activo).
+
+## 8.4 Detección de replay/reuse
+1. Cliente envía refresh token ya usado o revocado.
+2. Backend responde `409 Conflict`.
+3. Backend revoca cadena de sesión asociada.
+4. Frontend termina sesión local por seguridad.
+
+## 8.5 Cierre de sesión
+1. Cliente invoca `POST /api/auth/logout`.
+2. Backend revoca refresh token/sesión activa de forma idempotente.
+3. Cliente elimina credenciales locales y vuelve a estado no autenticado.
+
+## 8.6 Modo bypass configurable
+1. Si `Authentication:Bypass:Enabled=true` y el entorno está autorizado, backend permite identidad sintética.
+2. `/api/auth/me` debe responder `authenticationMode = "Bypass"`.
+3. Operaciones deben auditar `authMode=Bypass`.
+4. Comportamiento exacto de `/api/auth/login` y `/api/auth/refresh` en bypass (emitir sesión virtual o responder `409`) sigue abierto y debe cerrarse antes de implementación.
+
+## Reglas cerradas en esta iteración
+- Access token: 20 minutos.
+- Refresh proactivo: 3 minutos antes de vencimiento.
+- Rotación de refresh token obligatoria.
+- Single-flight de refresh en frontend para evitar concurrencia.
+- Retry acotado solo para fallos transitorios de red/5xx.
+
+## Decisiones abiertas explícitas
+- TTL exacto de refresh token.
+- Estrategia final de almacenamiento seguro de refresh token en cliente.
+- Política de sesiones simultáneas por usuario.
+- Comportamiento final de login/refresh cuando bypass está habilitado.
+
+---
+
 ## Reglas generales aún pendientes
 
 Existen definiciones transversales que todavía deberán cerrarse y que impactarán a varios flujos:
