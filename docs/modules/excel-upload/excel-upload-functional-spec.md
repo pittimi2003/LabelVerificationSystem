@@ -232,9 +232,9 @@ En el drawer de detalle de carga (`/excel-uploads`) se mantiene la estructura fu
   - `Status`
 - se agrega acción explícita **Limpiar filtros** para volver al estado inicial sin cerrar el drawer
 - se agrega paginación local en frontend con tamaños de página:
+  - 5
   - 10
   - 20
-  - 50
 - el `Status` por fila se presenta con chips consistentes por color/estilo para escaneo rápido
 - en **vista general** se mejora la agrupación visual de métricas
 - la agrupación de errores por `ErrorCode` se presenta destacada

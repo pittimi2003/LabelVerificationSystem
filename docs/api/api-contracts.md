@@ -462,7 +462,7 @@ Lista eventos auditables.
 Obtiene detalle de un evento auditable.
 
 ### `GET /api/excel-uploads/{uploadId}/audit`
-Consulta auditoría relacionada con una carga, si se decide exponer por subrecurso.
+Consulta auditoría relacionada con una carga, si se decide exponer por subrecurso (no implementado actualmente).
 
 ## Decisiones pendientes
 - eventos exactos auditables
@@ -534,6 +534,7 @@ La prioridad actual recomendada es:
 - `POST /api/excel-uploads`
 - `GET /api/excel-uploads`
 - `GET /api/excel-uploads/{uploadId}`
+- `GET /api/excel-uploads/{uploadId}/details`
 
 ### Prioridad 2
 - `GET /api/parts`
