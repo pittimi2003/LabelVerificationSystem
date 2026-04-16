@@ -314,6 +314,79 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 - cierre de sesión automático al fallar refresh por `401`/`409`.
 - revocación de cadena de refresh ante sospecha de replay.
 
+### Diseño técnico del modelo de sesión por tokens (cierre de iteración)
+
+> Alcance: diseño técnico y reglas de contrato. Esta sección **no implica implementación completa** en backend/frontend en esta iteración.
+
+#### 1) Diseño técnico del access token
+- Formato: JWT firmado por backend (algoritmo concreto pendiente de cierre de seguridad; no se fija proveedor de identidad en esta etapa).
+- Vida útil: **20 minutos** (`1200s`) como regla cerrada.
+- Claims mínimos requeridos por contrato:
+  - `sub` (identidad única de usuario o identidad sintética de bypass)
+  - `name`
+  - `email` (si aplica)
+  - `role` (múltiple)
+  - `permission` (múltiple)
+  - `sid` (identificador de sesión lógica)
+  - `jti` (identificador único del token)
+  - `iat`, `nbf`, `exp`
+- Uso: autorización de endpoints API y bootstrap de estado autenticado en UI vía `GET /api/auth/me`.
+
+#### 2) Diseño técnico del refresh token
+- Formato: token opaco, aleatorio, de alta entropía.
+- Persistencia: solo hash del token en backend; el valor plano no se persiste.
+- Semántica: token de un solo uso (one-time use) para habilitar rotación segura.
+- TTL: **pendiente de cierre** (decisión abierta). Debe ser mayor que 20 minutos y definido formalmente en implementación.
+- Asociación: cada refresh token pertenece a una sesión (`sid`) y a un usuario (o identidad de bypass si aplica por política de entorno).
+
+#### 3) Estrategia de expiración y refresh
+- Refresh proactivo obligatorio: iniciar renovación cuando resten **3 minutos o menos** para `exp`.
+- Clock skew máximo: 60 segundos.
+- Backend valida expiración de refresh token y estado de revocación.
+- Si refresh falla por `401` o `409`, frontend debe cerrar sesión local y requerir nueva autenticación (o reentrada por bypass, según configuración activa).
+
+#### 4) Estrategia de rotación y revocación
+- Rotación obligatoria por cada `POST /api/auth/refresh` exitoso:
+  - refresh token anterior queda consumido/inválido
+  - se emite nuevo refresh token
+  - se mantiene/actualiza cadena de sesión (`sid`) según diseño de implementación
+- Revocación explícita:
+  - `POST /api/auth/logout` revoca sesión actual (idempotente)
+  - detección de replay/reuse revoca cadena de sesión asociada por seguridad
+- Revocación administrativa global de usuario: **pendiente de formalización** (fuera de esta iteración).
+
+#### 5) Estrategia de detección de replay/reuse
+- Cada refresh token tiene estado de consumo (`usedAtUtc`) y revocación (`revokedAtUtc`, razón).
+- Si llega un refresh token ya consumido, backend responde `409 Conflict` (reuse detectado).
+- Al detectar reuse, backend marca comprometida la cadena de sesión y revoca tokens activos asociados a `sid`.
+- El evento debe quedar en auditoría con marca de seguridad.
+
+#### 6) Restauración de sesión al recargar aplicación (Blazor WASM)
+- Fuente canónica de identidad: `GET /api/auth/me` con access token vigente.
+- Flujo recomendado:
+  1. app carga estado local de credenciales (según almacenamiento definido)
+  2. valida ventana de expiración del access token
+  3. si está por vencer (<= 3 minutos), ejecuta refresh antes de hidratar sesión
+  4. consulta `/api/auth/me` para reconstruir usuario/claims en UI
+- Si no hay tokens válidos, la app queda en estado anónimo o modo bypass (si está habilitado y permitido por entorno).
+
+#### 7) Política single-flight para evitar refresh concurrentes
+- Frontend debe usar una única operación de refresh en curso compartida (mutex/promise compartida).
+- Requests concurrentes que detecten necesidad de refresh deben esperar el mismo resultado.
+- Si el refresh único falla, todas las solicitudes pendientes heredan el fallo y se ejecuta logout controlado.
+
+#### 8) Retry acotado ante fallos transitorios
+- Sólo para fallos transitorios de red/timeouts/5xx durante refresh.
+- Política propuesta (cerrada para contrato cliente): máximo **2 reintentos** además del intento inicial.
+- Backoff exponencial corto sugerido: `300ms`, `900ms` (con jitter opcional).
+- No reintentar en `400/401/409`.
+
+#### Decisiones abiertas explícitas (no cerradas aún)
+- TTL exacto de refresh token.
+- Algoritmo/firma final de JWT y gestión de llaves.
+- Ubicación final de almacenamiento del refresh token en cliente (cookie HttpOnly si infraestructura final lo soporta vs almacenamiento protegido alterno).
+- Política de revocación masiva por usuario/rol desde administración.
+
 ---
 
 ## Convención inicial de respuestas
