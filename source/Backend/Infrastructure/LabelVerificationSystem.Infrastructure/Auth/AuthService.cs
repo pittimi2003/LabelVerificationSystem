@@ -1,0 +1,346 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using LabelVerificationSystem.Application.Contracts.Auth;
+using LabelVerificationSystem.Application.Interfaces.Auth;
+using LabelVerificationSystem.Domain.Entities.Auth;
+using LabelVerificationSystem.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+
+namespace LabelVerificationSystem.Infrastructure.Auth;
+
+public sealed class AuthService : IAuthService
+{
+    private const string AuthModeUser = "User";
+    private const string AuthModeBypass = "Bypass";
+
+    private readonly AppDbContext _dbContext;
+    private readonly AuthenticationOptions _options;
+    private readonly IHostEnvironment _hostEnvironment;
+    private readonly ILogger<AuthService> _logger;
+
+    public AuthService(
+        AppDbContext dbContext,
+        IOptions<AuthenticationOptions> options,
+        IHostEnvironment hostEnvironment,
+        ILogger<AuthService> logger)
+    {
+        _dbContext = dbContext;
+        _options = options.Value;
+        _hostEnvironment = hostEnvironment;
+        _logger = logger;
+    }
+
+    public async Task<AuthTokenResponse> LoginAsync(AuthLoginRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
+    {
+        ValidateLoginRequest(request);
+
+        if (IsBypassEnabled())
+        {
+            throw new AuthConflictException("Bypass habilitado: login de usuario deshabilitado.");
+        }
+
+        var matchedUser = _options.Users.FirstOrDefault(x =>
+            string.Equals(x.Username, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)));
+
+        if (matchedUser is null || !matchedUser.IsActive || !string.Equals(matchedUser.Password, request.Password, StringComparison.Ordinal))
+        {
+            throw new AuthUnauthorizedException("Credenciales inválidas.");
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var session = new AuthSession
+        {
+            Id = Guid.NewGuid(),
+            SessionId = Guid.NewGuid().ToString("N"),
+            UserId = matchedUser.UserId,
+            Username = matchedUser.Username,
+            DisplayName = matchedUser.DisplayName,
+            Email = matchedUser.Email,
+            AuthMode = AuthModeUser,
+            CreatedAtUtc = nowUtc,
+            LastActivityAtUtc = nowUtc,
+            CreatedByIp = Truncate(ipAddress, 64),
+            CreatedByUserAgent = Truncate(userAgent, 512)
+        };
+
+        var refreshToken = BuildRefreshToken(session, nowUtc, ipAddress, userAgent);
+
+        _dbContext.AuthSessions.Add(session);
+        _dbContext.RefreshTokens.Add(refreshToken.Entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return BuildTokenResponse(session, matchedUser.Roles, matchedUser.Permissions, refreshToken.PlainToken, refreshToken.Entity.ExpiresAtUtc, nowUtc);
+    }
+
+    public async Task<AuthTokenResponse> RefreshAsync(AuthRefreshRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
+    {
+        if (IsBypassEnabled())
+        {
+            throw new AuthConflictException("Bypass habilitado: refresh de usuario deshabilitado.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            throw new AuthValidationException("refreshToken es obligatorio.");
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var tokenHash = ComputeTokenHash(request.RefreshToken);
+
+        var existingToken = await _dbContext.RefreshTokens
+            .Include(x => x.Session)
+            .FirstOrDefaultAsync(x => x.TokenHash == tokenHash, cancellationToken);
+
+        if (existingToken is null || existingToken.Session.RevokedAtUtc is not null)
+        {
+            throw new AuthUnauthorizedException("Refresh token inválido.");
+        }
+
+        if (existingToken.ExpiresAtUtc <= nowUtc || existingToken.RevokedAtUtc is not null)
+        {
+            throw new AuthUnauthorizedException("Refresh token expirado o revocado.");
+        }
+
+        if (existingToken.UsedAtUtc is not null)
+        {
+            await RevokeSessionChainAsync(existingToken.Session, "refresh_reuse_detected", nowUtc, cancellationToken);
+            throw new AuthConflictException("Refresh token ya utilizado.");
+        }
+
+        existingToken.UsedAtUtc = nowUtc;
+        existingToken.Session.LastActivityAtUtc = nowUtc;
+
+        var replacement = BuildRefreshToken(existingToken.Session, nowUtc, ipAddress, userAgent);
+        existingToken.ReplacedByTokenId = replacement.Entity.Id;
+
+        _dbContext.RefreshTokens.Add(replacement.Entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == existingToken.Session.UserId);
+        if (configuredUser is null)
+        {
+            throw new AuthUnauthorizedException("Usuario de sesión no disponible.");
+        }
+
+        return BuildTokenResponse(existingToken.Session, configuredUser.Roles, configuredUser.Permissions, replacement.PlainToken, replacement.Entity.ExpiresAtUtc, nowUtc);
+    }
+
+    public async Task LogoutAsync(string? sessionId, string? refreshToken, CancellationToken cancellationToken)
+    {
+        var nowUtc = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            var session = await _dbContext.AuthSessions.FirstOrDefaultAsync(x => x.SessionId == sessionId, cancellationToken);
+            if (session is not null)
+            {
+                await RevokeSessionChainAsync(session, "logout", nowUtc, cancellationToken);
+                return;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            var refreshTokenHash = ComputeTokenHash(refreshToken);
+            var token = await _dbContext.RefreshTokens.Include(x => x.Session)
+                .FirstOrDefaultAsync(x => x.TokenHash == refreshTokenHash, cancellationToken);
+            if (token is not null)
+            {
+                await RevokeSessionChainAsync(token.Session, "logout_by_refresh", nowUtc, cancellationToken);
+            }
+        }
+    }
+
+    public async Task<AuthMeResponse> GetMeAsync(string? sessionId, DateTime? accessTokenExpiresAtUtc, CancellationToken cancellationToken)
+    {
+        var nowUtc = DateTime.UtcNow;
+
+        if (IsBypassEnabled())
+        {
+            _logger.LogInformation("authMode=Bypass endpoint=/api/auth/me");
+            var bypassUser = new AuthUserDto(
+                _options.Bypass.UserId,
+                _options.Bypass.Username,
+                _options.Bypass.DisplayName,
+                _options.Bypass.Email,
+                _options.Bypass.Roles,
+                _options.Bypass.Permissions);
+
+            return new AuthMeResponse(true, AuthModeBypass, bypassUser, null);
+        }
+
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            throw new AuthUnauthorizedException("Token inválido o ausente.");
+        }
+
+        var session = await _dbContext.AuthSessions.FirstOrDefaultAsync(x => x.SessionId == sessionId, cancellationToken);
+        if (session is null || session.RevokedAtUtc is not null)
+        {
+            throw new AuthUnauthorizedException("Sesión inválida o revocada.");
+        }
+
+        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == session.UserId);
+        if (configuredUser is null)
+        {
+            throw new AuthUnauthorizedException("Usuario no disponible.");
+        }
+
+        var accessExpiresAtUtc = accessTokenExpiresAtUtc ?? nowUtc.AddMinutes(_options.Jwt.AccessTokenTtlMinutes);
+        var refreshRecommendedAtUtc = accessExpiresAtUtc.AddMinutes(-_options.Jwt.RefreshProactiveWindowMinutes);
+
+        var user = new AuthUserDto(
+            configuredUser.UserId,
+            configuredUser.Username,
+            configuredUser.DisplayName,
+            configuredUser.Email,
+            configuredUser.Roles,
+            configuredUser.Permissions);
+
+        return new AuthMeResponse(true, AuthModeUser, user, new AuthSessionDto(accessExpiresAtUtc, refreshRecommendedAtUtc, nowUtc));
+    }
+
+    private AuthTokenResponse BuildTokenResponse(AuthSession session, IReadOnlyList<string> roles, IReadOnlyList<string> permissions, string refreshToken, DateTime refreshExpiresAtUtc, DateTime nowUtc)
+    {
+        var accessExpiresAtUtc = nowUtc.AddMinutes(_options.Jwt.AccessTokenTtlMinutes);
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, session.UserId ?? session.Username),
+            new(JwtRegisteredClaimNames.UniqueName, session.Username),
+            new(JwtRegisteredClaimNames.Email, session.Email ?? string.Empty),
+            new("sid", session.SessionId),
+            new("auth_mode", session.AuthMode),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+        };
+
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(permissions.Select(permission => new Claim("permission", permission)));
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = accessExpiresAtUtc,
+            Issuer = _options.Jwt.Issuer,
+            Audience = _options.Jwt.Audience,
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Jwt.SigningKey)),
+                SecurityAlgorithms.HmacSha256)
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var accessToken = tokenHandler.WriteToken(securityToken);
+
+        var user = new AuthUserDto(
+            session.UserId ?? session.Username,
+            session.Username,
+            session.DisplayName,
+            session.Email,
+            roles,
+            permissions);
+
+        return new AuthTokenResponse(
+            accessToken,
+            "Bearer",
+            accessExpiresAtUtc,
+            (int)TimeSpan.FromMinutes(_options.Jwt.AccessTokenTtlMinutes).TotalSeconds,
+            refreshToken,
+            refreshExpiresAtUtc,
+            user);
+    }
+
+    private (RefreshToken Entity, string PlainToken) BuildRefreshToken(AuthSession session, DateTime nowUtc, string? ipAddress, string? userAgent)
+    {
+        var plainToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var hashedToken = ComputeTokenHash(plainToken);
+
+        var refreshToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            SessionId = session.Id,
+            TokenHash = hashedToken,
+            CreatedAtUtc = nowUtc,
+            ExpiresAtUtc = nowUtc.AddMinutes(_options.RefreshToken.TtlMinutes),
+            CreatedByIp = Truncate(ipAddress, 64),
+            CreatedByUserAgent = Truncate(userAgent, 512)
+        };
+
+        return (refreshToken, plainToken);
+    }
+
+    private async Task RevokeSessionChainAsync(AuthSession session, string reason, DateTime nowUtc, CancellationToken cancellationToken)
+    {
+        if (session.RevokedAtUtc is null)
+        {
+            session.RevokedAtUtc = nowUtc;
+            session.RevocationReason = reason;
+        }
+
+        var activeTokens = await _dbContext.RefreshTokens
+            .Where(x => x.SessionId == session.Id && x.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var token in activeTokens)
+        {
+            token.RevokedAtUtc = nowUtc;
+            token.RevocationReason = reason;
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private bool IsBypassEnabled()
+    {
+        if (!_options.Bypass.Enabled)
+        {
+            return false;
+        }
+
+        return _options.Bypass.AllowedEnvironments.Count == 0
+               || _options.Bypass.AllowedEnvironments.Contains(_hostEnvironment.EnvironmentName, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string ComputeTokenHash(string plainToken)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(plainToken));
+        return Convert.ToHexString(hash);
+    }
+
+    private static string? Truncate(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Length <= maxLength ? value : value[..maxLength];
+    }
+
+    private static void ValidateLoginRequest(AuthLoginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.UsernameOrEmail) || request.UsernameOrEmail.Trim().Length is < 3 or > 256)
+        {
+            throw new AuthValidationException("usernameOrEmail debe tener entre 3 y 256 caracteres.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+        {
+            throw new AuthValidationException("password debe tener mínimo 8 caracteres.");
+        }
+
+        if (request.ClientInfo is not null
+            && !string.IsNullOrWhiteSpace(request.ClientInfo.App)
+            && !string.Equals(request.ClientInfo.App, "BlazorWasm", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AuthValidationException("clientInfo.app debe ser BlazorWasm.");
+        }
+    }
+}

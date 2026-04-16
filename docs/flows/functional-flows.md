@@ -468,7 +468,7 @@ Permitir la administración de parámetros generales del sistema.
 # 8. Flujo de Sesión y Autenticación por Tokens
 
 ## Estado del flujo
-**Definido a nivel técnico de contrato; implementación completa pendiente**
+**Implementación backend fase 1 completada para `/api/auth/login|refresh|logout|me`; integración frontend completa pendiente**
 
 ## Objetivo
 Garantizar sesión estable en Blazor WebAssembly usando access token corto y refresh token rotativo, con soporte de bypass controlado por configuración.
@@ -516,7 +516,7 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 1. Si `Authentication:Bypass:Enabled=true` y el entorno está autorizado, backend permite identidad sintética.
 2. `/api/auth/me` debe responder `authenticationMode = "Bypass"`.
 3. Operaciones deben auditar `authMode=Bypass`.
-4. Comportamiento exacto de `/api/auth/login` y `/api/auth/refresh` en bypass (emitir sesión virtual o responder `409`) sigue abierto y debe cerrarse antes de implementación.
+4. Implementación fase 1: `/api/auth/login` y `/api/auth/refresh` responden `409 Conflict` cuando bypass está habilitado en entorno permitido.
 
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
@@ -526,10 +526,9 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 - Retry acotado solo para fallos transitorios de red/5xx.
 
 ## Decisiones abiertas explícitas
-- TTL exacto de refresh token.
 - Estrategia final de almacenamiento seguro de refresh token en cliente.
 - Política de sesiones simultáneas por usuario.
-- Comportamiento final de login/refresh cuando bypass está habilitado.
+- Definir si bypass emitirá sesión virtual en una fase futura o se mantiene el comportamiento `409` actual.
 
 ---
 

@@ -91,7 +91,7 @@ La propuesta contempla gestión de usuarios y roles y, desde este documento, se 
 
 ### Contrato propuesto de autenticación (.NET API + Blazor WebAssembly)
 
-> Estado de implementación actual confirmado: en backend solo existen controladores de `ExcelUploads` y `WeatherForecast`; no hay endpoints de autenticación implementados todavía.
+> Estado de implementación actual confirmado (fase backend auth 1): endpoints `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me` implementados.
 
 #### Objetivos del contrato
 - sesión robusta y estable para frontend Blazor WebAssembly
@@ -103,7 +103,7 @@ La propuesta contempla gestión de usuarios y roles y, desde este documento, se 
 #### Parámetros de sesión (normativos)
 - `access_token_ttl`: **20 minutos** (`1200` segundos)
 - ventana de renovación recomendada: iniciar refresh cuando `expiresAtUtc - nowUtc <= 3 minutos`
-- `refresh_token_ttl`: **pendiente de cierre** (se recomienda mayor a access token; decisión de seguridad a cerrar en implementación)
+- `refresh_token_ttl`: configurable por `Authentication:RefreshToken:TtlMinutes` (valor operativo inicial: `1440` minutos)
 - rotación de refresh token: **obligatoria** en cada renovación exitosa
 - tolerancia de reloj (clock skew): hasta `60` segundos en validación de expiración
 
@@ -239,6 +239,8 @@ Sin body. Requiere `Authorization: Bearer <access_token>`.
 ### `POST /api/auth/password/reset-request`
 Solicita recuperación de contraseña (envío de token/código fuera de banda).
 
+> Estado fase 1: **no implementado** (depende de decisiones aún abiertas de gestión formal de usuarios y canal de entrega).
+
 #### Request DTO
 ```json
 {
@@ -262,6 +264,8 @@ Solicita recuperación de contraseña (envío de token/código fuera de banda).
 
 ### `POST /api/auth/password/reset-confirm`
 Confirma cambio de contraseña con token de recuperación.
+
+> Estado fase 1: **no implementado** por la misma dependencia funcional.
 
 #### Request DTO
 ```json
@@ -300,10 +304,7 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 - Cuando `Enabled=true`:
   - los endpoints protegidos aceptan identidad sintética de sistema (por ejemplo `username = "system-bypass"`).
   - `GET /api/auth/me` responde `authenticationMode = "Bypass"` e incluye usuario virtual y roles/permisos definidos por configuración.
-  - `POST /api/auth/login` y `POST /api/auth/refresh` pueden:
-    - devolver sesión virtual (`200`) sin credenciales, o
-    - responder `409 Conflict` indicando que el modo bypass sustituye login tradicional.
-  - la estrategia seleccionada debe ser única y documentada en implementación.
+  - Implementación backend fase 1: `POST /api/auth/login` y `POST /api/auth/refresh` responden `409 Conflict` indicando que bypass sustituye autenticación de usuario.
 - Restricción obligatoria: bypass solo permitido en ambientes explícitamente autorizados por configuración (por ejemplo `Development`/`Local`), nunca habilitado por defecto.
 - Auditoría: toda operación en bypass debe registrar marca explícita `authMode=Bypass`.
 

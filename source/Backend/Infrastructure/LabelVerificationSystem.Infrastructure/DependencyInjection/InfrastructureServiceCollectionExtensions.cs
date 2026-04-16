@@ -1,4 +1,6 @@
+using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
+using LabelVerificationSystem.Infrastructure.Auth;
 using LabelVerificationSystem.Infrastructure.ExcelUploads;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +18,9 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
         services.Configure<ExcelUploadStorageOptions>(configuration.GetSection(ExcelUploadStorageOptions.SectionName));
+        services.Configure<AuthenticationOptions>(configuration.GetSection(AuthenticationOptions.SectionName));
         services.AddScoped<IExcelUploadService, ExcelUploadService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

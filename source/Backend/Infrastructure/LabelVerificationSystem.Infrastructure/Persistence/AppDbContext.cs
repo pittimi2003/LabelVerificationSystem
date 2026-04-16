@@ -1,4 +1,5 @@
 using LabelVerificationSystem.Domain.Entities;
+using LabelVerificationSystem.Domain.Entities.Auth;
 using Microsoft.EntityFrameworkCore;
 
 namespace LabelVerificationSystem.Infrastructure.Persistence;
@@ -13,6 +14,8 @@ public sealed class AppDbContext : DbContext
     public DbSet<Part> Parts => Set<Part>();
     public DbSet<ExcelUpload> ExcelUploads => Set<ExcelUpload>();
     public DbSet<ExcelUploadRowResult> ExcelUploadRowResults => Set<ExcelUploadRowResult>();
+    public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,6 +68,41 @@ public sealed class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(x => new { x.ExcelUploadId, x.RowNumber });
+        });
+
+        modelBuilder.Entity<AuthSession>(entity =>
+        {
+            entity.ToTable("AuthSessions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.SessionId).IsRequired();
+            entity.Property(x => x.Username).IsRequired();
+            entity.Property(x => x.DisplayName).IsRequired();
+            entity.Property(x => x.AuthMode).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.HasIndex(x => x.SessionId).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.RevokedAtUtc });
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.ToTable("RefreshTokens");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TokenHash).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.ExpiresAtUtc).IsRequired();
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.SessionId, x.ExpiresAtUtc });
+            entity.HasIndex(x => new { x.SessionId, x.UsedAtUtc, x.RevokedAtUtc });
+
+            entity.HasOne(x => x.Session)
+                .WithMany(x => x.RefreshTokens)
+                .HasForeignKey(x => x.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.ReplacedByToken)
+                .WithMany()
+                .HasForeignKey(x => x.ReplacedByTokenId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

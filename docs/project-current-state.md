@@ -335,3 +335,29 @@ Se implementó una mejora incremental en el drawer de detalle de `/excel-uploads
 - mantenimiento de vista general y vista por fila dentro del mismo drawer
 
 Este cambio se apoya en el endpoint ya implementado `GET /api/excel-uploads/{id}/details` y no introduce contratos nuevos.
+
+
+## Avance implementado: Autenticación backend fase 1
+
+Se implementó el primer corte real del backend de autenticación en API .NET, manteniendo arquitectura vigente:
+
+- entidades persistentes `AuthSession` y `RefreshToken`
+- migración EF Core para esquema auth
+- emisión de access token JWT (TTL 20 minutos)
+- refresh token opaco con hash persistido, rotación obligatoria y detección de reuse
+- endpoints `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
+- soporte de bypass configurable (`Authentication:Bypass:Enabled`) restringido por entorno
+- estrategia de inicialización DB migrada de `EnsureCreated()` a `Database.Migrate()`
+
+### Explícitamente fuera de esta fase
+
+- `POST /api/auth/password/reset-request`
+- `POST /api/auth/password/reset-confirm`
+- integración del usuario autenticado en flujo `ExcelUpload`
+- autorización avanzada y administración completa de usuarios
+
+### Decisiones abiertas que permanecen
+
+- política final de sesiones simultáneas por usuario
+- estrategia de almacenamiento cliente de refresh token
+- política de purga de sesiones/tokens expirados o revocados
