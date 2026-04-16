@@ -331,9 +331,9 @@ Debe definirse:
 
 ---
 
-## Entidades auxiliares probables
+## Entidades auxiliares probables y de soporte
 
-Las siguientes entidades todavía no están confirmadas como tablas separadas, pero son altamente probables según cómo evolucione el sistema.
+Las siguientes entidades incluyen componentes aún no confirmados y componentes de soporte ya implementados.
 
 ### Role
 Podría separarse si se desea gestión formal de roles y permisos.
@@ -341,8 +341,8 @@ Podría separarse si se desea gestión formal de roles y permisos.
 ### VerificationErrorDetail
 Podría existir si se necesita persistir discrepancias específicas por campo en una verificación.
 
-### ExcelUploadRowResult
-Entidad implementada para trazabilidad detallada por fila procesada en la carga de Excel.
+### ExcelUploadRowResult (implementada)
+Entidad de soporte ya implementada para trazabilidad detallada por fila procesada en la carga de Excel.
 
 Atributos implementados:
 - `Id`
@@ -358,7 +358,7 @@ Atributos implementados:
 ### SystemConfiguration
 Podría existir para representar configuración general persistente del sistema.
 
-Estas entidades no forman parte todavía del núcleo obligatorio del modelo actual, pero deben mantenerse en observación.
+`ExcelUploadRowResult` ya forma parte del modelo implementado de Carga de Excel; el resto de entidades de esta sección se mantienen en observación.
 
 ---
 
