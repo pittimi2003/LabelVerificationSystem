@@ -551,7 +551,7 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 
 
 ## 8.11 Administración backend de usuarios (Bloque B en Fase 4 abierta)
-1. Administrador autenticado consulta `GET /api/users` con filtros (`query`, `isActive`) y paginación (`page`, `pageSize`).
+1. Administrador autenticado consulta `GET /api/users` con filtros (`query`, `userId`, `username`, `displayName`, `email`, `role`, `permission`, `isActive`) y paginación (`page`, `pageSize`).
 2. Backend responde colección paginada con metadatos para grid administrativo.
 3. Administrador crea cuenta por `POST /api/users` con password inicial, roles/permisos y estado.
 4. Backend persiste `SystemUser` + `UserPasswordCredential` y devuelve recurso creado.
@@ -563,8 +563,8 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 ## 8.12 Administración de usuarios en frontend (Bloque B en Fase 4 abierta)
 1. Usuario administrador navega a `/users` dentro de la shell actual de Blazor WebAssembly.
 2. La UI renderiza una vista tipo grid administrativa (card principal, cabecera con acciones y tabla de filas limpias).
-3. La carga de datos usa `GET /api/users` con paginación (`page`, `pageSize`) y filtro de estado (`isActive`) para mantener consistencia con backend activo.
-4. Los filtros por columna (`userId`, `username`, `displayName`, `email`, `roles`, `permissions`) se aplican en cliente sobre la página cargada.
+3. La carga de datos usa `GET /api/users` con paginación (`page`, `pageSize`) y filtros de columna/estado para mantener consistencia con backend activo.
+4. Los filtros visibles por columna (`userId`, `username`, `displayName`, `email`, `role`, `permission`) se envían al backend y no dependen de filtrado local sobre una sola página.
 5. El alta de usuario usa formulario lateral y ejecuta `POST /api/users`.
 6. La edición usa detalle real `GET /api/users/{userId}` y persistencia por `PUT /api/users/{userId}`.
 7. La activación/desactivación se ejecuta por fila con `PATCH /api/users/{userId}/activation`.

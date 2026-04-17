@@ -461,8 +461,25 @@ Se implementó la vista principal del módulo de usuarios en Blazor WebAssembly,
 - la ruta permanece bajo las reglas actuales de protección de rutas autenticadas.
 
 ### Decisiones abiertas que continúan en Fase 4 (Bloque B)
-- filtros por columna combinados sobre todo el dataset requieren extensión de contrato backend (actualmente los filtros columnares en UI aplican sobre la página cargada, y `isActive` sí viaja al backend).
+- el filtrado por `roles` y `permissions` se soporta sobre JSON serializado actual (`RolesJson`/`PermissionsJson`) y queda pendiente una estrategia definitiva cuando se cierre el modelo final de roles/permisos.
 - no se implementa eliminación física/lógica adicional porque el backend actual expone activación/desactivación como operación vigente.
+
+## Avance implementado: Bloque B en Fase 4 (abierta) — Cierre de filtrado/paginación backend-driven en `/users`
+
+Se cerró la consistencia de filtrado y paginación del grid administrativo de usuarios sin mezclar alcance con Fase 5 ni incorporar NLog.
+
+### Implementado en backend
+- se extendió el contrato de `GET /api/users` con filtros por columna opcionales (`userId`, `username`, `displayName`, `email`, `role`, `permission`) además de `query`, `isActive`, `page` y `pageSize`.
+- la paginación se aplica sobre el conjunto ya filtrado en backend, manteniendo metadatos (`totalItems`, `totalPages`) consistentes con los filtros activos.
+- se conservó el alcance funcional vigente: listado, detalle, alta, edición, reset password (vía `newPassword`) y activación/desactivación.
+
+### Implementado en frontend
+- la página `/users` mantiene la UX actual (grid, drawers y acciones por fila), pero los filtros visibles ahora disparan recarga backend y dejan de filtrar únicamente la página cargada en cliente.
+- el cliente `UserAdministrationApiClient` envía los filtros de columna y estado como query params reales al backend.
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
+- este avance corresponde únicamente al **Bloque B**.
 
 ## Avance implementado: Control total de entrada y navegación auth (frontend fase 1.1)
 

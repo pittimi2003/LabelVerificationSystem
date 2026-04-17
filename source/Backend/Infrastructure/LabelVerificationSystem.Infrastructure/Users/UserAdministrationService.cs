@@ -20,46 +20,81 @@ public sealed class UserAdministrationService : IUserAdministrationService
         _dbContext = dbContext;
     }
 
-    public async Task<UserListResponse> ListAsync(string? query, bool? isActive, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<UserListResponse> ListAsync(UserListQuery query, CancellationToken cancellationToken)
     {
-        if (page <= 0)
+        if (query.Page <= 0)
         {
             throw new AuthValidationException("page debe ser mayor o igual a 1.");
         }
 
-        if (pageSize is < 1 or > 100)
+        if (query.PageSize is < 1 or > 100)
         {
             throw new AuthValidationException("pageSize debe estar entre 1 y 100.");
         }
 
         var usersQuery = _dbContext.SystemUsers.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(query))
+        var globalQuery = NormalizeFilter(query.Query);
+        if (!string.IsNullOrWhiteSpace(globalQuery))
         {
-            var normalized = query.Trim().ToLowerInvariant();
             usersQuery = usersQuery.Where(x =>
-                x.Username.ToLower().Contains(normalized)
-                || x.DisplayName.ToLower().Contains(normalized)
-                || (x.Email != null && x.Email.ToLower().Contains(normalized))
-                || x.UserId.ToLower().Contains(normalized));
+                x.Username.ToLower().Contains(globalQuery)
+                || x.DisplayName.ToLower().Contains(globalQuery)
+                || (x.Email != null && x.Email.ToLower().Contains(globalQuery)));
         }
 
-        if (isActive.HasValue)
+        var userId = NormalizeFilter(query.UserId);
+        if (!string.IsNullOrWhiteSpace(userId))
         {
-            usersQuery = usersQuery.Where(x => x.IsActive == isActive.Value);
+            usersQuery = usersQuery.Where(x => x.UserId.ToLower().Contains(userId));
+        }
+
+        var username = NormalizeFilter(query.Username);
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            usersQuery = usersQuery.Where(x => x.Username.ToLower().Contains(username));
+        }
+
+        var displayName = NormalizeFilter(query.DisplayName);
+        if (!string.IsNullOrWhiteSpace(displayName))
+        {
+            usersQuery = usersQuery.Where(x => x.DisplayName.ToLower().Contains(displayName));
+        }
+
+        var email = NormalizeFilter(query.Email);
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            usersQuery = usersQuery.Where(x => x.Email != null && x.Email.ToLower().Contains(email));
+        }
+
+        var role = NormalizeFilter(query.Role);
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            usersQuery = usersQuery.Where(x => x.RolesJson.ToLower().Contains(role));
+        }
+
+        var permission = NormalizeFilter(query.Permission);
+        if (!string.IsNullOrWhiteSpace(permission))
+        {
+            usersQuery = usersQuery.Where(x => x.PermissionsJson.ToLower().Contains(permission));
+        }
+
+        if (query.IsActive.HasValue)
+        {
+            usersQuery = usersQuery.Where(x => x.IsActive == query.IsActive.Value);
         }
 
         var totalItems = await usersQuery.CountAsync(cancellationToken);
-        var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize);
+        var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)query.PageSize);
 
         var users = await usersQuery
             .OrderBy(x => x.Username)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .ToListAsync(cancellationToken);
         var items = users.Select(MapToListItem).ToList();
 
-        return new UserListResponse(items, page, pageSize, totalItems, totalPages);
+        return new UserListResponse(items, query.Page, query.PageSize, totalItems, totalPages);
     }
 
     public async Task<UserDetailDto> GetByUserIdAsync(string userId, CancellationToken cancellationToken)
@@ -314,4 +349,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         return value.Length <= maxLength ? value : value[..maxLength];
     }
+
+    private static string? NormalizeFilter(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
 }

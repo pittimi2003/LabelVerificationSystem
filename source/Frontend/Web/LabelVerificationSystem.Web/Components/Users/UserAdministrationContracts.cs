@@ -1,5 +1,17 @@
 namespace LabelVerificationSystem.Web.Components.Users;
 
+public sealed record UserListQueryDto(
+    string? Query,
+    string? UserId,
+    string? Username,
+    string? DisplayName,
+    string? Email,
+    string? Role,
+    string? Permission,
+    bool? IsActive,
+    int Page,
+    int PageSize);
+
 public sealed record UserListItemDto(
     string UserId,
     string Username,
