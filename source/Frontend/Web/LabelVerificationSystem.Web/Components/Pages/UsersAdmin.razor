@@ -1,0 +1,575 @@
+@page "/users"
+@using LabelVerificationSystem.Web.Components.Users
+@inject UserAdministrationApiClient UserAdministrationApiClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Administración de usuarios</PageTitle>
+
+<div class="users-admin-page d-flex flex-column gap-4">
+    <MudPaper Class="users-admin-card pa-4" Outlined="true">
+        <MudStack Spacing="3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h5">Administración de usuarios</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/users</code>.</MudText>
+                </MudStack>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadUsersAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateDrawer" StartIcon="@Icons.Material.Filled.PersonAdd">Nuevo usuario</MudButton>
+                </MudStack>
+            </MudStack>
+
+            <MudPaper Class="pa-3 users-admin-filters" Outlined="true">
+                <MudGrid>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudTextField T="string" Value="@FilterUserId" ValueChanged="OnFilterUserIdChanged" Label="Filtro UserId" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudTextField T="string" Value="@FilterUsername" ValueChanged="OnFilterUsernameChanged" Label="Filtro Username" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudTextField T="string" Value="@FilterDisplayName" ValueChanged="OnFilterDisplayNameChanged" Label="Filtro Display Name" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudTextField T="string" Value="@FilterEmail" ValueChanged="OnFilterEmailChanged" Label="Filtro Email" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudTextField T="string" Value="@FilterRole" ValueChanged="OnFilterRoleChanged" Label="Filtro Rol" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudTextField T="string" Value="@FilterPermission" ValueChanged="OnFilterPermissionChanged" Label="Filtro Permiso" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3">
+                        <MudSelect T="string" Value="@ActiveFilter" ValueChanged="OnActiveFilterChanged" Label="Estado" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@AnyFilterValue">Todos</MudSelectItem>
+                            <MudSelectItem Value="true">Activos</MudSelectItem>
+                            <MudSelectItem Value="false">Inactivos</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="3" Class="d-flex align-center justify-end">
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearColumnFilters" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (IsLoading)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Cargando usuarios...</MudText>
+                </div>
+            }
+            else
+            {
+                <MudTable Hover="true" Elevation="0" Items="@FilteredUsers" Breakpoint="Breakpoint.Md" Bordered="true" Class="users-admin-table">
+                    <HeaderContent>
+                        <MudTh>User</MudTh>
+                        <MudTh>Display Name</MudTh>
+                        <MudTh>Email</MudTh>
+                        <MudTh>Roles</MudTh>
+                        <MudTh>Permisos</MudTh>
+                        <MudTh>Estado</MudTh>
+                        <MudTh>Creado UTC</MudTh>
+                        <MudTh>Actualizado UTC</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2" Class="fw-semibold">@context.Username</MudText>
+                                <MudText Typo="Typo.caption" Class="text-muted">@context.UserId</MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd>@context.DisplayName</MudTd>
+                        <MudTd>@(string.IsNullOrWhiteSpace(context.Email) ? "—" : context.Email)</MudTd>
+                        <MudTd>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var role in context.Roles)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">@role</MudChip>
+                                }
+                            </div>
+                        </MudTd>
+                        <MudTd>
+                            <div class="d-flex flex-wrap gap-1">
+                                @foreach (var permission in context.Permissions)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary">@permission</MudChip>
+                                }
+                            </div>
+                        </MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Error)">@(context.IsActive ? "Activo" : "Inactivo")</MudChip>
+                        </MudTd>
+                        <MudTd>@context.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>@context.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>
+                            <MudStack Row="true" Spacing="0">
+                                <MudTooltip Text="Editar usuario">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="() => OpenEditDrawerAsync(context.UserId)" />
+                                </MudTooltip>
+                                <MudTooltip Text="Reset password">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Password" Color="Color.Warning" Size="Size.Small" OnClick="() => OpenResetPasswordDrawerAsync(context.UserId)" />
+                                </MudTooltip>
+                                <MudTooltip Text="@(context.IsActive ? "Desactivar usuario" : "Activar usuario")">
+                                    <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.PersonOff : Icons.Material.Filled.CheckCircle)" Color="@(context.IsActive ? Color.Error : Color.Success)" Size="Size.Small" OnClick="() => ToggleActivationAsync(context)" />
+                                </MudTooltip>
+                            </MudStack>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2">No hay usuarios que coincidan con los filtros actuales para la página cargada.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-3 flex-wrap gap-2">
+                    <MudText Typo="Typo.caption">
+                        Página @CurrentPage de @TotalPages | Total backend: @TotalItems
+                    </MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudSelect T="int" Value="@PageSize" ValueChanged="OnPageSizeChanged" Variant="Variant.Outlined" Label="Filas por página" Class="users-page-size">
+                            <MudSelectItem Value="10">10</MudSelectItem>
+                            <MudSelectItem Value="20">20</MudSelectItem>
+                            <MudSelectItem Value="50">50</MudSelectItem>
+                        </MudSelect>
+                        <MudPagination Selected="@CurrentPage" Count="@TotalPages" SelectedChanged="OnPageChanged" Disabled="@IsLoading" />
+                    </MudStack>
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
+</div>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditorDrawerOpen" Width="540px" Elevation="6">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">@(EditorMode == UserEditorMode.Create ? "Crear usuario" : "Editar usuario")</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseEditorDrawer" />
+    </MudDrawerHeader>
+
+    <div class="pa-4">
+        <MudStack Spacing="2">
+            @if (EditorMode == UserEditorMode.Edit)
+            {
+                <MudTextField T="string" Value="@EditorUserId" Label="UserId" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@EditorUsername" Label="Username" Variant="Variant.Outlined" ReadOnly="true" />
+            }
+            else
+            {
+                <MudTextField T="string" Value="@EditorUsername" ValueChanged="(string? v) => EditorUsername = v ?? string.Empty" Label="Username" Variant="Variant.Outlined" Required="true" />
+                <MudTextField T="string" Value="@EditorPassword" ValueChanged="(string? v) => EditorPassword = v ?? string.Empty" Label="Password inicial" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+            }
+
+            <MudTextField T="string" Value="@EditorDisplayName" ValueChanged="(string? v) => EditorDisplayName = v ?? string.Empty" Label="Display Name" Variant="Variant.Outlined" Required="true" />
+            <MudTextField T="string" Value="@EditorEmail" ValueChanged="(string? v) => EditorEmail = v" Label="Email" Variant="Variant.Outlined" />
+            <MudTextField T="string" Value="@EditorRolesCsv" ValueChanged="(string? v) => EditorRolesCsv = v ?? string.Empty" Label="Roles (CSV)" Variant="Variant.Outlined" />
+            <MudTextField T="string" Value="@EditorPermissionsCsv" ValueChanged="(string? v) => EditorPermissionsCsv = v ?? string.Empty" Label="Permisos (CSV)" Variant="Variant.Outlined" />
+            <MudSwitch T="bool" Value="@EditorIsActive" ValueChanged="v => EditorIsActive = v" Label="Usuario activo" Color="Color.Success" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-3">
+                <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseEditorDrawer">Cancelar</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsSavingEditor" OnClick="SaveEditorAsync">Guardar</MudButton>
+            </MudStack>
+        </MudStack>
+    </div>
+</MudDrawer>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsResetDrawerOpen" Width="520px" Elevation="6">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Reset password de usuario</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseResetDrawer" />
+    </MudDrawerHeader>
+
+    <div class="pa-4">
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.caption" Class="text-muted">Usuario: @ResetDrawerUsername (@ResetDrawerUserId)</MudText>
+            <MudTextField T="string" Value="@ResetPassword" ValueChanged="(string? v) => ResetPassword = v ?? string.Empty" Label="Nuevo password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+            <MudTextField T="string" Value="@ResetConfirmPassword" ValueChanged="(string? v) => ResetConfirmPassword = v ?? string.Empty" Label="Confirmar password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
+
+            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-3">
+                <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="CloseResetDrawer">Cancelar</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Warning" Disabled="@IsSavingReset" OnClick="SavePasswordResetAsync">Aplicar reset</MudButton>
+            </MudStack>
+        </MudStack>
+    </div>
+</MudDrawer>
+
+@code {
+    private const string AnyFilterValue = "*";
+
+    private readonly List<UserListItemDto> _users = [];
+
+    private bool IsLoading { get; set; }
+    private bool IsSavingEditor { get; set; }
+    private bool IsSavingReset { get; set; }
+
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 20;
+    private int TotalPages { get; set; } = 1;
+    private int TotalItems { get; set; }
+
+    private string FilterUserId { get; set; } = string.Empty;
+    private string FilterUsername { get; set; } = string.Empty;
+    private string FilterDisplayName { get; set; } = string.Empty;
+    private string FilterEmail { get; set; } = string.Empty;
+    private string FilterRole { get; set; } = string.Empty;
+    private string FilterPermission { get; set; } = string.Empty;
+    private string ActiveFilter { get; set; } = AnyFilterValue;
+
+    private bool IsEditorDrawerOpen { get; set; }
+    private UserEditorMode EditorMode { get; set; }
+    private string EditorUserId { get; set; } = string.Empty;
+    private string EditorUsername { get; set; } = string.Empty;
+    private string EditorDisplayName { get; set; } = string.Empty;
+    private string? EditorEmail { get; set; }
+    private string EditorPassword { get; set; } = string.Empty;
+    private string EditorRolesCsv { get; set; } = string.Empty;
+    private string EditorPermissionsCsv { get; set; } = string.Empty;
+    private bool EditorIsActive { get; set; } = true;
+
+    private bool IsResetDrawerOpen { get; set; }
+    private string ResetDrawerUserId { get; set; } = string.Empty;
+    private string ResetDrawerUsername { get; set; } = string.Empty;
+    private string ResetPassword { get; set; } = string.Empty;
+    private string ResetConfirmPassword { get; set; } = string.Empty;
+
+    private IEnumerable<UserListItemDto> FilteredUsers => _users.Where(MatchesColumnFilters);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        IsLoading = true;
+
+        try
+        {
+            var isActiveFilter = ParseActiveFilterForBackend();
+            var response = await UserAdministrationApiClient.ListAsync(null, isActiveFilter, CurrentPage, PageSize, CancellationToken.None);
+
+            _users.Clear();
+            _users.AddRange(response.Items);
+
+            CurrentPage = response.Page;
+            PageSize = response.PageSize;
+            TotalItems = response.TotalItems;
+            TotalPages = Math.Max(response.TotalPages, 1);
+        }
+        catch (Exception ex)
+        {
+            _users.Clear();
+            Snackbar.Add($"No se pudo cargar el grid de usuarios: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private bool? ParseActiveFilterForBackend()
+    {
+        if (string.Equals(ActiveFilter, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.Equals(ActiveFilter, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return null;
+    }
+
+    private bool MatchesColumnFilters(UserListItemDto user)
+    {
+        if (!ContainsInvariant(user.UserId, FilterUserId)) return false;
+        if (!ContainsInvariant(user.Username, FilterUsername)) return false;
+        if (!ContainsInvariant(user.DisplayName, FilterDisplayName)) return false;
+        if (!ContainsInvariant(user.Email, FilterEmail)) return false;
+        if (!ContainsInvariant(string.Join(',', user.Roles), FilterRole)) return false;
+        if (!ContainsInvariant(string.Join(',', user.Permissions), FilterPermission)) return false;
+
+        if (string.Equals(ActiveFilter, "true", StringComparison.OrdinalIgnoreCase) && !user.IsActive)
+        {
+            return false;
+        }
+
+        if (string.Equals(ActiveFilter, "false", StringComparison.OrdinalIgnoreCase) && user.IsActive)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool ContainsInvariant(string? source, string? filter)
+    {
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            return true;
+        }
+
+        return source?.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase) is true;
+    }
+
+    private Task OnFilterUserIdChanged(string? value)
+    {
+        FilterUserId = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFilterUsernameChanged(string? value)
+    {
+        FilterUsername = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFilterDisplayNameChanged(string? value)
+    {
+        FilterDisplayName = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFilterEmailChanged(string? value)
+    {
+        FilterEmail = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFilterRoleChanged(string? value)
+    {
+        FilterRole = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private Task OnFilterPermissionChanged(string? value)
+    {
+        FilterPermission = value ?? string.Empty;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnActiveFilterChanged(string? value)
+    {
+        ActiveFilter = string.IsNullOrWhiteSpace(value) ? AnyFilterValue : value;
+        CurrentPage = 1;
+        await LoadUsersAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        CurrentPage = Math.Max(page, 1);
+        await LoadUsersAsync();
+    }
+
+    private async Task OnPageSizeChanged(int pageSize)
+    {
+        PageSize = pageSize;
+        CurrentPage = 1;
+        await LoadUsersAsync();
+    }
+
+    private void ClearColumnFilters()
+    {
+        FilterUserId = string.Empty;
+        FilterUsername = string.Empty;
+        FilterDisplayName = string.Empty;
+        FilterEmail = string.Empty;
+        FilterRole = string.Empty;
+        FilterPermission = string.Empty;
+        ActiveFilter = AnyFilterValue;
+    }
+
+    private void OpenCreateDrawer()
+    {
+        EditorMode = UserEditorMode.Create;
+        EditorUserId = string.Empty;
+        EditorUsername = string.Empty;
+        EditorDisplayName = string.Empty;
+        EditorEmail = string.Empty;
+        EditorPassword = string.Empty;
+        EditorRolesCsv = string.Empty;
+        EditorPermissionsCsv = string.Empty;
+        EditorIsActive = true;
+        IsEditorDrawerOpen = true;
+    }
+
+    private async Task OpenEditDrawerAsync(string userId)
+    {
+        try
+        {
+            var detail = await UserAdministrationApiClient.GetByUserIdAsync(userId, CancellationToken.None);
+
+            EditorMode = UserEditorMode.Edit;
+            EditorUserId = detail.UserId;
+            EditorUsername = detail.Username;
+            EditorDisplayName = detail.DisplayName;
+            EditorEmail = detail.Email;
+            EditorRolesCsv = string.Join(",", detail.Roles);
+            EditorPermissionsCsv = string.Join(",", detail.Permissions);
+            EditorIsActive = detail.IsActive;
+            EditorPassword = string.Empty;
+            IsEditorDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el usuario para edición: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseEditorDrawer()
+    {
+        IsEditorDrawerOpen = false;
+    }
+
+    private async Task SaveEditorAsync()
+    {
+        IsSavingEditor = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(EditorDisplayName))
+            {
+                Snackbar.Add("Display Name es requerido.", Severity.Warning);
+                return;
+            }
+
+            if (EditorMode == UserEditorMode.Create)
+            {
+                if (string.IsNullOrWhiteSpace(EditorUsername) || string.IsNullOrWhiteSpace(EditorPassword))
+                {
+                    Snackbar.Add("Username y Password inicial son requeridos para alta.", Severity.Warning);
+                    return;
+                }
+
+                var createRequest = new CreateUserRequestDto(
+                    EditorUsername.Trim(),
+                    EditorDisplayName.Trim(),
+                    NormalizeOptional(EditorEmail),
+                    EditorPassword,
+                    ParseCsv(EditorRolesCsv),
+                    ParseCsv(EditorPermissionsCsv),
+                    EditorIsActive);
+
+                await UserAdministrationApiClient.CreateAsync(createRequest, CancellationToken.None);
+                Snackbar.Add("Usuario creado correctamente.", Severity.Success);
+            }
+            else
+            {
+                var updateRequest = new UpdateUserRequestDto(
+                    EditorDisplayName.Trim(),
+                    NormalizeOptional(EditorEmail),
+                    ParseCsv(EditorRolesCsv),
+                    ParseCsv(EditorPermissionsCsv),
+                    EditorIsActive,
+                    null);
+
+                await UserAdministrationApiClient.UpdateAsync(EditorUserId, updateRequest, CancellationToken.None);
+                Snackbar.Add("Usuario actualizado correctamente.", Severity.Success);
+            }
+
+            IsEditorDrawerOpen = false;
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo guardar el usuario: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSavingEditor = false;
+        }
+    }
+
+    private async Task ToggleActivationAsync(UserListItemDto user)
+    {
+        try
+        {
+            var updated = await UserAdministrationApiClient.SetActivationAsync(user.UserId, !user.IsActive, CancellationToken.None);
+            Snackbar.Add($"Usuario {(updated.IsActive ? "activado" : "desactivado")} correctamente.", Severity.Success);
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cambiar el estado del usuario: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task OpenResetPasswordDrawerAsync(string userId)
+    {
+        try
+        {
+            var detail = await UserAdministrationApiClient.GetByUserIdAsync(userId, CancellationToken.None);
+            ResetDrawerUserId = detail.UserId;
+            ResetDrawerUsername = detail.Username;
+            ResetPassword = string.Empty;
+            ResetConfirmPassword = string.Empty;
+            IsResetDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo abrir reset password: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseResetDrawer()
+    {
+        IsResetDrawerOpen = false;
+    }
+
+    private async Task SavePasswordResetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ResetPassword) || string.IsNullOrWhiteSpace(ResetConfirmPassword))
+        {
+            Snackbar.Add("Debes completar password y confirmación.", Severity.Warning);
+            return;
+        }
+
+        if (!string.Equals(ResetPassword, ResetConfirmPassword, StringComparison.Ordinal))
+        {
+            Snackbar.Add("La confirmación de password no coincide.", Severity.Warning);
+            return;
+        }
+
+        IsSavingReset = true;
+
+        try
+        {
+            var detail = await UserAdministrationApiClient.GetByUserIdAsync(ResetDrawerUserId, CancellationToken.None);
+            var updateRequest = new UpdateUserRequestDto(
+                detail.DisplayName,
+                detail.Email,
+                detail.Roles,
+                detail.Permissions,
+                detail.IsActive,
+                ResetPassword);
+
+            await UserAdministrationApiClient.UpdateAsync(detail.UserId, updateRequest, CancellationToken.None);
+            Snackbar.Add("Password reseteado correctamente.", Severity.Success);
+            IsResetDrawerOpen = false;
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo completar el reset de password: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSavingReset = false;
+        }
+    }
+
+    private static IReadOnlyList<string> ParseCsv(string? raw)
+        => raw?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+           ?? [];
+
+    private static string? NormalizeOptional(string? value)
+        => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private enum UserEditorMode
+    {
+        Create,
+        Edit
+    }
+}

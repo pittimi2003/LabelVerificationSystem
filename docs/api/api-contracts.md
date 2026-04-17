@@ -430,9 +430,9 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 
 ### Contrato base de administración de usuarios (Bloque B / Fase 4 abierta)
 
-> Estado Bloque B / Fase 4: **implementación base backend activa**.
+> Estado Bloque B / Fase 4: **backend base + vista frontend administrativa inicial activas**.
 
-Se habilita un primer contrato operativo para administración de cuentas internas del sistema, sin incluir aún UI administrativa en este bloque.
+Se habilita un primer contrato operativo para administración de cuentas internas del sistema, con una primera UI administrativa en Blazor WASM (grid, filtros por columna en cliente, paginación y acciones CRUD soportadas por backend).
 
 #### `GET /api/users`
 Listado paginado con filtros para grid administrativo.
@@ -539,6 +539,7 @@ Códigos esperados:
 - Modelo final de roles/permisos (catálogo normalizado vs lista libre serializada).
 - Política definitiva de borrado (hard delete, soft delete o solo desactivación operativa).
 - Regla de unicidad/case-insensitive definitiva para `username` y `email` en todos los motores soportados.
+- Para filtros multi-columna combinados sobre todo el universo paginado, falta contrato backend con filtros por campo; en esta fase la UI aplica filtros por columna sobre la página cargada y filtro de estado también a nivel servidor (`isActive`).
 
 
 ## Convención inicial de respuestas

@@ -560,6 +560,16 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 7. Administrador activa/desactiva cuenta por `PATCH /api/users/{userId}/activation` según política operativa vigente.
 8. Flujo de autenticación reutiliza estas cuentas persistidas como fuente primaria, con fallback compatible al catálogo estático existente.
 
+## 8.12 Administración de usuarios en frontend (Bloque B en Fase 4 abierta)
+1. Usuario administrador navega a `/users` dentro de la shell actual de Blazor WebAssembly.
+2. La UI renderiza una vista tipo grid administrativa (card principal, cabecera con acciones y tabla de filas limpias).
+3. La carga de datos usa `GET /api/users` con paginación (`page`, `pageSize`) y filtro de estado (`isActive`) para mantener consistencia con backend activo.
+4. Los filtros por columna (`userId`, `username`, `displayName`, `email`, `roles`, `permissions`) se aplican en cliente sobre la página cargada.
+5. El alta de usuario usa formulario lateral y ejecuta `POST /api/users`.
+6. La edición usa detalle real `GET /api/users/{userId}` y persistencia por `PUT /api/users/{userId}`.
+7. La activación/desactivación se ejecuta por fila con `PATCH /api/users/{userId}/activation`.
+8. La acción de reset password se implementa con `PUT /api/users/{userId}` enviando `newPassword` (capacidad ya disponible en backend base).
+
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
 - Refresh proactivo: 3 minutos antes de vencimiento.

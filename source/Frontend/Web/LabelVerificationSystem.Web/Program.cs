@@ -3,6 +3,7 @@ using BlazorColorPicker;
 using LabelVerificationSystem.Web.Components;
 using LabelVerificationSystem.Web.Components.Auth;
 using LabelVerificationSystem.Web.Components.Services;
+using LabelVerificationSystem.Web.Components.Users;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -53,6 +54,12 @@ namespace LabelVerificationSystem.Web
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                 var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.ClientName);
                 return new LabelVerificationSystem.Web.Components.ExcelUploads.ExcelUploadApiClient(backendApiClient);
+            });
+            builder.Services.AddScoped(sp =>
+            {
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.ClientName);
+                return new UserAdministrationApiClient(backendApiClient);
             });
 
             await builder.Build().RunAsync();

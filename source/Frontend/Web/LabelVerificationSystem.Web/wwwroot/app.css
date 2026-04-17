@@ -58,3 +58,29 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+/* Users admin module */
+.users-admin-page .users-admin-card {
+    background: rgba(20, 24, 37, 0.88);
+    border: 1px solid rgba(126, 137, 182, 0.28);
+}
+
+.users-admin-page .users-admin-filters {
+    background: rgba(15, 18, 30, 0.55);
+    border: 1px solid rgba(126, 137, 182, 0.2);
+}
+
+.users-admin-page .users-admin-table {
+    background: transparent;
+}
+
+.users-admin-page .users-admin-table .mud-table-head {
+    background: rgba(74, 90, 160, 0.2);
+}
+
+.users-admin-page .users-admin-table .mud-table-row:hover {
+    background: rgba(115, 138, 216, 0.1);
+}
+
+.users-admin-page .users-page-size {
+    min-width: 150px;
+}
