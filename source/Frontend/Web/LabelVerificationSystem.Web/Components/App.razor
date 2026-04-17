@@ -1,13 +1,73 @@
-<LabelVerificationSystem.Web.Components.Auth.AuthBootstrap />
+@implements IDisposable
+@inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
+@inject NavigationManager NavigationManager
 
-<Router AppAssembly="@typeof(Program).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <LayoutView Layout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)">
-            <MudText Typo="Typo.h6">Página no encontrada.</MudText>
-        </LayoutView>
-    </NotFound>
-</Router>
+@if (!AuthSessionService.IsInitialized)
+{
+    <MudContainer Class="d-flex justify-center pa-10">
+        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+    </MudContainer>
+}
+else
+{
+    <Router AppAssembly="@typeof(Program).Assembly" OnNavigateAsync="HandleNavigateAsync">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)">
+                <MudText Typo="Typo.h6">Página no encontrada.</MudText>
+            </LayoutView>
+        </NotFound>
+    </Router>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        AuthSessionService.SessionChanged += OnSessionChanged;
+        await AuthSessionService.InitializeAsync();
+        EnsureCurrentLocationAccess();
+    }
+
+    private Task HandleNavigateAsync(Microsoft.AspNetCore.Components.Routing.NavigationContext context)
+    {
+        EnsureCurrentLocationAccess(context.Path);
+        return Task.CompletedTask;
+    }
+
+    private void EnsureCurrentLocationAccess(string? relativePath = null)
+    {
+        var path = string.IsNullOrWhiteSpace(relativePath)
+            ? NavigationManager.ToBaseRelativePath(NavigationManager.Uri)
+            : relativePath;
+
+        var isProtectedRoute = LabelVerificationSystem.Web.Components.Auth.AuthRoutePolicy.IsProtected(path);
+        var isAuthenticated = AuthSessionService.Current.IsAuthenticated;
+
+        if (isProtectedRoute && !isAuthenticated)
+        {
+            var returnUrl = Uri.EscapeDataString('/' + path.TrimStart('/'));
+            NavigationManager.NavigateTo($"/signin?returnUrl={returnUrl}", replace: true);
+            return;
+        }
+
+        if (LabelVerificationSystem.Web.Components.Auth.AuthRoutePolicy.IsPublic(path)
+            && isAuthenticated
+            && LabelVerificationSystem.Web.Components.Auth.AuthRoutePolicy.IsSignInRoute(path))
+        {
+            NavigationManager.NavigateTo("/", replace: true);
+        }
+    }
+
+    private void OnSessionChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AuthSessionService.SessionChanged -= OnSessionChanged;
+    }
+}

@@ -381,3 +381,27 @@ Se implementó el primer corte real del backend de autenticación en API .NET, m
 - política final de sesiones simultáneas por usuario
 - estrategia final de almacenamiento cliente de refresh token para endurecimiento productivo
 - política de purga de sesiones/tokens expirados o revocados
+
+## Avance implementado: Control total de entrada y navegación auth (frontend fase 1.1)
+
+Se cerró el comportamiento de acceso inicial y protección de navegación para que la app no renderice contenido protegido sin sesión activa o recuperable.
+
+### Implementado en esta iteración
+- Bootstrap de sesión bloqueante en `App.razor` antes de habilitar el router.
+- Guard de navegación por política de rutas (públicas vs protegidas) con redirección a `/signin` cuando no hay sesión válida.
+- Entrada normal cuando la sesión es válida, restaurada por refresh o en modo bypass.
+- Conservación de la regla de backend como autoridad real para validar tokens en llamadas API (`401/403` siguen disparando limpieza/redirección desde handler HTTP).
+- Redirección desde `/signin` a `/` cuando ya existe sesión autenticada.
+
+### Rutas oficiales en esta etapa
+- Públicas: `/signin`, `/signin-basic`, `/signup`, `/reset-password`, `/error`, `/error401`.
+- Protegidas: toda ruta no listada como pública (incluye `/`, `/index`, `/excel-uploads`, `/counter`, `/weather`, `/logout` y nuevas rutas futuras por defecto).
+
+### Configuración relevante (vigente)
+- Backend: `Authentication:Jwt:AccessTokenTtlMinutes`, `Authentication:Jwt:RefreshProactiveWindowMinutes`, `Authentication:RefreshToken:TtlMinutes`, `Authentication:Bypass:Enabled`, `Authentication:Bypass:AllowedEnvironments`.
+- Frontend: `Api:BaseUrl` y persistencia en `sessionStorage` (`AuthSessionV1`).
+
+### Decisiones abiertas que continúan
+- Estrategia final endurecida de almacenamiento del refresh token en cliente para producción.
+- Política final de sesiones simultáneas por usuario.
+- Definición final de comportamiento de bypass para operaciones protegidas fuera de `/api/auth/me` en fases posteriores.

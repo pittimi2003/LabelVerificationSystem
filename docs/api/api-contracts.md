@@ -317,6 +317,27 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 - cierre de sesión automático al fallar refresh por `401`/`409`.
 - revocación de cadena de refresh ante sospecha de replay.
 
+#### Reglas de entrada y protección de navegación (frontend fase 1.1)
+- El bootstrap de sesión es bloqueante al inicio de app: primero se ejecuta `InitializeAsync` y después se habilita el router para evitar parpadeo de contenido protegido.
+- La decisión de acceso por navegación usa el snapshot de sesión actual en memoria (sin llamar `/api/auth/me` en cada cambio de ruta).
+- Si la ruta objetivo es protegida y no hay sesión válida/recuperable, frontend redirige a `/signin` con `returnUrl`.
+- Si la sesión quedó restaurada (usuario o bypass), la navegación continúa normalmente.
+- Si el usuario ya está autenticado e intenta abrir `/signin` o `/signin-basic`, frontend redirige a `/`.
+
+#### Matriz de rutas públicas/protegidas vigente en frontend
+- **Públicas**: `/signin`, `/signin-basic`, `/signup`, `/reset-password`, `/error`, `/error401`.
+- **Protegidas**: toda ruta no incluida explícitamente en la lista pública (incluye `/`, `/index`, `/excel-uploads`, `/counter`, `/weather`, `/logout` y futuras rutas por defecto).
+
+#### Configuración relevante de autenticación (backend/frontend)
+- Backend:
+  - `Authentication:Jwt:AccessTokenTtlMinutes` (actual: `20`).
+  - `Authentication:Jwt:RefreshProactiveWindowMinutes` (actual: `3`).
+  - `Authentication:RefreshToken:TtlMinutes` (actual operativo: `1440`).
+  - `Authentication:Bypass:Enabled` + `Authentication:Bypass:AllowedEnvironments` para habilitar identidad sintética en entornos permitidos.
+- Frontend:
+  - `Api:BaseUrl` en `wwwroot/appsettings*.json` para el cliente HTTP `BackendApi`.
+  - Persistencia de snapshot de sesión en `sessionStorage` (`AuthSessionV1`) para restauración tras recarga.
+
 ### Diseño técnico del modelo de sesión por tokens (cierre de iteración)
 
 > Alcance: diseño técnico y reglas de contrato. Esta sección **no implica implementación completa** en backend/frontend en esta iteración.

@@ -520,6 +520,17 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 3. Operaciones deben auditar `authMode=Bypass`.
 4. Implementación fase 1: `/api/auth/login` y `/api/auth/refresh` responden `409 Conflict` cuando bypass está habilitado en entorno permitido.
 
+## 8.7 Control de entrada inicial y guard de rutas (cerrado en esta iteración)
+1. Al iniciar la app, frontend ejecuta bootstrap de sesión de forma bloqueante antes de renderizar navegación principal.
+2. Si no hay sesión válida o recuperable, redirige a `/signin`.
+3. Si hay sesión de usuario válida (o recuperada por refresh), permite entrada normal.
+4. Si aplica bypass vigente en backend, permite entrada con identidad sintética sin login manual.
+5. En cada navegación, frontend decide acceso usando el estado de sesión en memoria, sin invocar `/api/auth/me` en cada cambio de página.
+
+## 8.8 Clasificación de rutas frontend
+- Rutas públicas: `/signin`, `/signin-basic`, `/signup`, `/reset-password`, `/error`, `/error401`.
+- Rutas protegidas: cualquier otra ruta del SPA (incluyendo actuales y futuras), protegidas por política por defecto.
+
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
 - Refresh proactivo: 3 minutos antes de vencimiento.

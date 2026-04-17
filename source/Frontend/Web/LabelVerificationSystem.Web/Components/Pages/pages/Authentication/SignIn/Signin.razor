@@ -2,6 +2,7 @@
 @page "/signin-basic"
 @inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
 @inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components
 
 <PageTitle>Sign In</PageTitle>
 
@@ -37,6 +38,10 @@
 </div>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
     private string _username = string.Empty;
     private string _password = string.Empty;
     private bool _isSubmitting;
@@ -60,7 +65,8 @@
         try
         {
             await AuthSessionService.LoginAsync(_username.Trim(), _password, rememberMe: false);
-            NavigationManager.NavigateTo("/");
+            var targetUrl = string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl;
+            NavigationManager.NavigateTo(targetUrl, replace: true);
         }
         catch (HttpRequestException ex)
         {
