@@ -431,6 +431,43 @@ Decisión abierta:
 - Límite de sesiones simultáneas por usuario.
 - Estrategia de limpieza (purga) de tokens expirados/revocados.
 
+### Entidades implementadas para reset real de contraseña (Bloque A / Fase 4 en curso)
+
+#### PasswordResetToken
+Propósito: emitir y validar tokens opacos de recuperación de contraseña, de un solo uso y con expiración.
+
+Campos implementados:
+- `Id` (`Guid`).
+- `UserId` (`string`).
+- `TokenHash` (`string`, único).
+- `CreatedAtUtc` (`datetime`).
+- `ExpiresAtUtc` (`datetime`).
+- `UsedAtUtc` (`datetime`, nullable).
+- `RevokedAtUtc` (`datetime`, nullable).
+- `RevocationReason` (`string`, nullable).
+- `CreatedByIp` (`string`, nullable).
+- `CreatedByUserAgent` (`string`, nullable).
+
+Reglas implementadas:
+- el token plano nunca se persiste; solo hash SHA-256.
+- al pedir un reset nuevo se revocan tokens previos activos del mismo usuario.
+- al consumir reset exitoso se marca `UsedAtUtc` y se revocan tokens activos restantes.
+
+#### UserPasswordCredential
+Propósito: persistir credencial efectiva mutable del usuario sin alterar el catálogo base configurado en `Authentication:Users`.
+
+Campos implementados:
+- `Id` (`Guid`).
+- `UserId` (`string`, único).
+- `PasswordHash` (`string`) con formato `salt:hash` usando PBKDF2-SHA256.
+- `CreatedAtUtc` (`datetime`).
+- `UpdatedAtUtc` (`datetime`).
+- `UpdatedByIp` (`string`, nullable).
+- `UpdatedByUserAgent` (`string`, nullable).
+
+Regla implementada:
+- login valida primero `UserPasswordCredential`; si no existe, usa contraseña de `Authentication:Users` como fallback compatible.
+
 ---
 
 ## Relaciones principales del modelo

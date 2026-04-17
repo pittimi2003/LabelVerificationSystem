@@ -18,6 +18,7 @@ public sealed class AuthService : IAuthService
 {
     private const string AuthModeUser = "User";
     private const string AuthModeBypass = "Bypass";
+    private const string PasswordResetNeutralMessage = "If the account exists, reset instructions were sent.";
 
     private readonly AppDbContext _dbContext;
     private readonly AuthenticationOptions _options;
@@ -49,7 +50,7 @@ public sealed class AuthService : IAuthService
             string.Equals(x.Username, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)
             || (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)));
 
-        if (matchedUser is null || !matchedUser.IsActive || !string.Equals(matchedUser.Password, request.Password, StringComparison.Ordinal))
+        if (matchedUser is null || !matchedUser.IsActive || !await IsValidPasswordAsync(matchedUser, request.Password, cancellationToken))
         {
             throw new AuthUnauthorizedException("Credenciales inválidas.");
         }
@@ -207,6 +208,130 @@ public sealed class AuthService : IAuthService
         return new AuthMeResponse(true, AuthModeUser, user, new AuthSessionDto(accessExpiresAtUtc, refreshRecommendedAtUtc, nowUtc));
     }
 
+    public async Task<AuthResetRequestResponse> PasswordResetRequestAsync(AuthResetRequestRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
+    {
+        ValidatePasswordResetRequest(request);
+
+        var matchedUser = _options.Users.FirstOrDefault(x =>
+            x.IsActive
+            && (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(x.Username, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)));
+
+        if (matchedUser is null)
+        {
+            return new AuthResetRequestResponse(PasswordResetNeutralMessage);
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        var resetToken = BuildPasswordResetToken(matchedUser.UserId, nowUtc, ipAddress, userAgent);
+
+        var priorTokens = await _dbContext.PasswordResetTokens
+            .Where(x => x.UserId == matchedUser.UserId && x.UsedAtUtc == null && x.RevokedAtUtc == null && x.ExpiresAtUtc > nowUtc)
+            .ToListAsync(cancellationToken);
+
+        foreach (var prior in priorTokens)
+        {
+            prior.RevokedAtUtc = nowUtc;
+            prior.RevocationReason = "superseded_by_new_reset_request";
+        }
+
+        _dbContext.PasswordResetTokens.Add(resetToken.Entity);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "auth.password_reset.requested userId={UserId} delivery=out_of_band_phase token={ResetToken}",
+            matchedUser.UserId,
+            resetToken.PlainToken);
+
+        return new AuthResetRequestResponse(PasswordResetNeutralMessage);
+    }
+
+    public async Task PasswordResetConfirmAsync(AuthResetConfirmRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
+    {
+        ValidatePasswordResetConfirm(request);
+
+        var nowUtc = DateTime.UtcNow;
+        var resetTokenHash = ComputeTokenHash(request.ResetToken);
+
+        var tokenEntity = await _dbContext.PasswordResetTokens
+            .FirstOrDefaultAsync(x => x.TokenHash == resetTokenHash, cancellationToken);
+
+        if (tokenEntity is null)
+        {
+            throw new AuthUnauthorizedException("Reset token inválido.");
+        }
+
+        if (tokenEntity.RevokedAtUtc is not null || tokenEntity.UsedAtUtc is not null)
+        {
+            throw new AuthConflictException("Reset token ya utilizado o revocado.");
+        }
+
+        if (tokenEntity.ExpiresAtUtc <= nowUtc)
+        {
+            throw new AuthUnauthorizedException("Reset token expirado.");
+        }
+
+        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == tokenEntity.UserId && x.IsActive);
+        if (configuredUser is null)
+        {
+            tokenEntity.RevokedAtUtc = nowUtc;
+            tokenEntity.RevocationReason = "user_not_available";
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            throw new AuthUnauthorizedException("Reset token inválido.");
+        }
+
+        var existingCredential = await _dbContext.UserPasswordCredentials
+            .FirstOrDefaultAsync(x => x.UserId == configuredUser.UserId, cancellationToken);
+
+        var passwordHash = HashPassword(request.NewPassword);
+        if (existingCredential is null)
+        {
+            _dbContext.UserPasswordCredentials.Add(new UserPasswordCredential
+            {
+                Id = Guid.NewGuid(),
+                UserId = configuredUser.UserId,
+                PasswordHash = passwordHash,
+                CreatedAtUtc = nowUtc,
+                UpdatedAtUtc = nowUtc,
+                UpdatedByIp = Truncate(ipAddress, 64),
+                UpdatedByUserAgent = Truncate(userAgent, 512)
+            });
+        }
+        else
+        {
+            existingCredential.PasswordHash = passwordHash;
+            existingCredential.UpdatedAtUtc = nowUtc;
+            existingCredential.UpdatedByIp = Truncate(ipAddress, 64);
+            existingCredential.UpdatedByUserAgent = Truncate(userAgent, 512);
+        }
+
+        tokenEntity.UsedAtUtc = nowUtc;
+
+        var activeUserSessions = await _dbContext.AuthSessions
+            .Where(x => x.UserId == configuredUser.UserId && x.RevokedAtUtc == null)
+            .ToListAsync(cancellationToken);
+
+        if (_options.PasswordReset.RevokeAllSessionsOnPasswordReset)
+        {
+            foreach (var activeSession in activeUserSessions)
+            {
+                await RevokeSessionChainAsync(activeSession, "password_reset", nowUtc, cancellationToken);
+            }
+        }
+
+        var activeResetTokens = await _dbContext.PasswordResetTokens
+            .Where(x => x.UserId == configuredUser.UserId && x.Id != tokenEntity.Id && x.UsedAtUtc == null && x.RevokedAtUtc == null && x.ExpiresAtUtc > nowUtc)
+            .ToListAsync(cancellationToken);
+
+        foreach (var activeResetToken in activeResetTokens)
+        {
+            activeResetToken.RevokedAtUtc = nowUtc;
+            activeResetToken.RevocationReason = "password_reset_completed";
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private AuthTokenResponse BuildTokenResponse(AuthSession session, IReadOnlyList<string> roles, IReadOnlyList<string> permissions, string refreshToken, DateTime refreshExpiresAtUtc, DateTime nowUtc)
     {
         var accessExpiresAtUtc = nowUtc.AddMinutes(_options.Jwt.AccessTokenTtlMinutes);
@@ -276,6 +401,25 @@ public sealed class AuthService : IAuthService
         return (refreshToken, plainToken);
     }
 
+    private (PasswordResetToken Entity, string PlainToken) BuildPasswordResetToken(string userId, DateTime nowUtc, string? ipAddress, string? userAgent)
+    {
+        var plainToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var hashedToken = ComputeTokenHash(plainToken);
+
+        var resetToken = new PasswordResetToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            TokenHash = hashedToken,
+            CreatedAtUtc = nowUtc,
+            ExpiresAtUtc = nowUtc.AddMinutes(_options.PasswordReset.TokenTtlMinutes),
+            CreatedByIp = Truncate(ipAddress, 64),
+            CreatedByUserAgent = Truncate(userAgent, 512)
+        };
+
+        return (resetToken, plainToken);
+    }
+
     private async Task RevokeSessionChainAsync(AuthSession session, string reason, DateTime nowUtc, CancellationToken cancellationToken)
     {
         if (session.RevokedAtUtc is null)
@@ -341,6 +485,80 @@ public sealed class AuthService : IAuthService
             && !string.Equals(request.ClientInfo.App, "BlazorWasm", StringComparison.OrdinalIgnoreCase))
         {
             throw new AuthValidationException("clientInfo.app debe ser BlazorWasm.");
+        }
+    }
+
+    private static void ValidatePasswordResetRequest(AuthResetRequestRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.UsernameOrEmail) || request.UsernameOrEmail.Trim().Length is < 3 or > 256)
+        {
+            throw new AuthValidationException("usernameOrEmail debe tener entre 3 y 256 caracteres.");
+        }
+    }
+
+    private static void ValidatePasswordResetConfirm(AuthResetConfirmRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.ResetToken))
+        {
+            throw new AuthValidationException("resetToken es obligatorio.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 8)
+        {
+            throw new AuthValidationException("newPassword debe tener mínimo 8 caracteres.");
+        }
+
+        var hasLetter = request.NewPassword.Any(char.IsLetter);
+        var hasDigit = request.NewPassword.Any(char.IsDigit);
+        if (!hasLetter || !hasDigit)
+        {
+            throw new AuthValidationException("newPassword debe contener al menos una letra y un número.");
+        }
+
+        if (!string.Equals(request.NewPassword, request.ConfirmPassword, StringComparison.Ordinal))
+        {
+            throw new AuthValidationException("newPassword y confirmPassword deben coincidir.");
+        }
+    }
+
+    private async Task<bool> IsValidPasswordAsync(ConfiguredUser user, string providedPassword, CancellationToken cancellationToken)
+    {
+        var storedCredential = await _dbContext.UserPasswordCredentials
+            .FirstOrDefaultAsync(x => x.UserId == user.UserId, cancellationToken);
+
+        if (storedCredential is not null)
+        {
+            return VerifyPassword(providedPassword, storedCredential.PasswordHash);
+        }
+
+        return string.Equals(user.Password, providedPassword, StringComparison.Ordinal);
+    }
+
+    private static string HashPassword(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(16);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, 120000, HashAlgorithmName.SHA256, 32);
+        return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+    }
+
+    private static bool VerifyPassword(string password, string storedHash)
+    {
+        try
+        {
+            var pieces = storedHash.Split(':', 2);
+            if (pieces.Length != 2)
+            {
+                return false;
+            }
+
+            var salt = Convert.FromBase64String(pieces[0]);
+            var expectedHash = Convert.FromBase64String(pieces[1]);
+            var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, 120000, HashAlgorithmName.SHA256, expectedHash.Length);
+            return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+        }
+        catch (FormatException)
+        {
+            return false;
         }
     }
 }

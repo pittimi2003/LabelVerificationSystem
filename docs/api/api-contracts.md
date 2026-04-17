@@ -239,13 +239,12 @@ Sin body. Requiere `Authorization: Bearer <access_token>`.
 
 ### `POST /api/auth/password/reset-request`
 Solicita recuperación de contraseña (envío de token/código fuera de banda).
-
-> Estado fase 1: **no implementado** (depende de decisiones aún abiertas de gestión formal de usuarios y canal de entrega).
+> Estado Bloque A / Fase 4: **implementado** con entrega fuera de banda (sin proveedor de email integrado en esta fase).
 
 #### Request DTO
 ```json
 {
-  "email": "user@example.com"
+  "usernameOrEmail": "user@example.com"
 }
 ```
 
@@ -258,15 +257,20 @@ Solicita recuperación de contraseña (envío de token/código fuera de banda).
 
 #### Códigos esperados
 - `202 Accepted`: respuesta neutral (no filtra existencia de usuario)
-- `400 Bad Request`: formato inválido de email
-- `429 Too Many Requests`: rate limit
+- `400 Bad Request`: payload inválido
+
+#### Reglas implementadas
+- Respuesta neutral constante para evitar filtrado de existencia de cuenta.
+- Si el usuario existe y está activo, se crea token opaco de un solo uso con hash persistido y expiración configurable (`Authentication:PasswordReset:TokenTtlMinutes`, actual `30`).
+- Los tokens previos activos del mismo usuario se revocan al generar uno nuevo.
+- Entrega del token en esta fase: **fuera de banda** mediante logging operativo (`auth.password_reset.requested ... token=...`) mientras se define canal final (email/SMTP u otro).
 
 ---
 
 ### `POST /api/auth/password/reset-confirm`
 Confirma cambio de contraseña con token de recuperación.
 
-> Estado fase 1: **no implementado** por la misma dependencia funcional.
+> Estado Bloque A / Fase 4: **implementado**.
 
 #### Request DTO
 ```json
@@ -284,11 +288,20 @@ Sin payload (`204`).
 - `204 No Content`: cambio exitoso
 - `400 Bad Request`: payload inválido o contraseñas no coinciden
 - `401 Unauthorized`: token inválido/expirado
+- `409 Conflict`: token ya usado o revocado
 
 #### Reglas de validación
 - `newPassword` y `confirmPassword` requeridos y deben coincidir
 - política mínima: longitud `>= 8`, al menos 1 letra y 1 número
 - `resetToken` requerido, no vacío
+
+#### Reglas implementadas de seguridad
+- `resetToken` se valida por hash (no se persiste en claro).
+- token queda invalidado con `UsedAtUtc` al consumirse exitosamente.
+- token inválido/expirado no expone información de usuario.
+- al confirmar reset se persiste credencial derivada (PBKDF2 SHA256 + salt).
+- por configuración vigente (`Authentication:PasswordReset:RevokeAllSessionsOnPasswordReset=true`) se revocan todas las sesiones activas (`AuthSession` + cadena de refresh tokens) del usuario para forzar nuevo login en todos los dispositivos.
+- se revocan además otros reset tokens activos del mismo usuario tras reset exitoso.
 
 #### Nota de alineación UI
 Estos endpoints se alinean con la base de UI existente en `Pages/Authentication` (login/reset password) y permiten conectar esos flujos sin redefinir rutas al implementar backend.
@@ -333,6 +346,8 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
   - `Authentication:Jwt:AccessTokenTtlMinutes` (actual: `20`).
   - `Authentication:Jwt:RefreshProactiveWindowMinutes` (actual: `3`).
   - `Authentication:RefreshToken:TtlMinutes` (actual operativo: `1440`).
+  - `Authentication:PasswordReset:TokenTtlMinutes` (actual operativo: `30`).
+  - `Authentication:PasswordReset:RevokeAllSessionsOnPasswordReset` (actual operativo: `true`).
   - `Authentication:Bypass:Enabled` + `Authentication:Bypass:AllowedEnvironments` para habilitar identidad sintética en entornos permitidos.
 - Frontend:
   - `Api:BaseUrl` en `wwwroot/appsettings*.json` para el cliente HTTP `BackendApi`.

@@ -371,8 +371,6 @@ Se implementó el primer corte real del backend de autenticación en API .NET, m
 
 ### Explícitamente fuera de esta fase
 
-- `POST /api/auth/password/reset-request`
-- `POST /api/auth/password/reset-confirm`
 - integración del usuario autenticado en flujo `ExcelUpload`
 - autorización avanzada y administración completa de usuarios
 
@@ -381,6 +379,33 @@ Se implementó el primer corte real del backend de autenticación en API .NET, m
 - política final de sesiones simultáneas por usuario
 - estrategia final de almacenamiento cliente de refresh token para endurecimiento productivo
 - política de purga de sesiones/tokens expirados o revocados
+
+## Avance implementado: Bloque A en Fase 4 (abierta) — Reset real de contraseña
+
+Se implementó el flujo real end-to-end de reset password, alineado con el modelo de autenticación existente y sin mover la arquitectura backend.
+
+### Implementado en backend
+- endpoint `POST /api/auth/password/reset-request` activo.
+- endpoint `POST /api/auth/password/reset-confirm` activo.
+- nueva persistencia `PasswordResetToken` (token opaco hash + expiración + uso/revocación).
+- nueva persistencia `UserPasswordCredential` para credencial efectiva mutable (PBKDF2 + salt), manteniendo fallback compatible con `Authentication:Users`.
+- invalidación de token por uso único y revocación de tokens de reset previos/pendientes.
+- manejo neutral para usuario inexistente (`202` idéntico) sin filtrar existencia de cuenta.
+- política vigente tras cambio de contraseña: revocar todas las sesiones activas y refresh tokens del usuario (`Authentication:PasswordReset:RevokeAllSessionsOnPasswordReset=true`).
+
+### Implementado en frontend
+- integración real de la pantalla `/reset-password` con backend (`reset-request` + `reset-confirm`).
+- captura de `usernameOrEmail`, token de reset y nueva contraseña con confirmación.
+- mensajes de estado/errores alineados con respuestas API.
+
+### Estrategia explícita de fase para entrega de token
+- No se integró proveedor externo de email en este bloque.
+- La entrega del token se resuelve temporalmente fuera de banda por operación/logs (registro operativo del token emitido), y queda documentada como decisión de fase abierta.
+
+### Decisiones abiertas que continúan en Fase 4
+- canal definitivo de entrega de token (email/SMTP u otro) para producción.
+- endurecimiento adicional de operación (rate limiting dedicado, antifraude y auditoría extendida).
+- política final de purga de tokens de reset expirados/revocados.
 
 ## Avance implementado: Control total de entrada y navegación auth (frontend fase 1.1)
 

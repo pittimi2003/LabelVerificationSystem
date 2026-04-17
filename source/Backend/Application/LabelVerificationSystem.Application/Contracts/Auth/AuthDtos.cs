@@ -7,6 +7,9 @@ public sealed record AuthLoginRequest(string UsernameOrEmail, string Password, b
 public sealed record AuthRefreshRequest(string RefreshToken);
 
 public sealed record AuthLogoutRequest(string? RefreshToken);
+public sealed record AuthResetRequestRequest(string UsernameOrEmail);
+public sealed record AuthResetRequestResponse(string Message);
+public sealed record AuthResetConfirmRequest(string ResetToken, string NewPassword, string ConfirmPassword);
 
 public sealed record AuthUserDto(
     string UserId,
