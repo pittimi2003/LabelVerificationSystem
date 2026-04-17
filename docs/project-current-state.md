@@ -439,6 +439,31 @@ Se implementó la base backend del módulo administrativo de usuarios, mantenien
 - política final de baja lógica/física (por ahora se opera con activación/desactivación).
 - estrategia final de normalización/colación case-insensitive para unicidad robusta cross-DB.
 
+## Avance implementado: Bloque B en Fase 4 (abierta) — Vista frontend administrativa de usuarios (grid)
+
+Se implementó la vista principal del módulo de usuarios en Blazor WebAssembly, reutilizando la shell actual y consumiendo exclusivamente el backend ya implementado para administración de usuarios.
+
+### Implementado en frontend
+- nueva página protegida `/users` con patrón de grid administrativo en card principal.
+- cabecera de módulo con acciones visibles (`Actualizar`, `Nuevo usuario`).
+- tabla administrativa con columnas alineadas al contrato real (`userId`, `username`, `displayName`, `email`, `roles`, `permissions`, `isActive`, timestamps).
+- badges visuales para estado de usuario (`Activo` / `Inactivo`) y chips para roles/permisos.
+- filtros por columna visibles en la parte superior del grid.
+- paginación visible con selector de tamaño de página y navegación por página.
+- acciones CRUD por fila:
+  - editar usuario
+  - activar/desactivar usuario
+  - reset password vía `newPassword` en `PUT /api/users/{userId}` (capacidad existente en backend)
+- alta de usuario mediante formulario lateral conectado a `POST /api/users`.
+
+### Integración con navegación existente
+- se agregó entrada de menú `Usuarios (Admin)` sin romper la navegación actual de la shell.
+- la ruta permanece bajo las reglas actuales de protección de rutas autenticadas.
+
+### Decisiones abiertas que continúan en Fase 4 (Bloque B)
+- filtros por columna combinados sobre todo el dataset requieren extensión de contrato backend (actualmente los filtros columnares en UI aplican sobre la página cargada, y `isActive` sí viaja al backend).
+- no se implementa eliminación física/lógica adicional porque el backend actual expone activación/desactivación como operación vigente.
+
 ## Avance implementado: Control total de entrada y navegación auth (frontend fase 1.1)
 
 Se cerró el comportamiento de acceso inicial y protección de navegación para que la app no renderice contenido protegido sin sesión activa o recuperable.

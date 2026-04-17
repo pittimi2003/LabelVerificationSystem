@@ -36,6 +36,15 @@ public class MenuDataService
                     active: false,
                     dirChange: false
                 ),
+                new MainMenuItems (
+                    path: "/users",
+                    type: "link",
+                    icon: "",
+                    title: "Usuarios (Admin)",
+                    selected: false,
+                    active: false,
+                    dirChange: false
+                ),
             }
         ),
 
