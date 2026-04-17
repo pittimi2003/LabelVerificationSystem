@@ -24,6 +24,12 @@ public sealed class UsersController : ControllerBase
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UserListResponse>> List(
         [FromQuery] string? query,
+        [FromQuery] string? userId,
+        [FromQuery] string? username,
+        [FromQuery] string? displayName,
+        [FromQuery] string? email,
+        [FromQuery] string? role,
+        [FromQuery] string? permission,
         [FromQuery] bool? isActive,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -31,7 +37,18 @@ public sealed class UsersController : ControllerBase
     {
         try
         {
-            var response = await _userAdministrationService.ListAsync(query, isActive, page, pageSize, cancellationToken);
+            var listQuery = new UserListQuery(
+                query,
+                userId,
+                username,
+                displayName,
+                email,
+                role,
+                permission,
+                isActive,
+                page,
+                pageSize);
+            var response = await _userAdministrationService.ListAsync(listQuery, cancellationToken);
             return Ok(response);
         }
         catch (AuthValidationException ex)

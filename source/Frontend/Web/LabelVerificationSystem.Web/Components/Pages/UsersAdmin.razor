@@ -47,7 +47,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6" lg="3" Class="d-flex align-center justify-end">
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearColumnFilters" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearColumnFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
                     </MudItem>
                 </MudGrid>
             </MudPaper>
@@ -61,7 +61,7 @@
             }
             else
             {
-                <MudTable Hover="true" Elevation="0" Items="@FilteredUsers" Breakpoint="Breakpoint.Md" Bordered="true" Class="users-admin-table">
+                <MudTable Hover="true" Elevation="0" Items="@_users" Breakpoint="Breakpoint.Md" Bordered="true" Class="users-admin-table">
                     <HeaderContent>
                         <MudTh>User</MudTh>
                         <MudTh>Display Name</MudTh>
@@ -118,7 +118,7 @@
                         </MudTd>
                     </RowTemplate>
                     <NoRecordsContent>
-                        <MudText Typo="Typo.body2">No hay usuarios que coincidan con los filtros actuales para la página cargada.</MudText>
+                        <MudText Typo="Typo.body2">No hay usuarios que coincidan con los filtros actuales en backend.</MudText>
                     </NoRecordsContent>
                 </MudTable>
 
@@ -232,8 +232,6 @@
     private string ResetPassword { get; set; } = string.Empty;
     private string ResetConfirmPassword { get; set; } = string.Empty;
 
-    private IEnumerable<UserListItemDto> FilteredUsers => _users.Where(MatchesColumnFilters);
-
     protected override async Task OnInitializedAsync()
     {
         await LoadUsersAsync();
@@ -245,8 +243,7 @@
 
         try
         {
-            var isActiveFilter = ParseActiveFilterForBackend();
-            var response = await UserAdministrationApiClient.ListAsync(null, isActiveFilter, CurrentPage, PageSize, CancellationToken.None);
+            var response = await UserAdministrationApiClient.ListAsync(BuildListQuery(), CancellationToken.None);
 
             _users.Clear();
             _users.AddRange(response.Items);
@@ -282,79 +279,46 @@
         return null;
     }
 
-    private bool MatchesColumnFilters(UserListItemDto user)
-    {
-        if (!ContainsInvariant(user.UserId, FilterUserId)) return false;
-        if (!ContainsInvariant(user.Username, FilterUsername)) return false;
-        if (!ContainsInvariant(user.DisplayName, FilterDisplayName)) return false;
-        if (!ContainsInvariant(user.Email, FilterEmail)) return false;
-        if (!ContainsInvariant(string.Join(',', user.Roles), FilterRole)) return false;
-        if (!ContainsInvariant(string.Join(',', user.Permissions), FilterPermission)) return false;
-
-        if (string.Equals(ActiveFilter, "true", StringComparison.OrdinalIgnoreCase) && !user.IsActive)
-        {
-            return false;
-        }
-
-        if (string.Equals(ActiveFilter, "false", StringComparison.OrdinalIgnoreCase) && user.IsActive)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool ContainsInvariant(string? source, string? filter)
-    {
-        if (string.IsNullOrWhiteSpace(filter))
-        {
-            return true;
-        }
-
-        return source?.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase) is true;
-    }
-
-    private Task OnFilterUserIdChanged(string? value)
+    private async Task OnFilterUserIdChanged(string? value)
     {
         FilterUserId = value ?? string.Empty;
-        return Task.CompletedTask;
+        await ApplyFiltersAsync();
     }
 
-    private Task OnFilterUsernameChanged(string? value)
+    private async Task OnFilterUsernameChanged(string? value)
     {
         FilterUsername = value ?? string.Empty;
-        return Task.CompletedTask;
+        await ApplyFiltersAsync();
     }
 
-    private Task OnFilterDisplayNameChanged(string? value)
+    private async Task OnFilterDisplayNameChanged(string? value)
     {
         FilterDisplayName = value ?? string.Empty;
-        return Task.CompletedTask;
+        await ApplyFiltersAsync();
     }
 
-    private Task OnFilterEmailChanged(string? value)
+    private async Task OnFilterEmailChanged(string? value)
     {
         FilterEmail = value ?? string.Empty;
-        return Task.CompletedTask;
+        await ApplyFiltersAsync();
     }
 
-    private Task OnFilterRoleChanged(string? value)
+    private async Task OnFilterRoleChanged(string? value)
     {
         FilterRole = value ?? string.Empty;
-        return Task.CompletedTask;
+        await ApplyFiltersAsync();
     }
 
-    private Task OnFilterPermissionChanged(string? value)
+    private async Task OnFilterPermissionChanged(string? value)
     {
         FilterPermission = value ?? string.Empty;
-        return Task.CompletedTask;
+        await ApplyFiltersAsync();
     }
 
     private async Task OnActiveFilterChanged(string? value)
     {
         ActiveFilter = string.IsNullOrWhiteSpace(value) ? AnyFilterValue : value;
-        CurrentPage = 1;
-        await LoadUsersAsync();
+        await ApplyFiltersAsync();
     }
 
     private async Task OnPageChanged(int page)
@@ -370,7 +334,7 @@
         await LoadUsersAsync();
     }
 
-    private void ClearColumnFilters()
+    private async Task ClearColumnFiltersAsync()
     {
         FilterUserId = string.Empty;
         FilterUsername = string.Empty;
@@ -379,7 +343,28 @@
         FilterRole = string.Empty;
         FilterPermission = string.Empty;
         ActiveFilter = AnyFilterValue;
+        CurrentPage = 1;
+        await LoadUsersAsync();
     }
+
+    private async Task ApplyFiltersAsync()
+    {
+        CurrentPage = 1;
+        await LoadUsersAsync();
+    }
+
+    private UserListQueryDto BuildListQuery()
+        => new(
+            Query: null,
+            UserId: FilterUserId,
+            Username: FilterUsername,
+            DisplayName: FilterDisplayName,
+            Email: FilterEmail,
+            Role: FilterRole,
+            Permission: FilterPermission,
+            IsActive: ParseActiveFilterForBackend(),
+            Page: CurrentPage,
+            PageSize: PageSize);
 
     private void OpenCreateDrawer()
     {

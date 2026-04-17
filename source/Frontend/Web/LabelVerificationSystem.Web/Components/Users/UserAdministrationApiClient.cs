@@ -11,22 +11,29 @@ public sealed class UserAdministrationApiClient
         _httpClient = httpClient;
     }
 
-    public async Task<UserListResponseDto> ListAsync(string? query, bool? isActive, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<UserListResponseDto> ListAsync(UserListQueryDto query, CancellationToken cancellationToken)
     {
         var queryParameters = new List<string>
         {
-            $"page={page}",
-            $"pageSize={pageSize}"
+            $"page={query.Page}",
+            $"pageSize={query.PageSize}"
         };
 
-        if (!string.IsNullOrWhiteSpace(query))
+        if (!string.IsNullOrWhiteSpace(query.Query))
         {
-            queryParameters.Add($"query={Uri.EscapeDataString(query.Trim())}");
+            queryParameters.Add($"query={Uri.EscapeDataString(query.Query.Trim())}");
         }
 
-        if (isActive.HasValue)
+        AddIfPresent(queryParameters, "userId", query.UserId);
+        AddIfPresent(queryParameters, "username", query.Username);
+        AddIfPresent(queryParameters, "displayName", query.DisplayName);
+        AddIfPresent(queryParameters, "email", query.Email);
+        AddIfPresent(queryParameters, "role", query.Role);
+        AddIfPresent(queryParameters, "permission", query.Permission);
+
+        if (query.IsActive.HasValue)
         {
-            queryParameters.Add($"isActive={isActive.Value.ToString().ToLowerInvariant()}");
+            queryParameters.Add($"isActive={query.IsActive.Value.ToString().ToLowerInvariant()}");
         }
 
         var requestUri = $"api/users?{string.Join("&", queryParameters)}";
@@ -35,7 +42,7 @@ public sealed class UserAdministrationApiClient
         if (response.IsSuccessStatusCode)
         {
             return await response.Content.ReadFromJsonAsync<UserListResponseDto>(cancellationToken: cancellationToken)
-                ?? new UserListResponseDto([], page, pageSize, 0, 0);
+                ?? new UserListResponseDto([], query.Page, query.PageSize, 0, 0);
         }
 
         throw new InvalidOperationException(await ReadErrorAsync(response, cancellationToken));
@@ -106,5 +113,13 @@ public sealed class UserAdministrationApiClient
         }
 
         return $"La operación falló con código {(int)response.StatusCode}.";
+    }
+
+    private static void AddIfPresent(ICollection<string> queryParameters, string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            queryParameters.Add($"{key}={Uri.EscapeDataString(value.Trim())}");
+        }
     }
 }
