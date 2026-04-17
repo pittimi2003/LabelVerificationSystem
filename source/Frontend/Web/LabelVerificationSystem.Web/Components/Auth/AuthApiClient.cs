@@ -63,6 +63,47 @@ public sealed class AuthApiClient
         return await response.Content.ReadFromJsonAsync<AuthMeResponseDto>(cancellationToken: cancellationToken);
     }
 
+    public async Task<AuthResetRequestResponseDto> RequestPasswordResetAsync(string usernameOrEmail, CancellationToken cancellationToken)
+    {
+        var client = _httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
+        var response = await client.PostAsJsonAsync(
+            "api/auth/password/reset-request",
+            new AuthResetRequestRequestDto(usernameOrEmail),
+            cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<AuthResetRequestResponseDto>(cancellationToken: cancellationToken);
+            return result ?? new AuthResetRequestResponseDto("If the account exists, reset instructions were sent.");
+        }
+
+        var apiError = await response.Content.ReadFromJsonAsync<ApiErrorResponseDto>(cancellationToken: cancellationToken);
+        var message = string.IsNullOrWhiteSpace(apiError?.Error)
+            ? $"Error de autenticación {(int)response.StatusCode}."
+            : apiError.Error;
+        throw new HttpRequestException(message, null, response.StatusCode);
+    }
+
+    public async Task ConfirmPasswordResetAsync(string resetToken, string newPassword, string confirmPassword, CancellationToken cancellationToken)
+    {
+        var client = _httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
+        var response = await client.PostAsJsonAsync(
+            "api/auth/password/reset-confirm",
+            new AuthResetConfirmRequestDto(resetToken, newPassword, confirmPassword),
+            cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var apiError = await response.Content.ReadFromJsonAsync<ApiErrorResponseDto>(cancellationToken: cancellationToken);
+        var message = string.IsNullOrWhiteSpace(apiError?.Error)
+            ? $"Error de autenticación {(int)response.StatusCode}."
+            : apiError.Error;
+        throw new HttpRequestException(message, null, response.StatusCode);
+    }
+
     private static async Task<AuthTokenResponseDto> ReadTokenResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)

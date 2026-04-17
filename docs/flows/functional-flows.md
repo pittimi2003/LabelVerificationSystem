@@ -539,6 +539,16 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 4. `Log Out` desde menú de perfil reutiliza `AuthSessionService.LogoutAsync()` y mantiene cierre de sesión controlado.
 5. Si algún dato no existe en sesión, UI lo declara explícitamente como no disponible.
 
+## 8.10 Reset de contraseña real (Bloque A en Fase 4 abierta)
+1. Usuario abre `/reset-password` y envía `usernameOrEmail` a `POST /api/auth/password/reset-request`.
+2. Backend siempre responde `202` con mensaje neutral (sin revelar existencia de cuenta).
+3. Si la cuenta existe/activa, backend genera token opaco de un solo uso (hash persistido + expiración) y revoca tokens previos activos del mismo usuario.
+4. En esta fase, la entrega del token se hace fuera de banda por operación/logs; no hay proveedor email integrado aún.
+5. Usuario envía `resetToken + newPassword + confirmPassword` a `POST /api/auth/password/reset-confirm`.
+6. Backend valida token (vigente, no usado, no revocado), valida política de password y persiste credencial efectiva.
+7. Al reset exitoso se invalida el token consumido y los demás tokens activos de reset del usuario.
+8. Con configuración vigente, backend revoca todas las sesiones activas y refresh tokens del usuario (`reason=password_reset`), forzando re-login en todos los dispositivos.
+
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
 - Refresh proactivo: 3 minutos antes de vencimiento.
@@ -550,6 +560,7 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 - Estrategia final de almacenamiento seguro de refresh token en cliente (cookie HttpOnly u otro mecanismo endurecido para producción).
 - Política de sesiones simultáneas por usuario.
 - Definir si bypass emitirá sesión virtual en una fase futura o se mantiene el comportamiento `409` actual.
+- Canal final de entrega de reset token (email/SMTP u otro) para reemplazar estrategia temporal fuera de banda.
 
 ---
 

@@ -103,4 +103,46 @@ public sealed class AuthController : ControllerBase
             return Unauthorized(new ApiErrorResponse(ex.Message));
         }
     }
+
+    [HttpPost("password/reset-request")]
+    [ProducesResponseType(typeof(AuthResetRequestResponse), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<AuthResetRequestResponse>> PasswordResetRequest([FromBody] AuthResetRequestRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _authService.PasswordResetRequestAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), cancellationToken);
+            return Accepted(response);
+        }
+        catch (AuthValidationException ex)
+        {
+            return BadRequest(new ApiErrorResponse(ex.Message));
+        }
+    }
+
+    [HttpPost("password/reset-confirm")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PasswordResetConfirm([FromBody] AuthResetConfirmRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _authService.PasswordResetConfirmAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString(), cancellationToken);
+            return NoContent();
+        }
+        catch (AuthValidationException ex)
+        {
+            return BadRequest(new ApiErrorResponse(ex.Message));
+        }
+        catch (AuthUnauthorizedException ex)
+        {
+            return Unauthorized(new ApiErrorResponse(ex.Message));
+        }
+        catch (AuthConflictException ex)
+        {
+            return Conflict(new ApiErrorResponse(ex.Message));
+        }
+    }
 }

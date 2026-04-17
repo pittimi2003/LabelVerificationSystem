@@ -16,6 +16,8 @@ public sealed class AppDbContext : DbContext
     public DbSet<ExcelUploadRowResult> ExcelUploadRowResults => Set<ExcelUploadRowResult>();
     public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<UserPasswordCredential> UserPasswordCredentials => Set<UserPasswordCredential>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -103,6 +105,30 @@ public sealed class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.ReplacedByTokenId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.ToTable("PasswordResetTokens");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.UserId).IsRequired();
+            entity.Property(x => x.TokenHash).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.ExpiresAtUtc).IsRequired();
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.ExpiresAtUtc });
+            entity.HasIndex(x => new { x.UserId, x.UsedAtUtc, x.RevokedAtUtc });
+        });
+
+        modelBuilder.Entity<UserPasswordCredential>(entity =>
+        {
+            entity.ToTable("UserPasswordCredentials");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.UserId).IsRequired();
+            entity.Property(x => x.PasswordHash).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => x.UserId).IsUnique();
         });
     }
 }

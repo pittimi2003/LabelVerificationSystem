@@ -6,6 +6,7 @@ public sealed class AuthenticationOptions
 
     public JwtOptions Jwt { get; set; } = new();
     public RefreshTokenOptions RefreshToken { get; set; } = new();
+    public PasswordResetOptions PasswordReset { get; set; } = new();
     public BypassOptions Bypass { get; set; } = new();
     public List<ConfiguredUser> Users { get; set; } = [];
 }
@@ -23,6 +24,12 @@ public sealed class JwtOptions
 public sealed class RefreshTokenOptions
 {
     public int TtlMinutes { get; set; } = 1440;
+}
+
+public sealed class PasswordResetOptions
+{
+    public int TokenTtlMinutes { get; set; } = 30;
+    public bool RevokeAllSessionsOnPasswordReset { get; set; } = true;
 }
 
 public sealed class BypassOptions
