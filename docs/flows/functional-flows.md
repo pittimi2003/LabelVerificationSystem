@@ -549,6 +549,17 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 7. Al reset exitoso se invalida el token consumido y los demás tokens activos de reset del usuario.
 8. Con configuración vigente, backend revoca todas las sesiones activas y refresh tokens del usuario (`reason=password_reset`), forzando re-login en todos los dispositivos.
 
+
+## 8.11 Administración backend de usuarios (Bloque B en Fase 4 abierta)
+1. Administrador autenticado consulta `GET /api/users` con filtros (`query`, `isActive`) y paginación (`page`, `pageSize`).
+2. Backend responde colección paginada con metadatos para grid administrativo.
+3. Administrador crea cuenta por `POST /api/users` con password inicial, roles/permisos y estado.
+4. Backend persiste `SystemUser` + `UserPasswordCredential` y devuelve recurso creado.
+5. Administrador consulta detalle por `GET /api/users/{userId}` para cargar edición.
+6. Administrador actualiza cuenta por `PUT /api/users/{userId}` (incluyendo cambio opcional de contraseña).
+7. Administrador activa/desactiva cuenta por `PATCH /api/users/{userId}/activation` según política operativa vigente.
+8. Flujo de autenticación reutiliza estas cuentas persistidas como fuente primaria, con fallback compatible al catálogo estático existente.
+
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
 - Refresh proactivo: 3 minutos antes de vencimiento.

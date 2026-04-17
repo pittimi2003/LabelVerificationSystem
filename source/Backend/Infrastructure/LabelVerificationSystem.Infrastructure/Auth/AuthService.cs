@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using LabelVerificationSystem.Application.Contracts.Auth;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Domain.Entities.Auth;
@@ -24,6 +25,7 @@ public sealed class AuthService : IAuthService
     private readonly AuthenticationOptions _options;
     private readonly IHostEnvironment _hostEnvironment;
     private readonly ILogger<AuthService> _logger;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public AuthService(
         AppDbContext dbContext,
@@ -46,11 +48,9 @@ public sealed class AuthService : IAuthService
             throw new AuthConflictException("Bypass habilitado: login de usuario deshabilitado.");
         }
 
-        var matchedUser = _options.Users.FirstOrDefault(x =>
-            string.Equals(x.Username, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)
-            || (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)));
+        var matchedUser = await ResolveUserByLoginAsync(request.UsernameOrEmail, cancellationToken);
 
-        if (matchedUser is null || !matchedUser.IsActive || !await IsValidPasswordAsync(matchedUser, request.Password, cancellationToken))
+        if (matchedUser is null || !matchedUser.IsActive || !await IsValidPasswordAsync(matchedUser.UserId, matchedUser.FallbackPassword, request.Password, cancellationToken))
         {
             throw new AuthUnauthorizedException("Credenciales inválidas.");
         }
@@ -124,13 +124,13 @@ public sealed class AuthService : IAuthService
         _dbContext.RefreshTokens.Add(replacement.Entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == existingToken.Session.UserId);
-        if (configuredUser is null)
+        var resolvedUser = await ResolveUserByIdAsync(existingToken.Session.UserId, cancellationToken);
+        if (resolvedUser is null || !resolvedUser.IsActive)
         {
             throw new AuthUnauthorizedException("Usuario de sesión no disponible.");
         }
 
-        return BuildTokenResponse(existingToken.Session, configuredUser.Roles, configuredUser.Permissions, replacement.PlainToken, replacement.Entity.ExpiresAtUtc, nowUtc);
+        return BuildTokenResponse(existingToken.Session, resolvedUser.Roles, resolvedUser.Permissions, replacement.PlainToken, replacement.Entity.ExpiresAtUtc, nowUtc);
     }
 
     public async Task LogoutAsync(string? sessionId, string? refreshToken, CancellationToken cancellationToken)
@@ -188,8 +188,8 @@ public sealed class AuthService : IAuthService
             throw new AuthUnauthorizedException("Sesión inválida o revocada.");
         }
 
-        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == session.UserId);
-        if (configuredUser is null)
+        var resolvedUser = await ResolveUserByIdAsync(session.UserId, cancellationToken);
+        if (resolvedUser is null || !resolvedUser.IsActive)
         {
             throw new AuthUnauthorizedException("Usuario no disponible.");
         }
@@ -198,12 +198,12 @@ public sealed class AuthService : IAuthService
         var refreshRecommendedAtUtc = accessExpiresAtUtc.AddMinutes(-_options.Jwt.RefreshProactiveWindowMinutes);
 
         var user = new AuthUserDto(
-            configuredUser.UserId,
-            configuredUser.Username,
-            configuredUser.DisplayName,
-            configuredUser.Email,
-            configuredUser.Roles,
-            configuredUser.Permissions);
+            resolvedUser.UserId,
+            resolvedUser.Username,
+            resolvedUser.DisplayName,
+            resolvedUser.Email,
+            resolvedUser.Roles,
+            resolvedUser.Permissions);
 
         return new AuthMeResponse(true, AuthModeUser, user, new AuthSessionDto(accessExpiresAtUtc, refreshRecommendedAtUtc, nowUtc));
     }
@@ -212,12 +212,9 @@ public sealed class AuthService : IAuthService
     {
         ValidatePasswordResetRequest(request);
 
-        var matchedUser = _options.Users.FirstOrDefault(x =>
-            x.IsActive
-            && (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(x.Username, request.UsernameOrEmail, StringComparison.OrdinalIgnoreCase)));
+        var matchedUser = await ResolveUserByLoginAsync(request.UsernameOrEmail, cancellationToken);
 
-        if (matchedUser is null)
+        if (matchedUser is null || !matchedUser.IsActive)
         {
             return new AuthResetRequestResponse(PasswordResetNeutralMessage);
         }
@@ -271,8 +268,8 @@ public sealed class AuthService : IAuthService
             throw new AuthUnauthorizedException("Reset token expirado.");
         }
 
-        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == tokenEntity.UserId && x.IsActive);
-        if (configuredUser is null)
+        var resolvedUser = await ResolveUserByIdAsync(tokenEntity.UserId, cancellationToken);
+        if (resolvedUser is null || !resolvedUser.IsActive)
         {
             tokenEntity.RevokedAtUtc = nowUtc;
             tokenEntity.RevocationReason = "user_not_available";
@@ -281,7 +278,7 @@ public sealed class AuthService : IAuthService
         }
 
         var existingCredential = await _dbContext.UserPasswordCredentials
-            .FirstOrDefaultAsync(x => x.UserId == configuredUser.UserId, cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserId == resolvedUser.UserId, cancellationToken);
 
         var passwordHash = HashPassword(request.NewPassword);
         if (existingCredential is null)
@@ -289,7 +286,7 @@ public sealed class AuthService : IAuthService
             _dbContext.UserPasswordCredentials.Add(new UserPasswordCredential
             {
                 Id = Guid.NewGuid(),
-                UserId = configuredUser.UserId,
+                UserId = resolvedUser.UserId,
                 PasswordHash = passwordHash,
                 CreatedAtUtc = nowUtc,
                 UpdatedAtUtc = nowUtc,
@@ -308,7 +305,7 @@ public sealed class AuthService : IAuthService
         tokenEntity.UsedAtUtc = nowUtc;
 
         var activeUserSessions = await _dbContext.AuthSessions
-            .Where(x => x.UserId == configuredUser.UserId && x.RevokedAtUtc == null)
+            .Where(x => x.UserId == resolvedUser.UserId && x.RevokedAtUtc == null)
             .ToListAsync(cancellationToken);
 
         if (_options.PasswordReset.RevokeAllSessionsOnPasswordReset)
@@ -320,7 +317,7 @@ public sealed class AuthService : IAuthService
         }
 
         var activeResetTokens = await _dbContext.PasswordResetTokens
-            .Where(x => x.UserId == configuredUser.UserId && x.Id != tokenEntity.Id && x.UsedAtUtc == null && x.RevokedAtUtc == null && x.ExpiresAtUtc > nowUtc)
+            .Where(x => x.UserId == resolvedUser.UserId && x.Id != tokenEntity.Id && x.UsedAtUtc == null && x.RevokedAtUtc == null && x.ExpiresAtUtc > nowUtc)
             .ToListAsync(cancellationToken);
 
         foreach (var activeResetToken in activeResetTokens)
@@ -521,17 +518,102 @@ public sealed class AuthService : IAuthService
         }
     }
 
-    private async Task<bool> IsValidPasswordAsync(ConfiguredUser user, string providedPassword, CancellationToken cancellationToken)
+    private async Task<bool> IsValidPasswordAsync(string userId, string? fallbackPassword, string providedPassword, CancellationToken cancellationToken)
     {
         var storedCredential = await _dbContext.UserPasswordCredentials
-            .FirstOrDefaultAsync(x => x.UserId == user.UserId, cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         if (storedCredential is not null)
         {
             return VerifyPassword(providedPassword, storedCredential.PasswordHash);
         }
 
-        return string.Equals(user.Password, providedPassword, StringComparison.Ordinal);
+        return !string.IsNullOrWhiteSpace(fallbackPassword)
+               && string.Equals(fallbackPassword, providedPassword, StringComparison.Ordinal);
+    }
+
+    private async Task<ResolvedAuthUser?> ResolveUserByLoginAsync(string usernameOrEmail, CancellationToken cancellationToken)
+    {
+        var login = usernameOrEmail.Trim();
+        var dbUser = await _dbContext.SystemUsers.AsNoTracking().FirstOrDefaultAsync(x =>
+            x.Username == login
+            || (x.Email != null && x.Email == login), cancellationToken);
+
+        if (dbUser is not null)
+        {
+            return new ResolvedAuthUser(
+                dbUser.UserId,
+                dbUser.Username,
+                dbUser.DisplayName,
+                dbUser.Email,
+                dbUser.IsActive,
+                DeserializeList(dbUser.RolesJson),
+                DeserializeList(dbUser.PermissionsJson),
+                null);
+        }
+
+        var configuredUser = _options.Users.FirstOrDefault(x =>
+            string.Equals(x.Username, login, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, login, StringComparison.OrdinalIgnoreCase)));
+
+        return configuredUser is null
+            ? null
+            : new ResolvedAuthUser(
+                configuredUser.UserId,
+                configuredUser.Username,
+                configuredUser.DisplayName,
+                configuredUser.Email,
+                configuredUser.IsActive,
+                configuredUser.Roles,
+                configuredUser.Permissions,
+                configuredUser.Password);
+    }
+
+    private async Task<ResolvedAuthUser?> ResolveUserByIdAsync(string? userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return null;
+        }
+
+        var dbUser = await _dbContext.SystemUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+        if (dbUser is not null)
+        {
+            return new ResolvedAuthUser(
+                dbUser.UserId,
+                dbUser.Username,
+                dbUser.DisplayName,
+                dbUser.Email,
+                dbUser.IsActive,
+                DeserializeList(dbUser.RolesJson),
+                DeserializeList(dbUser.PermissionsJson),
+                null);
+        }
+
+        var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == userId);
+        return configuredUser is null
+            ? null
+            : new ResolvedAuthUser(
+                configuredUser.UserId,
+                configuredUser.Username,
+                configuredUser.DisplayName,
+                configuredUser.Email,
+                configuredUser.IsActive,
+                configuredUser.Roles,
+                configuredUser.Permissions,
+                configuredUser.Password);
+    }
+
+    private static IReadOnlyList<string> DeserializeList(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private static string HashPassword(string password)
@@ -561,4 +643,14 @@ public sealed class AuthService : IAuthService
             return false;
         }
     }
+
+    private sealed record ResolvedAuthUser(
+        string UserId,
+        string Username,
+        string DisplayName,
+        string? Email,
+        bool IsActive,
+        IReadOnlyList<string> Roles,
+        IReadOnlyList<string> Permissions,
+        string? FallbackPassword);
 }

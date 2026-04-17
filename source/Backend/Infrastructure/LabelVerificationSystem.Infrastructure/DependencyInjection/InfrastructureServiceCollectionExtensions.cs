@@ -1,8 +1,10 @@
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
+using LabelVerificationSystem.Application.Interfaces.Users;
 using LabelVerificationSystem.Infrastructure.Auth;
 using LabelVerificationSystem.Infrastructure.ExcelUploads;
 using LabelVerificationSystem.Infrastructure.Persistence;
+using LabelVerificationSystem.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +23,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.Configure<AuthenticationOptions>(configuration.GetSection(AuthenticationOptions.SectionName));
         services.AddScoped<IExcelUploadService, ExcelUploadService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserAdministrationService, UserAdministrationService>();
 
         return services;
     }

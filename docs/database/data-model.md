@@ -470,6 +470,35 @@ Regla implementada:
 
 ---
 
+### Entidad implementada para administración de usuarios (Bloque B / Fase 4 en curso)
+
+#### SystemUser
+Propósito: persistir el catálogo operativo de cuentas administrables del sistema para alta/consulta/edición/activación.
+
+Campos implementados:
+- `Id` (`Guid`).
+- `UserId` (`string`, único, identificador funcional para auth/sesión).
+- `Username` (`string`, único).
+- `DisplayName` (`string`).
+- `Email` (`string`, nullable, indexado).
+- `IsActive` (`bool`, indexado).
+- `RolesJson` (`string`, JSON serializado).
+- `PermissionsJson` (`string`, JSON serializado).
+- `CreatedAtUtc` (`datetime`).
+- `UpdatedAtUtc` (`datetime`).
+
+Reglas implementadas:
+- `UserId` y `Username` con índice único.
+- alta de usuario crea también `UserPasswordCredential` inicial.
+- edición permite actualizar password de forma opcional.
+- desactivación se gestiona por `IsActive` (sin borrado físico en este bloque).
+
+Decisiones abiertas explícitas:
+- normalizar roles/permisos a tablas dedicadas.
+- definir política de borrado final.
+- endurecer normalización case-insensitive para unicidad en distintos motores.
+
+
 ## Relaciones principales del modelo
 
 ## Relación: Part -> Configuration
