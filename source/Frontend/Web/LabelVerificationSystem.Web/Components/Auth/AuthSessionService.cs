@@ -16,6 +16,7 @@ public sealed class AuthSessionService
     private AuthSessionSnapshot _current = AuthSessionSnapshot.Anonymous();
     private Task<bool>? _inFlightRefreshTask;
     private CancellationTokenSource? _refreshLoopCts;
+    private Task? _initializeTask;
     private bool _initialized;
 
     public AuthSessionService(
@@ -31,42 +32,59 @@ public sealed class AuthSessionService
     }
 
     public AuthSessionSnapshot Current => _current;
+    public bool IsInitialized => _initialized;
     public event Action? SessionChanged;
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    public Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        _initializeTask ??= InitializeCoreAsync(cancellationToken);
+        return _initializeTask;
+    }
+
+    private async Task InitializeCoreAsync(CancellationToken cancellationToken)
     {
         if (_initialized)
         {
             return;
         }
 
-        _initialized = true;
-
-        var stored = await _storage.LoadAsync();
-        if (stored is not null)
+        try
         {
-            _current = stored;
-        }
-
-        if (_current.IsUserMode && !string.IsNullOrWhiteSpace(_current.AccessToken))
-        {
-            var refreshed = await EnsureValidAccessTokenAsync(cancellationToken);
-            if (refreshed)
+            var stored = await _storage.LoadAsync();
+            if (stored is not null)
             {
-                await LoadCurrentUserAsync(cancellationToken);
+                _current = stored;
+            }
+
+            if (_current.IsUserMode && !string.IsNullOrWhiteSpace(_current.AccessToken))
+            {
+                var refreshed = await EnsureValidAccessTokenAsync(cancellationToken);
+                if (refreshed)
+                {
+                    await LoadCurrentUserAsync(cancellationToken);
+                }
+                else
+                {
+                    await ClearSessionInternalAsync();
+                }
             }
             else
             {
-                await ClearSessionInternalAsync();
+                await TryHydrateBypassAsync(cancellationToken);
             }
-        }
-        else
-        {
-            await TryHydrateBypassAsync(cancellationToken);
-        }
 
-        StartRefreshLoop();
-        NotifyChanged();
+            StartRefreshLoop();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            _logger.LogWarning(ex, "No se pudo restaurar la sesión al iniciar la app. Se continuará como anónimo.");
+            await ClearSessionInternalAsync();
+        }
+        finally
+        {
+            _initialized = true;
+            NotifyChanged();
+        }
     }
 
     public async Task LoginAsync(string usernameOrEmail, string password, bool rememberMe, CancellationToken cancellationToken = default)
