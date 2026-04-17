@@ -428,6 +428,119 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 
 ---
 
+### Contrato base de administración de usuarios (Bloque B / Fase 4 abierta)
+
+> Estado Bloque B / Fase 4: **implementación base backend activa**.
+
+Se habilita un primer contrato operativo para administración de cuentas internas del sistema, sin incluir aún UI administrativa en este bloque.
+
+#### `GET /api/users`
+Listado paginado con filtros para grid administrativo.
+
+Query params:
+- `query` (opcional): texto libre contra `username`, `displayName`, `email`, `userId`
+- `isActive` (opcional): `true|false`
+- `page` (opcional): default `1`, mínimo `1`
+- `pageSize` (opcional): default `20`, rango `1..100`
+
+Response DTO (200):
+```json
+{
+  "items": [
+    {
+      "userId": "string",
+      "username": "string",
+      "displayName": "string",
+      "email": "string|null",
+      "isActive": true,
+      "roles": ["Administrator"],
+      "permissions": ["excel.upload.create"],
+      "createdAtUtc": "2026-04-17T15:00:00Z",
+      "updatedAtUtc": "2026-04-17T15:00:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalItems": 1,
+  "totalPages": 1
+}
+```
+
+#### `GET /api/users/{userId}`
+Detalle de cuenta por `userId`.
+
+Códigos esperados:
+- `200 OK`
+- `404 Not Found`
+
+#### `POST /api/users`
+Alta de cuenta con credencial inicial.
+
+Request DTO:
+```json
+{
+  "username": "string",
+  "displayName": "string",
+  "email": "string|null",
+  "password": "string",
+  "roles": ["Operator"],
+  "permissions": ["excel.upload.create"],
+  "isActive": true
+}
+```
+
+Códigos esperados:
+- `201 Created`
+- `400 Bad Request`
+- `409 Conflict`
+
+#### `PUT /api/users/{userId}`
+Edición base de cuenta (perfil, roles/permisos, estado y cambio opcional de contraseña).
+
+Request DTO:
+```json
+{
+  "displayName": "string",
+  "email": "string|null",
+  "roles": ["Operator"],
+  "permissions": ["excel.upload.create"],
+  "isActive": true,
+  "newPassword": "string|null"
+}
+```
+
+Códigos esperados:
+- `200 OK`
+- `400 Bad Request`
+- `404 Not Found`
+- `409 Conflict`
+
+#### `PATCH /api/users/{userId}/activation`
+Activación/desactivación explícita de cuenta.
+
+Request DTO:
+```json
+{
+  "isActive": false
+}
+```
+
+Códigos esperados:
+- `200 OK`
+- `400 Bad Request`
+- `404 Not Found`
+
+#### Integración con autenticación existente
+- Login/refresh/me/reset usan resolución de usuario por DB (`SystemUsers`) y mantienen fallback compatible a `Authentication:Users` para no romper base existente.
+- Si existe `UserPasswordCredential`, la validación de contraseña usa credencial persistida.
+- Si no existe credencial persistida y el usuario viene de configuración estática, se conserva fallback al password configurado.
+
+#### Decisiones abiertas explícitas en Bloque B (no cerradas en esta iteración)
+- Modelo final de roles/permisos (catálogo normalizado vs lista libre serializada).
+- Política definitiva de borrado (hard delete, soft delete o solo desactivación operativa).
+- Regla de unicidad/case-insensitive definitiva para `username` y `email` en todos los motores soportados.
+
+
 ## Convención inicial de respuestas
 
 ## Respuesta exitosa conceptual

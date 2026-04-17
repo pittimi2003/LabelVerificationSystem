@@ -18,6 +18,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<UserPasswordCredential> UserPasswordCredentials => Set<UserPasswordCredential>();
+    public DbSet<SystemUser> SystemUsers => Set<SystemUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

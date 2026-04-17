@@ -407,6 +407,38 @@ Se implementó el flujo real end-to-end de reset password, alineado con el model
 - endurecimiento adicional de operación (rate limiting dedicado, antifraude y auditoría extendida).
 - política final de purga de tokens de reset expirados/revocados.
 
+
+
+## Avance implementado: Bloque B en Fase 4 (abierta) — Base backend de administración de usuarios
+
+Se implementó la base backend del módulo administrativo de usuarios, manteniendo intacta la arquitectura actual y sin mezclar alcance con Fase 5.
+
+### Implementado en backend
+- nueva entidad persistente `SystemUser` para administración de cuentas internas (`userId`, `username`, `displayName`, `email`, `isActive`, `roles`, `permissions`, timestamps).
+- nueva migración de base de datos para tabla `SystemUsers` con índices para `userId`, `username`, `email` y `isActive`.
+- servicio de administración de usuarios con casos base:
+  - listado paginado y filtrable
+  - detalle por `userId`
+  - alta con credencial inicial
+  - edición de datos base + cambio opcional de contraseña
+  - activación/desactivación explícita
+- endpoints protegidos (`/api/users`) para exponer estas capacidades al frontend.
+- ajuste de CORS backend para permitir métodos `PUT` y `PATCH` en consumo SPA local.
+
+### Integración aplicada con autenticación existente
+- autenticación resuelve usuarios prioritariamente desde persistencia (`SystemUsers`) y mantiene fallback compatible con `Authentication:Users`.
+- refresh, `/me` y reset de contraseña utilizan resolución por `userId` con la misma compatibilidad.
+- la credencial persistida `UserPasswordCredential` sigue siendo la fuente efectiva para contraseña cuando existe.
+
+### Preparación explícita para frontend administrativo (grid)
+- contrato de listado incluye `query`, `isActive`, `page`, `pageSize` y metadatos (`totalItems`, `totalPages`) para soportar grilla con filtros/paginación.
+- contrato de detalle y edición deja payload consistente para formularios de administración.
+
+### Decisiones abiertas que continúan en Fase 4 (Bloque B)
+- definición final del modelo de roles/permisos (normalizado vs serializado).
+- política final de baja lógica/física (por ahora se opera con activación/desactivación).
+- estrategia final de normalización/colación case-insensitive para unicidad robusta cross-DB.
+
 ## Avance implementado: Control total de entrada y navegación auth (frontend fase 1.1)
 
 Se cerró el comportamiento de acceso inicial y protección de navegación para que la app no renderice contenido protegido sin sesión activa o recuperable.
