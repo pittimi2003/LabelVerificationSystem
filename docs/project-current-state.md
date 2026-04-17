@@ -405,3 +405,19 @@ Se cerró el comportamiento de acceso inicial y protección de navegación para 
 - Estrategia final endurecida de almacenamiento del refresh token en cliente para producción.
 - Política final de sesiones simultáneas por usuario.
 - Definición final de comportamiento de bypass para operaciones protegidas fuera de `/api/auth/me` en fases posteriores.
+
+## Avance implementado: Integración visible de usuario autenticado (frontend auth fase 1.2)
+
+Se completó la consolidación del perfil autenticado en UI, manteniendo la shell actual y reutilizando la sesión existente sin duplicar lógica de autenticación/logout:
+
+- nueva vista protegida `/profile-settings` para `Account Settings`
+- visualización de datos reales de sesión (`displayName`, `username`, `email`, `userId`, `roles`, `permissions`, `authenticationMode`)
+- mensaje explícito cuando un dato no está disponible en la sesión actual (por ejemplo, `email`)
+- menú de perfil del header actualizado para mostrar usuario autenticado real en lugar de datos estáticos
+- `Account Settings` y `View Profile` ahora navegan a `/profile-settings`
+- `Log Out` del menú de perfil usa `AuthSessionService.LogoutAsync()` (flujo real existente)
+
+### Restricciones respetadas en esta iteración
+- No se agregaron endpoints backend nuevos ni se alteró arquitectura backend.
+- No se implementó edición de perfil ni gestión avanzada de cuenta.
+- Se usó únicamente información ya disponible en snapshot de sesión y `GET /api/auth/me`.

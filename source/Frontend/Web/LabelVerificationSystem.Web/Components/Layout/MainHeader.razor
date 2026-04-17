@@ -4,10 +4,12 @@
 @inject IActionService ActionService
 @inject IJSRuntime JSRuntime
 @inject IJSRuntime JS
+@inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
 @using Microsoft.JSInterop;
 @using BlazorColorPicker
 @inject IColorPickerService ColorPickerService
 @using MudBlazor
+@implements IDisposable
 
     <header class="app-header sticky @headerClass" id="header">
 
@@ -430,17 +432,17 @@
                                         </MudAvatar>
                                     </div>
                                     <div>
-                                        <span Class="d-block fw-semibold lh-1">Tom Phillip</span>
-                                        <span Class="text-muted fs-12">tomphillip32@gmail.com</span>
+                                        <span Class="d-block fw-semibold lh-1">@CurrentUserDisplayName</span>
+                                        <span Class="text-muted fs-12">@CurrentUserEmail</span>
                                     </div>
                                 </div>
                             </MudMenuItem>
-                            <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-user-circle me-2 fs-18 lh-1 align-middle" />View Profile</MudMenuItem>
-                            <MudMenuItem Class="d-flex align-center border-b" Href="javascript:void(0);"><MudIcon Icon="ti ti-settings-cog me-2 fs-18 lh-1 align-middle" />Account Settings</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center" Href="/profile-settings"><MudIcon Icon="ti ti-user-circle me-2 fs-18 lh-1 align-middle" />View Profile</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center border-b" Href="/profile-settings"><MudIcon Icon="ti ti-settings-cog me-2 fs-18 lh-1 align-middle" />Account Settings</MudMenuItem>
                             <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-lifebuoy me-2 fs-18 lh-1 align-middle" />Support</MudMenuItem>
                             <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-bolt me-2 fs-18 lh-1 align-middle" />Activity Log</MudMenuItem>
                             <MudMenuItem Class="d-flex align-center border-b" Href="javascript:void(0);"><MudIcon Icon="ti ti-calendar me-2 fs-18 lh-1 align-middle" />Events</MudMenuItem>
-                            <MudMenuItem Class="d-flex align-center" Href="javascript:void(0);"><MudIcon Icon="ti ti-logout me-2 fs-18 lh-1 align-middle" />Log Out</MudMenuItem>
+                            <MudMenuItem Class="d-flex align-center" OnClick="HandleProfileLogoutAsync"><MudIcon Icon="ti ti-logout me-2 fs-18 lh-1 align-middle" />Log Out</MudMenuItem>
                         </ChildContent>
                     </MudMenu>
                 </div>  
@@ -1093,6 +1095,29 @@
     @*end main switcher*@
 
 @code {
+
+    private string CurrentUserDisplayName => AuthSessionService.Current.User?.DisplayName
+        ?? AuthSessionService.Current.User?.Username
+        ?? "Usuario autenticado";
+
+    private string CurrentUserEmail => AuthSessionService.Current.User?.Email
+        ?? "Correo no disponible en la sesión actual";
+
+    private void OnAuthSessionChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleProfileLogoutAsync()
+    {
+        await AuthSessionService.LogoutAsync();
+    }
+
+    public void Dispose()
+    {
+        AuthSessionService.SessionChanged -= OnAuthSessionChanged;
+        stateService.OnStateChanged -= RefreshState;
+    }
     // Cart Model
     public class CartItem
     {
@@ -1654,6 +1679,7 @@
     }
     protected override void OnInitialized()
     {
+        AuthSessionService.SessionChanged += OnAuthSessionChanged;
         StateHasChanged(); // Force re-render
     }
     protected override async Task OnInitializedAsync()

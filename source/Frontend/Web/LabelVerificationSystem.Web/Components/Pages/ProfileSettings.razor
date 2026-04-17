@@ -1,0 +1,82 @@
+@page "/profile-settings"
+@inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
+
+<PageTitle>Profile Settings</PageTitle>
+
+<MudStack Spacing="3">
+    <MudText Typo="Typo.h5">Account Settings</MudText>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Perfil autenticado actual</MudText>
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Esta vista refleja únicamente los datos actualmente disponibles en la sesión y en <code>GET /api/auth/me</code>.
+            No incluye edición de perfil en esta fase.
+        </MudText>
+
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption">Display Name</MudText>
+                <MudText Typo="Typo.body1">@CurrentUser?.DisplayName</MudText>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption">Username</MudText>
+                <MudText Typo="Typo.body1">@CurrentUser?.Username</MudText>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption">Email</MudText>
+                <MudText Typo="Typo.body1">@(CurrentUser?.Email ?? "No disponible en sesión actual")</MudText>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption">UserId</MudText>
+                <MudText Typo="Typo.body1">@CurrentUser?.UserId</MudText>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudText Typo="Typo.caption">Authentication Mode</MudText>
+                <MudText Typo="Typo.body1">@AuthSessionService.Current.AuthenticationMode</MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Class="pa-4" Outlined="true">
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Accesos de sesión</MudText>
+        <MudStack Spacing="2">
+            <div>
+                <MudText Typo="Typo.caption">Roles</MudText>
+                @if (CurrentUser?.Roles is { Count: > 0 })
+                {
+                    <MudStack Row="true" Spacing="1" Class="mt-1 flex-wrap">
+                        @foreach (var role in CurrentUser.Roles)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">@role</MudChip>
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2">Sin roles en la sesión actual.</MudText>
+                }
+            </div>
+
+            <div>
+                <MudText Typo="Typo.caption">Permissions</MudText>
+                @if (CurrentUser?.Permissions is { Count: > 0 })
+                {
+                    <MudStack Row="true" Spacing="1" Class="mt-1 flex-wrap">
+                        @foreach (var permission in CurrentUser.Permissions)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">@permission</MudChip>
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2">Sin permisos en la sesión actual.</MudText>
+                }
+            </div>
+        </MudStack>
+    </MudPaper>
+</MudStack>
+
+@code {
+    private LabelVerificationSystem.Web.Components.Auth.AuthUserDto? CurrentUser => AuthSessionService.Current.User;
+}

@@ -531,6 +531,14 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 - Rutas públicas: `/signin`, `/signin-basic`, `/signup`, `/reset-password`, `/error`, `/error401`.
 - Rutas protegidas: cualquier otra ruta del SPA (incluyendo actuales y futuras), protegidas por política por defecto.
 
+
+## 8.9 Perfil autenticado en UI (frontend fase 1.2)
+1. En header profile se muestra identidad real de la sesión (`displayName`/`username` y `email` si existe).
+2. `Account Settings` y `View Profile` navegan a `/profile-settings`.
+3. La vista `/profile-settings` refleja sólo datos disponibles en `GET /api/auth/me` (sin edición).
+4. `Log Out` desde menú de perfil reutiliza `AuthSessionService.LogoutAsync()` y mantiene cierre de sesión controlado.
+5. Si algún dato no existe en sesión, UI lo declara explícitamente como no disponible.
+
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
 - Refresh proactivo: 3 minutos antes de vencimiento.
