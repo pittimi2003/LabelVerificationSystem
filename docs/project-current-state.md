@@ -520,3 +520,33 @@ Se completó la consolidación del perfil autenticado en UI, manteniendo la shel
 - No se agregaron endpoints backend nuevos ni se alteró arquitectura backend.
 - No se implementó edición de perfil ni gestión avanzada de cuenta.
 - Se usó únicamente información ya disponible en snapshot de sesión y `GET /api/auth/me`.
+
+## Avance implementado: Bloque B en Fase 4 (abierta) — Ajuste de autorización real para `/api/users` (401 vs 403)
+
+Se corrigió el bloqueo real del módulo de usuarios sin mezclar alcance con Fase 5 ni con NLog.
+
+### Diagnóstico confirmado en esta iteración
+- Con `Authentication:Bypass:Enabled=true` (entorno permitido), `GET /api/auth/me` respondía autenticado en modo `Bypass`.
+- En ese mismo estado, `GET /api/users` devolvía `401 Unauthorized` porque el endpoint requería `[Authorize]` JWT pero no existía identidad autenticada para requests sin bearer token.
+- El problema reproducido no era parseo JSON (ya corregido), sino autenticación/autorización efectiva del request a `/api/users`.
+
+### Corrección aplicada
+- Se incorporó esquema de autenticación bypass para requests sin bearer token cuando bypass está habilitado y el entorno está permitido.
+- Se introdujeron políticas explícitas para módulo usuarios:
+  - `UsersRead`: `Administrator` o claim `permission=users.read|users.manage`.
+  - `UsersManage`: `Administrator` o claim `permission=users.manage`.
+- `UsersController` ahora aplica `UsersRead` en `GET` y `UsersManage` en `POST/PUT/PATCH`.
+- Se actualizó el cliente frontend de usuarios para distinguir mensaje de error por `401` vs `403`.
+
+### Impacto funcional confirmado
+- En bypass válido, `/api/users` deja de fallar por ausencia de identidad y respeta políticas de permiso/rol.
+- En usuario autenticado sin permisos administrativos, el resultado esperado para `/api/users` pasa a ser `403` (sesión válida pero sin autorización).
+- Se mantiene intacto el alcance funcional del módulo (`grid`, filtros/paginación, create/edit/reset password/activación-desactivación).
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
+- Este avance corresponde únicamente al **Bloque B**.
+
+### Decisiones abiertas que continúan en Fase 4 (Bloque B)
+- Catálogo/normalización definitiva de permisos y roles (actualmente lista serializada).
+- Política final de asignación mínima de permisos administrativos por entorno (usuarios reales vs bypass).

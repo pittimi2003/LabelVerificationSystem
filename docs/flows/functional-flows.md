@@ -524,7 +524,7 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 1. Al iniciar la app, frontend ejecuta bootstrap de sesión de forma bloqueante antes de renderizar navegación principal.
 2. Si no hay sesión válida o recuperable, redirige a `/signin`.
 3. Si hay sesión de usuario válida (o recuperada por refresh), permite entrada normal.
-4. Si aplica bypass vigente en backend, permite entrada con identidad sintética sin login manual.
+4. Si aplica bypass vigente en backend y el entorno está permitido, backend acepta identidad sintética también para endpoints protegidos sin bearer token, incluyendo validación de políticas de autorización de cada módulo.
 5. En cada navegación, frontend decide acceso usando el estado de sesión en memoria, sin invocar `/api/auth/me` en cada cambio de página.
 
 ## 8.8 Clasificación de rutas frontend
@@ -551,7 +551,7 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 
 
 ## 8.11 Administración backend de usuarios (Bloque B en Fase 4 abierta)
-1. Administrador autenticado consulta `GET /api/users` con filtros (`query`, `userId`, `username`, `displayName`, `email`, `role`, `permission`, `isActive`) y paginación (`page`, `pageSize`).
+1. Administrador autenticado consulta `GET /api/users` con filtros (`query`, `userId`, `username`, `displayName`, `email`, `role`, `permission`, `isActive`) y paginación (`page`, `pageSize`). Si no existe identidad válida, backend responde `401`; si existe sesión pero faltan permisos administrativos, responde `403`.
 2. Backend responde colección paginada con metadatos para grid administrativo.
 3. Administrador crea cuenta por `POST /api/users` con password inicial, roles/permisos y estado.
 4. Backend persiste `SystemUser` + `UserPasswordCredential` y devuelve recurso creado.
