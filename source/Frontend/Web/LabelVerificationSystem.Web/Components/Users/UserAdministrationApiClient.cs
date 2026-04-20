@@ -122,9 +122,14 @@ public sealed class UserAdministrationApiClient
 
     private static async Task<string> ReadErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            return "No autorizado para consultar usuarios. Inicia sesión nuevamente.";
+            return "No autorizado para consultar usuarios (401). Inicia sesión nuevamente.";
+        }
+
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            return "Acceso denegado al módulo de usuarios (403). Tu sesión es válida, pero no tiene permisos administrativos suficientes.";
         }
 
         var contentType = response.Content.Headers.ContentType?.MediaType;

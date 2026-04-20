@@ -1,4 +1,5 @@
 using LabelVerificationSystem.Api.Contracts;
+using LabelVerificationSystem.Api.Auth;
 using LabelVerificationSystem.Application.Contracts.Users;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.Users;
@@ -20,6 +21,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersRead)]
     [ProducesResponseType(typeof(UserListResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<UserListResponse>> List(
@@ -58,6 +60,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}")]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersRead)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserDetailDto>> GetByUserId(string userId, CancellationToken cancellationToken)
@@ -78,6 +81,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
@@ -103,6 +107,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPut("{userId}")]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -134,6 +139,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPatch("{userId}/activation")]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]

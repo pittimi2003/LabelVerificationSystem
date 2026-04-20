@@ -317,9 +317,9 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 #### Modo bypass configurable (acceso automático sin usuarios)
 - Agregar flag de configuración de backend (nombre sugerido): `Authentication:Bypass:Enabled`.
 - Cuando `Enabled=true`:
-  - los endpoints protegidos aceptan identidad sintética de sistema (por ejemplo `username = "system-bypass"`).
   - `GET /api/auth/me` responde `authenticationMode = "Bypass"` e incluye usuario virtual y roles/permisos definidos por configuración.
-  - Implementación backend fase 1: `POST /api/auth/login` y `POST /api/auth/refresh` responden `409 Conflict` indicando que bypass sustituye autenticación de usuario.
+  - los endpoints protegidos aceptan identidad sintética de sistema cuando no se envía bearer token, usando esquema de autenticación bypass restringido por entorno permitido.
+  - `POST /api/auth/login` y `POST /api/auth/refresh` responden `409 Conflict` indicando que bypass sustituye autenticación de usuario.
 - Restricción obligatoria: bypass solo permitido en ambientes explícitamente autorizados por configuración (por ejemplo `Development`/`Local`), nunca habilitado por defecto.
 - Auditoría: toda operación en bypass debe registrar marca explícita `authMode=Bypass`.
 
@@ -430,12 +430,16 @@ Estos endpoints se alinean con la base de UI existente en `Pages/Authentication`
 
 ### Contrato base de administración de usuarios (Bloque B / Fase 4 abierta)
 
-> Estado Bloque B / Fase 4: **backend + frontend administrativos activos con filtrado/paginación backend-driven**.
+> Estado Bloque B / Fase 4: **backend + frontend administrativos activos con filtrado/paginación backend-driven y autorización explícita por claims/rol**.
 
 Se mantiene el contrato operativo para administración de cuentas internas del sistema en Blazor WASM, con filtros visibles que se ejecutan contra backend y paginación consistente sobre el universo filtrado.
 
 #### `GET /api/users`
 Listado paginado con filtros para grid administrativo.
+
+Autorización requerida:
+- `401 Unauthorized`: no existe identidad autenticada válida para el request.
+- `403 Forbidden`: la identidad existe, pero no cumple política `UsersRead` (`role=Administrator` o claim `permission=users.read|users.manage`).
 
 Query params:
 - `query` (opcional): texto libre contra `username`, `displayName`, `email`
@@ -477,6 +481,8 @@ Detalle de cuenta por `userId`.
 
 Códigos esperados:
 - `200 OK`
+- `401 Unauthorized`
+- `403 Forbidden`
 - `404 Not Found`
 
 #### `POST /api/users`
@@ -498,6 +504,8 @@ Request DTO:
 Códigos esperados:
 - `201 Created`
 - `400 Bad Request`
+- `401 Unauthorized`
+- `403 Forbidden`
 - `409 Conflict`
 
 #### `PUT /api/users/{userId}`
@@ -518,6 +526,8 @@ Request DTO:
 Códigos esperados:
 - `200 OK`
 - `400 Bad Request`
+- `401 Unauthorized`
+- `403 Forbidden`
 - `404 Not Found`
 - `409 Conflict`
 
@@ -534,15 +544,21 @@ Request DTO:
 Códigos esperados:
 - `200 OK`
 - `400 Bad Request`
+- `401 Unauthorized`
+- `403 Forbidden`
 - `404 Not Found`
 
 #### Integración con autenticación existente
+- Políticas de autorización vigentes para módulo `/api/users`:
+  - `UsersRead`: requiere `role=Administrator` o claim `permission=users.read|users.manage`.
+  - `UsersManage`: requiere `role=Administrator` o claim `permission=users.manage`.
 - Login/refresh/me/reset usan resolución de usuario por DB (`SystemUsers`) y mantienen fallback compatible a `Authentication:Users` para no romper base existente.
 - Si existe `UserPasswordCredential`, la validación de contraseña usa credencial persistida.
 - Si no existe credencial persistida y el usuario viene de configuración estática, se conserva fallback al password configurado.
 
 #### Decisiones abiertas explícitas en Bloque B (no cerradas en esta iteración)
 - Modelo final de roles/permisos (catálogo normalizado vs lista libre serializada).
+- Endurecer mensajes y UX para diferenciar explícitamente `401` (sesión) vs `403` (permisos) en cada operación administrativa además del listado.
 - Política definitiva de borrado (hard delete, soft delete o solo desactivación operativa).
 - Regla de unicidad/case-insensitive definitiva para `username` y `email` en todos los motores soportados.
 - El filtrado por `role` y `permission` sigue atado al almacenamiento serializado actual y podrá refinarse cuando se cierre el modelo final de roles/permisos.
