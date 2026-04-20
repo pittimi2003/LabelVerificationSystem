@@ -58,8 +58,9 @@ namespace LabelVerificationSystem.Web
             builder.Services.AddScoped(sp =>
             {
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-                var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.ClientName);
-                return new UserAdministrationApiClient(backendApiClient);
+                var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
+                var authSessionService = sp.GetRequiredService<AuthSessionService>();
+                return new UserAdministrationApiClient(backendApiClient, authSessionService);
             });
 
             await builder.Build().RunAsync();

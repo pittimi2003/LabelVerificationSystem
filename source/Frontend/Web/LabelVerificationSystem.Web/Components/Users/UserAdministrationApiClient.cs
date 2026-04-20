@@ -1,16 +1,20 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using System.Text.Json;
+using LabelVerificationSystem.Web.Components.Auth;
 
 namespace LabelVerificationSystem.Web.Components.Users;
 
 public sealed class UserAdministrationApiClient
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthSessionService _authSessionService;
 
-    public UserAdministrationApiClient(HttpClient httpClient)
+    public UserAdministrationApiClient(HttpClient httpClient, AuthSessionService authSessionService)
     {
         _httpClient = httpClient;
+        _authSessionService = authSessionService;
     }
 
     public async Task<UserListResponseDto> ListAsync(UserListQueryDto query, CancellationToken cancellationToken)
@@ -39,7 +43,8 @@ public sealed class UserAdministrationApiClient
         }
 
         var requestUri = $"api/users?{string.Join("&", queryParameters)}";
-        var response = await _httpClient.GetAsync(requestUri, cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        var response = await SendAsync(request, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -55,7 +60,8 @@ public sealed class UserAdministrationApiClient
 
     public async Task<UserDetailDto> GetByUserIdAsync(string userId, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.GetAsync($"api/users/{Uri.EscapeDataString(userId)}", cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/users/{Uri.EscapeDataString(userId)}");
+        var response = await SendAsync(request, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -71,7 +77,11 @@ public sealed class UserAdministrationApiClient
 
     public async Task<UserDetailDto> CreateAsync(CreateUserRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/users", request, cancellationToken);
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "api/users")
+        {
+            Content = JsonContent.Create(request)
+        };
+        var response = await SendAsync(requestMessage, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -87,7 +97,11 @@ public sealed class UserAdministrationApiClient
 
     public async Task<UserDetailDto> UpdateAsync(string userId, UpdateUserRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.PutAsJsonAsync($"api/users/{Uri.EscapeDataString(userId)}", request, cancellationToken);
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Put, $"api/users/{Uri.EscapeDataString(userId)}")
+        {
+            Content = JsonContent.Create(request)
+        };
+        var response = await SendAsync(requestMessage, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -103,10 +117,11 @@ public sealed class UserAdministrationApiClient
 
     public async Task<UserDetailDto> SetActivationAsync(string userId, bool isActive, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.PatchAsJsonAsync(
-            $"api/users/{Uri.EscapeDataString(userId)}/activation",
-            new SetUserActivationRequestDto(isActive),
-            cancellationToken);
+        using var request = new HttpRequestMessage(HttpMethod.Patch, $"api/users/{Uri.EscapeDataString(userId)}/activation")
+        {
+            Content = JsonContent.Create(new SetUserActivationRequestDto(isActive))
+        };
+        var response = await SendAsync(request, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {
@@ -200,6 +215,27 @@ public sealed class UserAdministrationApiClient
         if (!string.IsNullOrWhiteSpace(value))
         {
             queryParameters.Add($"{key}={Uri.EscapeDataString(value.Trim())}");
+        }
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        await AttachAuthorizationAsync(request, cancellationToken);
+        return await _httpClient.SendAsync(request, cancellationToken);
+    }
+
+    private async Task AttachAuthorizationAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var hasValidAccessToken = await _authSessionService.EnsureValidAccessTokenAsync(cancellationToken);
+        if (!hasValidAccessToken)
+        {
+            return;
+        }
+
+        var token = _authSessionService.Current.AccessToken;
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
     }
 }
