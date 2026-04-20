@@ -563,12 +563,13 @@ Garantizar sesión estable en Blazor WebAssembly usando access token corto y ref
 ## 8.12 Administración de usuarios en frontend (Bloque B en Fase 4 abierta)
 1. Usuario administrador navega a `/users` dentro de la shell actual de Blazor WebAssembly.
 2. La UI renderiza una vista tipo grid administrativa (card principal, cabecera con acciones y tabla de filas limpias).
-3. La carga de datos usa `GET /api/users` con paginación (`page`, `pageSize`) y filtros de columna/estado para mantener consistencia con backend activo.
-4. Los filtros visibles por columna (`userId`, `username`, `displayName`, `email`, `role`, `permission`) se envían al backend y no dependen de filtrado local sobre una sola página.
-5. El alta de usuario usa formulario lateral y ejecuta `POST /api/users`.
-6. La edición usa detalle real `GET /api/users/{userId}` y persistencia por `PUT /api/users/{userId}`.
-7. La activación/desactivación se ejecuta por fila con `PATCH /api/users/{userId}/activation`.
-8. La acción de reset password se implementa con `PUT /api/users/{userId}` enviando `newPassword` (capacidad ya disponible en backend base).
+3. La carga de datos usa `GET /api/users` con paginación (`page`, `pageSize`) y filtrado backend-driven.
+4. La zona de filtros sigue el patrón único: `SearchField` (selector de campo) + `SearchText` (texto) + `StatusFilter` + acción de limpiar filtros.
+5. `SearchField` puede apuntar a `userId`, `username`, `displayName`, `email`, `role` o `permission`; solo el campo seleccionado se envía al backend junto con `isActive`.
+6. El alta y edición usan drawers con selectores multiselección para `roles` y `permissions`, evitando entrada CSV manual.
+7. Los valores seleccionables de `roles`/`permissions` se derivan de valores reales presentes en el sistema (listado/detalle cargado), sin catálogos ficticios.
+8. La activación/desactivación se ejecuta por fila con `PATCH /api/users/{userId}/activation`.
+9. La acción de reset password se implementa con `PUT /api/users/{userId}` enviando `newPassword` (capacidad ya disponible en backend base).
 
 ## Reglas cerradas en esta iteración
 - Access token: 20 minutos.
