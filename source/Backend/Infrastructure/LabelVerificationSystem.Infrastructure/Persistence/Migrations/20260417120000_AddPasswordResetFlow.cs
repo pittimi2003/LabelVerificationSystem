@@ -1,10 +1,13 @@
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260417120000_AddPasswordResetFlow")]
     public partial class AddPasswordResetFlow : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
