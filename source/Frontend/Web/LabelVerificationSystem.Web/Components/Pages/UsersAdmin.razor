@@ -8,7 +8,7 @@
 <div class="users-admin-page d-flex flex-column gap-4">
     <MudPaper Class="users-admin-card pa-4" Outlined="true">
         <MudStack Spacing="3">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="users-admin-toolbar flex-wrap gap-2">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">Administración de usuarios</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/users</code>.</MudText>
@@ -21,33 +21,26 @@
 
             <MudPaper Class="pa-3 users-admin-filters" Outlined="true">
                 <MudGrid>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudTextField T="string" Value="@FilterUserId" ValueChanged="OnFilterUserIdChanged" Label="Filtro UserId" Variant="Variant.Outlined" Immediate="true" />
+                    <MudItem xs="12" md="4" lg="3">
+                        <MudSelect T="string" Value="@SearchField" ValueChanged="OnSearchFieldChanged" Label="SearchField" Variant="Variant.Outlined">
+                            @foreach (var option in SearchFieldOptions)
+                            {
+                                <MudSelectItem Value="@option.Value">@option.Label</MudSelectItem>
+                            }
+                        </MudSelect>
                     </MudItem>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudTextField T="string" Value="@FilterUsername" ValueChanged="OnFilterUsernameChanged" Label="Filtro Username" Variant="Variant.Outlined" Immediate="true" />
+                    <MudItem xs="12" md="8" lg="5">
+                        <MudTextField T="string" Value="@SearchText" ValueChanged="OnSearchTextChanged" Label="SearchText" Variant="Variant.Outlined" Immediate="true" />
                     </MudItem>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudTextField T="string" Value="@FilterDisplayName" ValueChanged="OnFilterDisplayNameChanged" Label="Filtro Display Name" Variant="Variant.Outlined" Immediate="true" />
-                    </MudItem>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudTextField T="string" Value="@FilterEmail" ValueChanged="OnFilterEmailChanged" Label="Filtro Email" Variant="Variant.Outlined" Immediate="true" />
-                    </MudItem>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudTextField T="string" Value="@FilterRole" ValueChanged="OnFilterRoleChanged" Label="Filtro Rol" Variant="Variant.Outlined" Immediate="true" />
-                    </MudItem>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudTextField T="string" Value="@FilterPermission" ValueChanged="OnFilterPermissionChanged" Label="Filtro Permiso" Variant="Variant.Outlined" Immediate="true" />
-                    </MudItem>
-                    <MudItem xs="12" md="6" lg="3">
-                        <MudSelect T="string" Value="@ActiveFilter" ValueChanged="OnActiveFilterChanged" Label="Estado" Variant="Variant.Outlined">
+                    <MudItem xs="12" md="6" lg="2">
+                        <MudSelect T="string" Value="@ActiveFilter" ValueChanged="OnActiveFilterChanged" Label="StatusFilter" Variant="Variant.Outlined">
                             <MudSelectItem Value="@AnyFilterValue">Todos</MudSelectItem>
                             <MudSelectItem Value="true">Activos</MudSelectItem>
                             <MudSelectItem Value="false">Inactivos</MudSelectItem>
                         </MudSelect>
                     </MudItem>
-                    <MudItem xs="12" md="6" lg="3" Class="d-flex align-center justify-end">
-                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearColumnFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
+                    <MudItem xs="12" md="6" lg="2" Class="d-flex align-center justify-end">
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
                     </MudItem>
                 </MudGrid>
             </MudPaper>
@@ -140,7 +133,7 @@
     </MudPaper>
 </div>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditorDrawerOpen" Width="540px" Elevation="6">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditorDrawerOpen" Width="540px" Elevation="6" Class="users-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">@(EditorMode == UserEditorMode.Create ? "Crear usuario" : "Editar usuario")</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseEditorDrawer" />
@@ -161,8 +154,37 @@
 
             <MudTextField T="string" Value="@EditorDisplayName" ValueChanged="(string? v) => EditorDisplayName = v ?? string.Empty" Label="Display Name" Variant="Variant.Outlined" Required="true" />
             <MudTextField T="string" Value="@EditorEmail" ValueChanged="(string? v) => EditorEmail = v" Label="Email" Variant="Variant.Outlined" />
-            <MudTextField T="string" Value="@EditorRolesCsv" ValueChanged="(string? v) => EditorRolesCsv = v ?? string.Empty" Label="Roles (CSV)" Variant="Variant.Outlined" />
-            <MudTextField T="string" Value="@EditorPermissionsCsv" ValueChanged="(string? v) => EditorPermissionsCsv = v ?? string.Empty" Label="Permisos (CSV)" Variant="Variant.Outlined" />
+            <MudSelect T="string"
+                       Label="Roles"
+                       Variant="Variant.Outlined"
+                       MultiSelection="true"
+                       SelectedValues="@EditorSelectedRoles"
+                       SelectedValuesChanged="OnEditorRolesChanged">
+                @foreach (var role in AvailableRoles)
+                {
+                    <MudSelectItem Value="@role">@role</MudSelectItem>
+                }
+            </MudSelect>
+            @if (AvailableRoles.Count == 0)
+            {
+                <MudText Typo="Typo.caption" Class="text-muted">No hay roles detectados aún en los datos reales disponibles.</MudText>
+            }
+
+            <MudSelect T="string"
+                       Label="Permisos"
+                       Variant="Variant.Outlined"
+                       MultiSelection="true"
+                       SelectedValues="@EditorSelectedPermissions"
+                       SelectedValuesChanged="OnEditorPermissionsChanged">
+                @foreach (var permission in AvailablePermissions)
+                {
+                    <MudSelectItem Value="@permission">@permission</MudSelectItem>
+                }
+            </MudSelect>
+            @if (AvailablePermissions.Count == 0)
+            {
+                <MudText Typo="Typo.caption" Class="text-muted">No hay permisos detectados aún en los datos reales disponibles.</MudText>
+            }
             <MudSwitch T="bool" Value="@EditorIsActive" ValueChanged="v => EditorIsActive = v" Label="Usuario activo" Color="Color.Success" />
 
             <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2" Class="mt-3">
@@ -173,7 +195,7 @@
     </div>
 </MudDrawer>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsResetDrawerOpen" Width="520px" Elevation="6">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsResetDrawerOpen" Width="520px" Elevation="6" Class="users-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Reset password de usuario</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseResetDrawer" />
@@ -207,13 +229,12 @@
     private int TotalPages { get; set; } = 1;
     private int TotalItems { get; set; }
 
-    private string FilterUserId { get; set; } = string.Empty;
-    private string FilterUsername { get; set; } = string.Empty;
-    private string FilterDisplayName { get; set; } = string.Empty;
-    private string FilterEmail { get; set; } = string.Empty;
-    private string FilterRole { get; set; } = string.Empty;
-    private string FilterPermission { get; set; } = string.Empty;
+    private string SearchField { get; set; } = SearchFieldUserId;
+    private string SearchText { get; set; } = string.Empty;
     private string ActiveFilter { get; set; } = AnyFilterValue;
+
+    private HashSet<string> AvailableRoles { get; } = [];
+    private HashSet<string> AvailablePermissions { get; } = [];
 
     private bool IsEditorDrawerOpen { get; set; }
     private UserEditorMode EditorMode { get; set; }
@@ -222,8 +243,8 @@
     private string EditorDisplayName { get; set; } = string.Empty;
     private string? EditorEmail { get; set; }
     private string EditorPassword { get; set; } = string.Empty;
-    private string EditorRolesCsv { get; set; } = string.Empty;
-    private string EditorPermissionsCsv { get; set; } = string.Empty;
+    private HashSet<string> EditorSelectedRoles { get; set; } = [];
+    private HashSet<string> EditorSelectedPermissions { get; set; } = [];
     private bool EditorIsActive { get; set; } = true;
 
     private bool IsResetDrawerOpen { get; set; }
@@ -231,6 +252,23 @@
     private string ResetDrawerUsername { get; set; } = string.Empty;
     private string ResetPassword { get; set; } = string.Empty;
     private string ResetConfirmPassword { get; set; } = string.Empty;
+
+    private static readonly IReadOnlyList<SearchFieldOption> SearchFieldOptions =
+    [
+        new(SearchFieldUserId, "UserId"),
+        new(SearchFieldUsername, "Username"),
+        new(SearchFieldDisplayName, "Display Name"),
+        new(SearchFieldEmail, "Email"),
+        new(SearchFieldRole, "Rol"),
+        new(SearchFieldPermission, "Permiso")
+    ];
+
+    private const string SearchFieldUserId = "userId";
+    private const string SearchFieldUsername = "username";
+    private const string SearchFieldDisplayName = "displayName";
+    private const string SearchFieldEmail = "email";
+    private const string SearchFieldRole = "role";
+    private const string SearchFieldPermission = "permission";
 
     protected override async Task OnInitializedAsync()
     {
@@ -247,6 +285,7 @@
 
             _users.Clear();
             _users.AddRange(response.Items);
+            RefreshAvailableRolesAndPermissions();
 
             CurrentPage = response.Page;
             PageSize = response.PageSize;
@@ -279,39 +318,15 @@
         return null;
     }
 
-    private async Task OnFilterUserIdChanged(string? value)
+    private async Task OnSearchFieldChanged(string? value)
     {
-        FilterUserId = value ?? string.Empty;
+        SearchField = SearchFieldOptions.Any(x => x.Value == value) ? value! : SearchFieldUserId;
         await ApplyFiltersAsync();
     }
 
-    private async Task OnFilterUsernameChanged(string? value)
+    private async Task OnSearchTextChanged(string? value)
     {
-        FilterUsername = value ?? string.Empty;
-        await ApplyFiltersAsync();
-    }
-
-    private async Task OnFilterDisplayNameChanged(string? value)
-    {
-        FilterDisplayName = value ?? string.Empty;
-        await ApplyFiltersAsync();
-    }
-
-    private async Task OnFilterEmailChanged(string? value)
-    {
-        FilterEmail = value ?? string.Empty;
-        await ApplyFiltersAsync();
-    }
-
-    private async Task OnFilterRoleChanged(string? value)
-    {
-        FilterRole = value ?? string.Empty;
-        await ApplyFiltersAsync();
-    }
-
-    private async Task OnFilterPermissionChanged(string? value)
-    {
-        FilterPermission = value ?? string.Empty;
+        SearchText = value ?? string.Empty;
         await ApplyFiltersAsync();
     }
 
@@ -334,14 +349,10 @@
         await LoadUsersAsync();
     }
 
-    private async Task ClearColumnFiltersAsync()
+    private async Task ClearFiltersAsync()
     {
-        FilterUserId = string.Empty;
-        FilterUsername = string.Empty;
-        FilterDisplayName = string.Empty;
-        FilterEmail = string.Empty;
-        FilterRole = string.Empty;
-        FilterPermission = string.Empty;
+        SearchField = SearchFieldUserId;
+        SearchText = string.Empty;
         ActiveFilter = AnyFilterValue;
         CurrentPage = 1;
         await LoadUsersAsync();
@@ -354,17 +365,21 @@
     }
 
     private UserListQueryDto BuildListQuery()
-        => new(
+    {
+        var normalizedText = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim();
+
+        return new UserListQueryDto(
             Query: null,
-            UserId: FilterUserId,
-            Username: FilterUsername,
-            DisplayName: FilterDisplayName,
-            Email: FilterEmail,
-            Role: FilterRole,
-            Permission: FilterPermission,
+            UserId: SearchField == SearchFieldUserId ? normalizedText : null,
+            Username: SearchField == SearchFieldUsername ? normalizedText : null,
+            DisplayName: SearchField == SearchFieldDisplayName ? normalizedText : null,
+            Email: SearchField == SearchFieldEmail ? normalizedText : null,
+            Role: SearchField == SearchFieldRole ? normalizedText : null,
+            Permission: SearchField == SearchFieldPermission ? normalizedText : null,
             IsActive: ParseActiveFilterForBackend(),
             Page: CurrentPage,
             PageSize: PageSize);
+    }
 
     private void OpenCreateDrawer()
     {
@@ -374,8 +389,8 @@
         EditorDisplayName = string.Empty;
         EditorEmail = string.Empty;
         EditorPassword = string.Empty;
-        EditorRolesCsv = string.Empty;
-        EditorPermissionsCsv = string.Empty;
+        EditorSelectedRoles = [];
+        EditorSelectedPermissions = [];
         EditorIsActive = true;
         IsEditorDrawerOpen = true;
     }
@@ -391,8 +406,10 @@
             EditorUsername = detail.Username;
             EditorDisplayName = detail.DisplayName;
             EditorEmail = detail.Email;
-            EditorRolesCsv = string.Join(",", detail.Roles);
-            EditorPermissionsCsv = string.Join(",", detail.Permissions);
+            EditorSelectedRoles = detail.Roles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            EditorSelectedPermissions = detail.Permissions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            AddKnownValues(AvailableRoles, detail.Roles);
+            AddKnownValues(AvailablePermissions, detail.Permissions);
             EditorIsActive = detail.IsActive;
             EditorPassword = string.Empty;
             IsEditorDrawerOpen = true;
@@ -433,8 +450,8 @@
                     EditorDisplayName.Trim(),
                     NormalizeOptional(EditorEmail),
                     EditorPassword,
-                    ParseCsv(EditorRolesCsv),
-                    ParseCsv(EditorPermissionsCsv),
+                    EditorSelectedRoles.ToList(),
+                    EditorSelectedPermissions.ToList(),
                     EditorIsActive);
 
                 await UserAdministrationApiClient.CreateAsync(createRequest, CancellationToken.None);
@@ -445,8 +462,8 @@
                 var updateRequest = new UpdateUserRequestDto(
                     EditorDisplayName.Trim(),
                     NormalizeOptional(EditorEmail),
-                    ParseCsv(EditorRolesCsv),
-                    ParseCsv(EditorPermissionsCsv),
+                    EditorSelectedRoles.ToList(),
+                    EditorSelectedPermissions.ToList(),
                     EditorIsActive,
                     null);
 
@@ -545,9 +562,31 @@
         }
     }
 
-    private static IReadOnlyList<string> ParseCsv(string? raw)
-        => raw?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
-           ?? [];
+    private Task OnEditorRolesChanged(IEnumerable<string>? roles)
+    {
+        EditorSelectedRoles = roles?.ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+        return Task.CompletedTask;
+    }
+
+    private Task OnEditorPermissionsChanged(IEnumerable<string>? permissions)
+    {
+        EditorSelectedPermissions = permissions?.ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+        return Task.CompletedTask;
+    }
+
+    private void RefreshAvailableRolesAndPermissions()
+    {
+        AddKnownValues(AvailableRoles, _users.SelectMany(x => x.Roles));
+        AddKnownValues(AvailablePermissions, _users.SelectMany(x => x.Permissions));
+    }
+
+    private static void AddKnownValues(HashSet<string> target, IEnumerable<string> source)
+    {
+        foreach (var item in source.Where(x => !string.IsNullOrWhiteSpace(x)))
+        {
+            target.Add(item.Trim());
+        }
+    }
 
     private static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -557,4 +596,6 @@
         Create,
         Edit
     }
+
+    private sealed record SearchFieldOption(string Value, string Label);
 }

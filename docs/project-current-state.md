@@ -481,6 +481,28 @@ Se cerró la consistencia de filtrado y paginación del grid administrativo de u
 - **Fase 4 continúa abierta**.
 - este avance corresponde únicamente al **Bloque B**.
 
+## Avance implementado: Bloque B en Fase 4 (abierta) — Refinamiento UX/UI de `/users` sin cambio de alcance funcional
+
+Se refinó la experiencia visual y de uso del módulo `/users`, manteniendo intactas las capacidades funcionales ya implementadas (create, edit, reset password, activación/desactivación, autorización y paginación backend-driven) y sin mezclar alcance con Fase 5 ni con NLog.
+
+### Implementado en frontend (UX/UI)
+- se reemplazó la edición CSV de `roles` y `permissions` por selectores multiselección en create/edit.
+- los valores de multiselección se alimentan solo con roles/permisos reales detectados desde respuestas existentes del backend (`GET /api/users` y `GET /api/users/{userId}`), sin catálogo inventado.
+- la zona de filtros del grid se simplificó al patrón:
+  - `SearchField` (selector de campo)
+  - `SearchText`
+  - `StatusFilter`
+  - `Limpiar filtros`
+- se conserva el envío de filtros al backend y la paginación server-side; solo cambió la UX del filtro visible.
+- se ajustaron estilos del módulo para coexistir con tema actual (incluyendo light theme), eliminando colores oscuros hardcodeados en card/filtros/tabla/drawers.
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
+- Este avance corresponde únicamente al **Bloque B**.
+
+### Decisiones abiertas que continúan en Fase 4 (Bloque B)
+- definir estrategia definitiva para descubrir catálogo global de roles/permisos cuando existan más páginas que las cargadas por el grid actual.
+
 ## Avance implementado: Control total de entrada y navegación auth (frontend fase 1.1)
 
 Se cerró el comportamiento de acceso inicial y protección de navegación para que la app no renderice contenido protegido sin sesión activa o recuperable.

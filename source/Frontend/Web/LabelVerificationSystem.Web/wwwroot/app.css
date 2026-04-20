@@ -60,27 +60,45 @@ h1:focus {
 }
 /* Users admin module */
 .users-admin-page .users-admin-card {
-    background: rgba(20, 24, 37, 0.88);
-    border: 1px solid rgba(126, 137, 182, 0.28);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 12px;
+    box-shadow: var(--mud-elevation-1);
+}
+
+.users-admin-page .users-admin-toolbar {
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
 }
 
 .users-admin-page .users-admin-filters {
-    background: rgba(15, 18, 30, 0.55);
-    border: 1px solid rgba(126, 137, 182, 0.2);
+    background: var(--mud-palette-background-grey);
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 10px;
 }
 
 .users-admin-page .users-admin-table {
-    background: transparent;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .users-admin-page .users-admin-table .mud-table-head {
-    background: rgba(74, 90, 160, 0.2);
+    background: color-mix(in srgb, var(--mud-palette-primary) 8%, var(--mud-palette-surface));
 }
 
 .users-admin-page .users-admin-table .mud-table-row:hover {
-    background: rgba(115, 138, 216, 0.1);
+    background: color-mix(in srgb, var(--mud-palette-primary) 6%, transparent);
+}
+
+.users-admin-page .users-admin-table .mud-icon-button {
+    border-radius: 8px;
 }
 
 .users-admin-page .users-page-size {
     min-width: 150px;
+}
+
+.users-admin-page .users-admin-drawer .mud-drawer-header {
+    background: var(--mud-palette-surface);
 }
