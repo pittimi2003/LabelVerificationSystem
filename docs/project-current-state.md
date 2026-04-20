@@ -550,3 +550,21 @@ Se corrigió el bloqueo real del módulo de usuarios sin mezclar alcance con Fas
 ### Decisiones abiertas que continúan en Fase 4 (Bloque B)
 - Catálogo/normalización definitiva de permisos y roles (actualmente lista serializada).
 - Política final de asignación mínima de permisos administrativos por entorno (usuarios reales vs bypass).
+
+## Avance implementado: Bloque B en Fase 4 (abierta) — Diagnóstico/corrección de autenticación HTTP en frontend `/users`
+
+Se atendió el caso reproducido con `Authentication:Bypass:Enabled=false` y login real (`admin`) donde `/api/auth/me` validaba sesión de usuario, pero `GET /api/users` devolvía `401`.
+
+### Diagnóstico confirmado en esta iteración
+- El problema confirmado está en la autenticación de la request HTTP del módulo `/users`, no en políticas `UsersRead`/`UsersManage`.
+- En el estado reproducido, la llamada de frontend a `GET /api/users` podía salir sin `Authorization: Bearer` al depender del pipeline genérico de `HttpClient` para adjuntar token.
+- El `401` observado corresponde a ausencia de identidad autenticada efectiva en la request de `/api/users` (no a falta de permisos, que sería `403`).
+
+### Corrección aplicada
+- `UserAdministrationApiClient` ahora adjunta explícitamente el bearer token de la sesión real (`AuthSessionService`) antes de enviar cada request del módulo (`GET/POST/PUT/PATCH`).
+- El cliente de `/users` se registra usando `BackendApiRaw` + `AuthSessionService` para que el módulo utilice de forma determinística la misma sesión/token vigente del frontend.
+- Se mantiene intacto el resto del comportamiento funcional del módulo (`grid`, filtros/paginación, create/edit/reset password/activación-desactivación).
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
+- Este avance corresponde únicamente al **Bloque B**.
