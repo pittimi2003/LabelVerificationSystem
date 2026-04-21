@@ -1,6 +1,6 @@
 # Referencia concreta: UsersAdmin.razor
 
-## Propósito
+## Propósito y alcance
 
 Este documento evalúa `UsersAdmin.razor` como referencia actual del patrón de vista administrativa tipo Grid.
 
@@ -12,7 +12,7 @@ Objetivo:
 
 Estado explícito:
 
-- **Fase 4 sigue abierta**.
+- Contexto actual: **Fase 4 sigue abierta**.
 - Este documento es de referencia documental; no cierra fase ni agrega alcance funcional nuevo.
 
 ---
@@ -58,7 +58,53 @@ Estado explícito:
 
 ---
 
-## 2) Decisiones actuales específicas del módulo de usuarios
+## 2) Reutilización segura (matriz operativa)
+
+### A) Reutilizable tal cual
+
+- estructura general de vista: toolbar + filtros + grid + paginación;
+- patrón de recarga por cambio de filtros/paginación;
+- feedback de carga/operación con snackbar;
+- uso de multiselección para campos multivalor (no CSV).
+
+### B) Reutilizable con adaptación
+
+- catálogo y orden de columnas (debe ajustarse al DTO real del módulo destino);
+- opciones de `SearchField` (deben existir en backend real del módulo destino);
+- presencia y semántica de `StatusFilter` (solo si hay estado operativo real);
+- drawers create/edit/detail/reset (solo los soportados por endpoints reales);
+- textos UX (labels, tooltips, mensajes) contextualizados al módulo.
+
+### C) No reutilizable sin revalidación
+
+- acciones específicas de identidad (`reset password`);
+- suposición de estado `isActive` o activación/desactivación;
+- estructura exacta de DTOs de usuario (`CreateUserRequestDto` / `UpdateUserRequestDto`);
+- reglas de validación de contraseñas/identidad;
+- mapeo de roles/permisos basado en el comportamiento actual del módulo usuarios.
+
+---
+
+## 3) Dependencias funcionales actuales de UsersAdmin
+
+El funcionamiento real actual de UsersAdmin queda condicionado por:
+
+1. **Contrato backend de listado de usuarios**
+   - disponibilidad de filtros soportados y paginación real.
+2. **Contrato de acciones por fila**
+   - endpoints reales para editar, activar/desactivar y reset de contraseña.
+3. **Modelo de estado operativo de usuario**
+   - existencia de estado activo/inactivo para `StatusFilter` y acciones de toggle.
+4. **Disponibilidad de roles/permisos en datos de usuario**
+   - la UI actual depende de información recibida en respuestas de usuarios.
+5. **Autorización vigente de administración**
+   - acceso y ejecución de acciones sujetos a políticas/permisos activos del sistema.
+
+Estas dependencias deben verificarse antes de intentar reutilización en otros módulos.
+
+---
+
+## 4) Decisiones actuales específicas del módulo de usuarios
 
 Estas decisiones son de usuarios y **no deben promoverse automáticamente como estándar universal**:
 
@@ -71,13 +117,14 @@ Estas decisiones son de usuarios y **no deben promoverse automáticamente como e
 
 ---
 
-## 3) Limitaciones abiertas que siguen vigentes
+## 5) Limitaciones abiertas que siguen vigentes
 
 En el estado actual, siguen abiertas (no cerrar como estándar definitivo):
 
-1. **Catálogo global de roles/permisos**
+1. **Catálogo global de roles/permisos (limitación importante)**
    - actualmente se detecta desde datos disponibles en respuestas cargadas,
-   - no existe un catálogo independiente y completo garantizado para todo el universo de datos.
+   - no existe un catálogo independiente, centralizado y completo garantizado para todo el universo de datos,
+   - esto condiciona la reutilización directa de filtros/edición de roles-permisos en otros módulos.
 
 2. **Modelo final roles/permisos**
    - sigue abierto a cierre de fase (normalización final vs representación actual).
@@ -89,7 +136,7 @@ Estas limitaciones deben declararse al replicar el patrón en otros módulos.
 
 ---
 
-## 4) Qué NO debe copiarse ciegamente a otros módulos
+## 6) Qué NO debe copiarse ciegamente a otros módulos
 
 No copiar de forma literal:
 
@@ -107,13 +154,13 @@ Tampoco copiar sin validar:
 
 ---
 
-## 5) Qué piezas visuales/funcionales SÍ son reutilizables
+## 7) Qué piezas visuales/funcionales SÍ son reutilizables
 
 Componentes/patrones reutilizables:
 
 - layout administrativo en card principal;
 - toolbar con acción de refresco + alta;
-- patrón de filtros validado (`SearchField`, `SearchText`, `StatusFilter`, `Limpiar filtros`);
+- patrón de filtros validado (`SearchField`, `SearchText`, `StatusFilter`, `Limpiar filtros`) cuando aplique al modelo;
 - recarga backend al cambiar filtros/paginación;
 - tabla con chips para colecciones;
 - bloque de paginación con metadatos backend;
@@ -129,7 +176,7 @@ Además:
 
 ---
 
-## 6) Evaluación final de referencia
+## 8) Evaluación final de referencia
 
 `UsersAdmin.razor` es una referencia útil y vigente para el patrón Grid administrativo del proyecto, pero **no es una plantilla literal universal**.
 
@@ -138,4 +185,4 @@ Uso recomendado:
 - reutilizar su estructura y flujo UX,
 - adaptar filtros/columnas/acciones al contrato real del módulo destino,
 - declarar limitaciones abiertas cuando backend aún no cierra capacidades,
-- mantener explícito que **Fase 4 sigue abierta** en el bloque documental correspondiente.
+- mantener su uso como referencia controlada y revalidada por módulo.
