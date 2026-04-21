@@ -391,3 +391,37 @@ No implementado en esta iteración:
 - Reemplazo completo del motor de autorización legacy en runtime.
 - UI administrativa completa del nuevo modelo.
 - Retiro físico de `RolesJson` / `PermissionsJson`.
+
+## 13) Estado de implementación runtime (iteración actual, Bloque B / Fase 4 abierta)
+
+> **Fase 4 sigue abierta**. Esta implementación no cierra Fase 4.
+
+Implementado en backend para resolución efectiva en runtime:
+
+- Servicio central `AuthorizationMatrixService` (infra) + contrato `IAuthorizationMatrixService` (application) para evaluar autorización efectiva por:
+  - módulo (`ModuleCode`)
+  - acción dentro de módulo (`ActionCode`).
+- Estrategia runtime activa:
+  1. intenta resolver con modelo robusto (`RoleCatalog` + `SystemUserRole` + `RoleModuleAuthorization` + `RoleModuleActionAuthorization`);
+  2. aplica precondición de módulo antes de acción;
+  3. si no puede resolver robusto (usuario sin datos migrados / bypass / transición), aplica fallback legacy controlado por flag.
+- Policies existentes de `/api/users` (`UsersRead`, `UsersManage`) migradas internamente a requirement/handler basado en módulo+acción:
+  - `UsersRead` => `UsersAdministration.View`
+  - `UsersManage` => `UsersAdministration.Edit`
+- Compatibilidad transitoria mantenida:
+  - policies conservan sus nombres;
+  - fallback legacy sigue reconociendo `role=Administrator` y claims `users.read` / `users.manage`;
+  - usuarios legacy y bypass continúan operativos mientras se completa transición.
+- Bypass ajustado para convivencia:
+  - se mantiene flujo actual de bypass;
+  - al no existir `SystemUser` real, la autorización se resuelve por fallback legacy de claims;
+  - no se rompe `login`/`refresh`/`/me` por este cambio.
+- Configuración de rollout:
+  - `Authorization:UseRobustMatrix` (default `true`)
+  - `Authorization:EnableLegacyFallback` (default `true`)
+
+No implementado en esta iteración runtime:
+
+- migración de todos los endpoints/policies al modelo robusto (solo `/api/users` en este corte);
+- invalidación distribuida/caché avanzada de matriz;
+- retiro de `RolesJson`/`PermissionsJson`.

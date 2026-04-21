@@ -541,13 +541,14 @@ public sealed class AuthService : IAuthService
 
         if (dbUser is not null)
         {
+            var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
             return new ResolvedAuthUser(
                 dbUser.UserId,
                 dbUser.Username,
                 dbUser.DisplayName,
                 dbUser.Email,
                 dbUser.IsActive,
-                DeserializeList(dbUser.RolesJson),
+                effectiveRoles,
                 DeserializeList(dbUser.PermissionsJson),
                 null);
         }
@@ -579,13 +580,14 @@ public sealed class AuthService : IAuthService
         var dbUser = await _dbContext.SystemUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
         if (dbUser is not null)
         {
+            var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
             return new ResolvedAuthUser(
                 dbUser.UserId,
                 dbUser.Username,
                 dbUser.DisplayName,
                 dbUser.Email,
                 dbUser.IsActive,
-                DeserializeList(dbUser.RolesJson),
+                effectiveRoles,
                 DeserializeList(dbUser.PermissionsJson),
                 null);
         }
@@ -653,4 +655,21 @@ public sealed class AuthService : IAuthService
         IReadOnlyList<string> Roles,
         IReadOnlyList<string> Permissions,
         string? FallbackPassword);
+
+    private async Task<IReadOnlyList<string>> ResolveEffectiveRolesAsync(SystemUser dbUser, CancellationToken cancellationToken)
+    {
+        var catalogRoles = await _dbContext.SystemUserRoles
+            .AsNoTracking()
+            .Where(x => x.SystemUserId == dbUser.Id && x.Role.IsActive)
+            .Select(x => x.Role.Code)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (catalogRoles.Count > 0)
+        {
+            return catalogRoles;
+        }
+
+        return DeserializeList(dbUser.RolesJson);
+    }
 }

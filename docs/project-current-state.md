@@ -697,3 +697,37 @@ Se implementó en backend la persistencia inicial del modelo robusto de autoriza
 
 ### Estado de fase
 - **Fase 4 sigue abierta**.
+
+## Avance implementado: resolución runtime de autorización robusta (Bloque B / Fase 4 abierta)
+
+Se implementó la resolución efectiva de autorización en backend usando el modelo robusto, con transición segura y compatibilidad legacy.
+
+### Implementado en backend
+- Nuevo servicio de runtime `AuthorizationMatrixService` con contrato `IAuthorizationMatrixService` para resolver autorización por módulo y acción.
+- Nuevo handler/policies sobre ASP.NET Authorization:
+  - `UsersRead` ahora evalúa `UsersAdministration.View`.
+  - `UsersManage` ahora evalúa `UsersAdministration.Edit`.
+- Evaluación runtime aplicada:
+  1. intenta matriz robusta (`SystemUserRole` + `RoleModuleAuthorization` + `RoleModuleActionAuthorization`);
+  2. exige precondición de módulo para validar acción;
+  3. si no hay resolución robusta suficiente, ejecuta fallback legacy controlado.
+- Compatibilidad temporal activa:
+  - convivencia con `RolesJson` y `PermissionsJson` sin remoción,
+  - convivencia con policies legacy (mismo nombre externo),
+  - continuidad para usuarios existentes.
+- Bypass ajustado para coexistencia:
+  - bypass sigue disponible sin romper auth actual,
+  - cuando no hay `SystemUser` real (bypass), resuelve por fallback legacy de roles/permisos en claims.
+- Ajuste en emisión de roles de usuario autenticado:
+  - token prioriza roles de `SystemUserRole/RoleCatalog` si existen;
+  - fallback a `RolesJson` cuando aún no hay datos robustos del usuario.
+- Configuración agregada:
+  - `Authorization:UseRobustMatrix`
+  - `Authorization:EnableLegacyFallback`
+
+### Alcance de migración en este corte
+- Migración aplicada explícitamente a políticas del módulo `/api/users`.
+- No se migra todavía el resto de endpoints/policies (se mantiene transición incremental).
+
+### Estado de fase
+- **Fase 4 sigue abierta**.

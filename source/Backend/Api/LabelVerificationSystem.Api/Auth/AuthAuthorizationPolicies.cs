@@ -6,6 +6,17 @@ public static class AuthAuthorizationPolicies
     public const string UsersManage = "UsersManage";
 }
 
+public static class AuthModules
+{
+    public const string UsersAdministration = "UsersAdministration";
+}
+
+public static class AuthModuleActions
+{
+    public const string View = "View";
+    public const string Edit = "Edit";
+}
+
 public static class AuthPermissionClaims
 {
     public const string Type = "permission";

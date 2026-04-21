@@ -1,7 +1,9 @@
 using LabelVerificationSystem.Application.Interfaces.Auth;
+using LabelVerificationSystem.Application.Interfaces.Authorization;
 using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
 using LabelVerificationSystem.Application.Interfaces.Users;
 using LabelVerificationSystem.Infrastructure.Auth;
+using LabelVerificationSystem.Infrastructure.Authorization;
 using LabelVerificationSystem.Infrastructure.ExcelUploads;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using LabelVerificationSystem.Infrastructure.Users;
@@ -21,8 +23,10 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
         services.Configure<ExcelUploadStorageOptions>(configuration.GetSection(ExcelUploadStorageOptions.SectionName));
         services.Configure<AuthenticationOptions>(configuration.GetSection(AuthenticationOptions.SectionName));
+        services.Configure<AuthorizationRuntimeOptions>(configuration.GetSection(AuthorizationRuntimeOptions.SectionName));
         services.AddScoped<IExcelUploadService, ExcelUploadService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IAuthorizationMatrixService, AuthorizationMatrixService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
 
         return services;

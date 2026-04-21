@@ -1,11 +1,13 @@
 using System.Security.Claims;
 using System.Text;
 using LabelVerificationSystem.Api.Auth;
+using LabelVerificationSystem.Api.Auth.Authorization;
 using LabelVerificationSystem.Infrastructure.Auth;
 using LabelVerificationSystem.Infrastructure.DependencyInjection;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -82,20 +84,17 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthAuthorizationPolicies.UsersRead, policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireAssertion(context =>
-            context.User.IsInRole("Administrator")
-            || context.User.HasClaim(AuthPermissionClaims.Type, AuthPermissionClaims.UsersRead)
-            || context.User.HasClaim(AuthPermissionClaims.Type, AuthPermissionClaims.UsersManage));
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.UsersAdministration, AuthModuleActions.View));
     });
 
     options.AddPolicy(AuthAuthorizationPolicies.UsersManage, policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireAssertion(context =>
-            context.User.IsInRole("Administrator")
-            || context.User.HasClaim(AuthPermissionClaims.Type, AuthPermissionClaims.UsersManage));
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.UsersAdministration, AuthModuleActions.Edit));
     });
 });
+
+builder.Services.AddScoped<IAuthorizationHandler, ModuleActionAuthorizationHandler>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
