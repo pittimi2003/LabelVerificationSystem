@@ -63,6 +63,37 @@ Mientras no exista definición cerrada por módulo, este documento no fija aún 
 
 ## Entidades principales
 
+
+## Extensión documental vigente: autorización robusta (Bloque B / Fase 4 abierta)
+
+Se incorpora como diseño lógico implementable (aún no reemplazo total activo) el modelo robusto de autorización definido en `docs/security-authorization-model-block-b-phase4.md`.
+
+### Entidades lógicas agregadas
+- `RoleCatalog`
+- `ModuleCatalog`
+- `ModuleActionCatalog`
+- `RoleModuleAuthorization`
+- `RoleModuleActionAuthorization`
+- `SystemUserRole`
+
+### Reglas lógicas confirmadas
+- Autorización se resuelve por combinación **módulo + acción**.
+- Semántica base:
+  - `Module Authorized` controla acceso al módulo.
+  - `Action Authorized` controla capacidad operativa.
+- `Permissions` del XML legado no es centro del modelo final; queda como referencia estructural histórica.
+- Catálogo inicial de roles cerrado en:
+  - `SuperAdmin`
+  - `Operators`
+  - `Managers`
+
+### Estado
+- Esta extensión mantiene **Fase 4 abierta**.
+- Se considera diseño de transición/migración desde `RolesJson` y `PermissionsJson`.
+- El retiro del modelo legacy queda pendiente de una iteración posterior de cierre de transición.
+
+---
+
 # 1. Part
 
 ## Propósito
@@ -156,11 +187,8 @@ La propuesta inicial contempla gestión de usuarios, roles y administración del
 - un usuario puede operar sobre múltiples packing lists
 - un usuario puede generar eventos auditables
 
-## Decisión pendiente
-Debe definirse si el modelo de roles será:
-- simple por campo directo
-- basado en tabla de roles separada
-- basado en claims/permisos más detallados
+## Estado de decisión (actualizado)
+El modelo objetivo de roles/permisos queda orientado a catálogos y matriz explícita (Bloque B / Fase 4 abierta), con transición progresiva desde la representación serializada legacy.
 
 ---
 
