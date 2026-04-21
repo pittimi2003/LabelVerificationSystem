@@ -660,3 +660,21 @@ Referencias de trabajo utilizadas y trazadas en documentación:
 - `docs/Managment.html` (referencia conceptual de UX de administración),
 - `docs/frontend/grid-view-standard.md`,
 - `docs/frontend/grid-view-users-reference.md`.
+
+## Avance documental: diseño técnico implementable de autorización robusta (Bloque B / Fase 4 abierta)
+
+Se consolidó la propuesta técnica implementable y migrable del modelo de autorización robusta para Bloque B, manteniendo explícitamente que **Fase 4 sigue abierta**.
+
+### Alcance confirmado en esta iteración
+- diseño de entidades/relaciones para catálogos de roles, módulos y acciones;
+- diseño de matriz de autorización por rol-módulo y rol-acción;
+- definición de reglas de integridad y unicidad;
+- estrategia de seed inicial (roles, módulos, acciones y matriz base);
+- estrategia de transición desde `RolesJson`/`PermissionsJson` y usuarios existentes;
+- definición de convivencia temporal con autenticación actual;
+- separación de qué permanece en token/claims y qué se resuelve en backend.
+
+### Exclusiones explícitas
+- no se implementa todavía UI administrativa completa de permisos;
+- no se ejecuta todavía reemplazo completo del modelo legacy sin cierre de transición;
+- no se mezcla este avance con Fase 5 ni NLog.

@@ -8,87 +8,144 @@
 
 Esta propuesta se consolida usando únicamente referencias confirmadas del repositorio:
 
-- `docs/Permissions.xml` como referencia **estructural histórica** del árbol de permisos.
-- `docs/Managment.html` como referencia **conceptual UX** para administrar permisos.
-- `docs/frontend/grid-view-standard.md` como marco UX/documental reusable para vistas administrativas.
-- `docs/frontend/grid-view-users-reference.md` como referencia de límites actuales del patrón de usuarios.
+- `docs/Permissions.xml` como referencia **estructural histórica** del árbol `grupo -> módulo -> acción`.
+- `docs/Managment.html` como referencia **conceptual UX** para edición centralizada por rol.
+- `docs/frontend/grid-view-standard.md` como marco UX/documental reusable.
+- `docs/frontend/grid-view-users-reference.md` como límites reales del patrón vigente en UI.
 
-## 1) Propuesta de modelo conceptual completo
+---
 
-El sistema evoluciona desde un esquema de listas serializadas (`roles`/`permissions`) hacia un modelo explícito de autorización por catálogo:
+## 1) Resumen técnico implementable (objetivo de esta iteración)
 
-- **Catálogo de roles** (cerrado en esta iteración):
-  - `SuperAdmin`
-  - `Operators`
-  - `Managers`
-- **Catálogo de módulos** del sistema.
-- **Catálogo de acciones** por módulo.
-- **Autorización por módulo** (`Module Authorized`): habilita o niega acceso al módulo.
-- **Autorización por acción** (`Action Authorized`): habilita o niega la capacidad operativa concreta.
+Esta iteración transforma la propuesta conceptual de Bloque B en un diseño **implementable y migrable** sin ejecutar aún el reemplazo completo.
 
-Semántica funcional base confirmada:
+### Decisiones funcionales cerradas (base obligatoria)
 
-- `Module Authorized = true`: el rol puede entrar/usar el módulo.
-- `Module Authorized = false`: el rol no puede usar el módulo.
-- `Action Authorized = true`: el rol puede ejecutar la acción.
-- `Action Authorized = false`: el rol no puede ejecutar la acción.
+1. Roles como catálogo explícito.
+2. Catálogo inicial de roles:
+   - `SuperAdmin`
+   - `Operators`
+   - `Managers`
+3. Catálogo explícito de módulos.
+4. Catálogo explícito de acciones por módulo.
+5. Validación de autorización por **módulo + acción** (no solo por ruta).
+6. Semántica base:
+   - `Module Authorized` = acceso al módulo.
+   - `Action Authorized` = capacidad operativa sobre acción concreta.
+   - `Action Authorized = true` => ejecuta acción.
+   - `Action Authorized = false` => no ejecuta acción.
+7. Atributo `Permissions` del XML queda como referencia histórica/estructural, no como núcleo del modelo final.
 
-## 2) Entidades y relaciones necesarias
+---
 
-### Catálogos
+## 2) Diseño técnico de entidades/tablas/relaciones
 
-1. **RoleCatalog**
-   - Identificador técnico.
-   - `Code` único (`SuperAdmin`, `Operators`, `Managers`).
-   - Nombre de presentación.
-   - Estado (`IsActive`) para evolución controlada.
+> Nota: nombres en PascalCase alineados a nomenclatura ya usada en backend .NET. Se pueden mapear a snake_case en físico si se decide más adelante.
 
-2. **ModuleCatalog**
-   - Identificador técnico.
-   - `Code` único (clave estable para backend/frontend).
-   - Nombre de presentación.
-   - Orden para UI.
-   - Estado (`IsActive`).
+### 2.1 Catálogos
 
-3. **ModuleActionCatalog**
-   - Identificador técnico.
-   - `ModuleId` (FK a `ModuleCatalog`).
-   - `Code` único por módulo.
-   - Nombre de presentación.
-   - Orden para UI.
-   - Estado (`IsActive`).
+#### `RoleCatalog`
+- **PK**: `Id` (Guid)
+- `Code` (string, requerido, único global)
+- `Name` (string, requerido)
+- `IsActive` (bool, requerido, default true)
+- `CreatedAtUtc` (datetime)
+- `UpdatedAtUtc` (datetime)
 
-### Matriz de autorización
+**Reglas**
+- `Code` debe ser estable y case-insensitive único.
+- No eliminación física en operación normal (soft lifecycle por `IsActive`).
 
-4. **RoleModuleAuthorization**
-   - `RoleId` (FK).
-   - `ModuleId` (FK).
-   - `Authorized` (`bool`).
-   - Único por (`RoleId`, `ModuleId`).
+#### `ModuleCatalog`
+- **PK**: `Id` (Guid)
+- `Code` (string, requerido, único global)
+- `Name` (string, requerido)
+- `Description` (string, opcional)
+- `DisplayOrder` (int, requerido)
+- `IsActive` (bool, requerido, default true)
+- `CreatedAtUtc` / `UpdatedAtUtc`
 
-5. **RoleModuleActionAuthorization**
-   - `RoleId` (FK).
-   - `ModuleActionId` (FK).
-   - `Authorized` (`bool`).
-   - Único por (`RoleId`, `ModuleActionId`).
+**Reglas**
+- `Code` estable para policy mapping backend/frontend.
+- `DisplayOrder` único opcional (recomendado) para evitar empates en UX administrativa.
 
-### Relación con usuarios
+#### `ModuleActionCatalog`
+- **PK**: `Id` (Guid)
+- **FK**: `ModuleId` -> `ModuleCatalog.Id`
+- `Code` (string, requerido)
+- `Name` (string, requerido)
+- `Description` (string, opcional)
+- `DisplayOrder` (int, requerido)
+- `IsActive` (bool, requerido, default true)
+- `CreatedAtUtc` / `UpdatedAtUtc`
 
-6. **SystemUserRole**
-   - `SystemUserId` (FK).
-   - `RoleId` (FK).
-   - Único por (`SystemUserId`, `RoleId`).
+**Reglas**
+- Unicidad compuesta: (`ModuleId`, `Code`).
+- Unicidad recomendada de orden por módulo: (`ModuleId`, `DisplayOrder`).
 
-> Nota de diseño: para simplificar gobernanza inicial, se recomienda **1 rol principal por usuario** en operación diaria; la estructura N:M se conserva para crecimiento controlado.
+### 2.2 Matriz de autorización
 
-## 3) Catálogo base propuesto
+#### `RoleModuleAuthorization`
+- **PK**: `Id` (Guid) *(alternativa: PK compuesta; se mantiene surrogate para auditoría futura)*
+- **FK**: `RoleId` -> `RoleCatalog.Id`
+- **FK**: `ModuleId` -> `ModuleCatalog.Id`
+- `Authorized` (bool, requerido)
+- `CreatedAtUtc` / `UpdatedAtUtc`
 
-### Roles (cerrado)
+**Reglas**
+- Unicidad compuesta obligatoria: (`RoleId`, `ModuleId`).
+- `Authorized` explícito (sin null).
+
+#### `RoleModuleActionAuthorization`
+- **PK**: `Id` (Guid)
+- **FK**: `RoleId` -> `RoleCatalog.Id`
+- **FK**: `ModuleActionId` -> `ModuleActionCatalog.Id`
+- `Authorized` (bool, requerido)
+- `CreatedAtUtc` / `UpdatedAtUtc`
+
+**Reglas**
+- Unicidad compuesta obligatoria: (`RoleId`, `ModuleActionId`).
+- `Authorized` explícito (sin null).
+
+### 2.3 Relación usuario-rol
+
+#### `SystemUserRole`
+- **PK**: `Id` (Guid)
+- **FK**: `SystemUserId` -> `SystemUser.Id`
+- **FK**: `RoleId` -> `RoleCatalog.Id`
+- `IsPrimary` (bool, requerido, default false)
+- `AssignedAtUtc` (datetime)
+- `AssignedByUserId` (Guid, opcional, FK a `SystemUser.Id`)
+
+**Reglas**
+- Unicidad compuesta obligatoria: (`SystemUserId`, `RoleId`).
+- Restricción recomendada: máximo un registro `IsPrimary=true` por usuario.
+
+---
+
+## 3) Reglas de integridad y consistencia (backend)
+
+1. **Deny by default**: ausencia de fila en matriz => no autorizado.
+2. **Precondición de módulo para acción**: si `RoleModuleAuthorization.Authorized = false`, cualquier acción del módulo se resuelve no autorizada aunque exista acción en true.
+3. **Acciones huérfanas prohibidas lógicamente**:
+   - al guardar acción en `true`, el backend debe validar que el módulo esté en `true` para el mismo rol (o elevar módulo automáticamente y registrar evento, decisión pendiente).
+4. **No cascada destructiva** en eliminaciones:
+   - para evitar pérdida histórica accidental, preferir `IsActive=false` en catálogos.
+5. **Normalización de códigos**:
+   - almacenar `Code` canonicalizado (ej. trim + upper/lower invariant) para comparar sin ambigüedad.
+6. **Concurrencia**:
+   - usar token de concurrencia (rowversion/timestamp o `UpdatedAtUtc` validado) en edición de matriz.
+
+---
+
+## 4) Catálogos iniciales y seed base
+
+## 4.1 Seed de roles (cerrado)
 - `SuperAdmin`
 - `Operators`
 - `Managers`
 
-### Módulos base (propuesta inicial a confirmar contra contratos activos)
+## 4.2 Seed de módulos (baseline operativo)
 - `UsersAdministration`
 - `ExcelUploads`
 - `PartsCatalog`
@@ -97,8 +154,7 @@ Semántica funcional base confirmada:
 - `AuditTrail`
 - `SystemConfiguration`
 
-### Acciones base por módulo (propuesta inicial)
-
+## 4.3 Seed de acciones por módulo (baseline operativo)
 - `UsersAdministration`: `View`, `Create`, `Edit`, `ActivateDeactivate`, `ResetPassword`.
 - `ExcelUploads`: `View`, `Upload`.
 - `PartsCatalog`: `View`, `Create`, `Edit`.
@@ -107,105 +163,193 @@ Semántica funcional base confirmada:
 - `AuditTrail`: `View`.
 - `SystemConfiguration`: `View`, `Edit`.
 
-> Estos módulos/acciones son punto de partida operativo y no deben considerarse catálogo definitivo hasta su cierre contractual por módulo.
+## 4.4 Seed de matriz base de autorización (propuesta migrable)
 
-## 4) Qué debe persistirse y qué no
+### `SuperAdmin`
+- Todos los módulos `Authorized=true`.
+- Todas las acciones `Authorized=true`.
 
-### Persistir (fuente de verdad)
-- Catálogo de roles.
-- Catálogo de módulos.
-- Catálogo de acciones por módulo.
-- Autorización por rol-módulo (`Authorized`).
-- Autorización por rol-acción (`Authorized`).
-- Asignación usuario-rol.
+### `Operators`
+- Módulos `true`: `ExcelUploads`, `LabelVerification`, `PackingLists`.
+- Módulos `false`: `UsersAdministration`, `PartsCatalog`, `AuditTrail`, `SystemConfiguration`.
+- Acciones `true` sugeridas:
+  - `ExcelUploads`: `View`, `Upload`
+  - `LabelVerification`: `View`, `Execute`
+  - `PackingLists`: `View`, `Create`, `Edit`
+- Resto de acciones: `false`.
 
-### No persistir como fuente canónica
-- Listas libres de permisos en texto/JSON sin normalizar.
-- Inferencias dinámicas de catálogos a partir de datos de grilla.
-- Reglas de autorización embebidas únicamente en frontend.
+### `Managers`
+- Módulos `true`: todos excepto los que se restrinjan explícitamente por decisión funcional.
+- Acciones `true` sugeridas:
+  - `UsersAdministration`: `View`
+  - `ExcelUploads`: `View`
+  - `PartsCatalog`: `View`, `Edit`
+  - `LabelVerification`: `View`
+  - `PackingLists`: `View`, `Close`
+  - `AuditTrail`: `View`
+  - `SystemConfiguration`: `View`
+- Acciones de alto impacto administrativo (ej. `ResetPassword`, `SystemConfiguration.Edit`) en `false` salvo cierre explícito.
 
-## 5) Cómo se relaciona con usuarios
+> Esta matriz es baseline para arranque técnico. No debe tratarse como política final de negocio hasta validación de dueños funcionales.
 
-- `SystemUser` deja de depender de `RolesJson`/`PermissionsJson` como modelo final.
-- Cada usuario se vincula a uno o más roles del catálogo explícito.
-- La autorización efectiva del usuario se calcula por la matriz:
-  - Roles del usuario
-  - `RoleModuleAuthorization`
-  - `RoleModuleActionAuthorization`
+---
 
-Regla de resolución recomendada en backend:
-- **Deny por defecto**.
-- Si un usuario no tiene asignación explícita para módulo/acción, la respuesta es no autorizado.
+## 5) Estrategia de transición desde estado transitorio (`RolesJson` / `PermissionsJson`)
 
-## 6) Traducción a autorización backend
+## 5.1 Principio
+Transición en **modo convivencia**, sin corte big-bang.
 
-1. **Claims de sesión**
-   - Incluir `role` desde catálogo.
-   - Incluir claims técnicos para módulo/acción cuando aplique (o resolverlos por consulta en caché).
+## 5.2 Fases de transición de datos
 
-2. **Policies por acción backend**
-   - Reemplazar políticas genéricas por políticas que validen:
-     - acceso al módulo,
-     - permiso de acción.
+1. **Expandir esquema**
+   - Crear nuevas tablas de catálogo, matriz y asignación usuario-rol.
+   - Sin remover `RolesJson`/`PermissionsJson`.
 
-3. **Punto de decisión unificado**
-   - Definir un servicio central (ej. `IAuthorizationMatrixService`) para evitar lógica duplicada en controladores/endpoints.
+2. **Seed controlado**
+   - Insertar roles, módulos, acciones y matriz base.
 
-4. **Errores esperados**
-   - `401`: sin identidad autenticada.
-   - `403`: identidad válida pero sin autorización de módulo/acción.
+3. **Backfill usuarios existentes**
+   - Mapear `RolesJson` -> `SystemUserRole`.
+   - Si un usuario no tiene rol reconocible, asignar rol seguro por defecto (`Operators` o rol mínimo definido por negocio) y registrar incidencia para revisión manual.
 
-## 7) XML (`docs/Permissions.xml`): qué sí sirve y qué no copiar tal cual
+4. **Backfill permisos legacy**
+   - Interpretar `PermissionsJson` solo como ayuda de migración.
+   - Traducir a filas en `RoleModuleAuthorization`/`RoleModuleActionAuthorization` cuando exista equivalencia conocida.
+   - Si no hay equivalencia directa, registrar hallazgo en reporte de migración y aplicar deny explícito.
 
-### Útil como referencia estructural
-- Jerarquía `UserGroup -> Modules -> Module -> Actions -> Action`.
-- `Authorized` a nivel módulo.
-- `Authorized` a nivel acción.
-- Distinción explícita entre acceso de módulo y ejecución por acción.
+5. **Dual-read (temporal)**
+   - Resolver autorización primero desde nuevo modelo.
+   - Si falta dato migrado, fallback controlado a legacy por ventana acotada de transición.
 
-### No copiar tal cual al modelo final
-- `UserGroup` textual libre como fuente principal (se sustituye por catálogo de roles explícito).
-- Atributo `Permissions` como eje del diseño final (queda como referencia histórica solamente).
-- Nombres legacy de módulos/acciones que no correspondan al dominio actual de LabelVerificationSystem.
+6. **Dual-write (solo si imprescindible)**
+   - Durante breve ventana, cambios administrativos pueden actualizar ambos modelos para evitar divergencia.
+   - Desactivar dual-write al cerrar validación de transición.
 
-## 8) HTML (`docs/Managment.html`): qué sí sirve y qué no copiar tal cual
+7. **Retiro gradual legacy**
+   - Congelar escritura de `RolesJson`/`PermissionsJson`.
+   - Retirar fallback.
+   - Planificar eliminación física en migración posterior, no en esta iteración documental.
 
-### Útil como referencia UX
-- Selector de grupo/rol para administrar permisos.
-- Vista tabular por módulos.
-- Toggle de `Authorized` en módulo.
-- Acciones hijas dentro del módulo con toggles por acción.
-- Flujo de edición operativa centralizado (`leer -> editar -> guardar`).
+## 5.3 Reglas de migración para usuarios existentes
 
-### No copiar tal cual
-- Dependencia de archivo XML como contrato operativo final.
-- Restricciones hardcodeadas del ejemplo heredado.
-- Reglas de negocio resueltas solo en JavaScript sin backend autoritativo.
+- Priorizar continuidad de acceso mínimo operativo (evitar lockout masivo).
+- Cualquier ambigüedad -> deny por defecto + cola de remediación.
+- Emitir reporte de migración con:
+  - usuarios mapeados automáticamente,
+  - usuarios con conflictos,
+  - permisos no traducibles.
 
-## 9) Decisiones abiertas pendientes
+---
 
-1. Confirmar catálogo definitivo de módulos/acciones contra endpoints activos por módulo.
-2. Definir plan de migración de `RolesJson`/`PermissionsJson` a tablas normalizadas.
-3. Decidir si la UX inicial permitirá multi-rol o solo rol único operativo.
-4. Definir estrategia de caché e invalidación de matriz de autorización en backend.
-5. Definir trazabilidad/auditoría de cambios de permisos (quién cambió qué, cuándo y por qué).
-6. Confirmar contrato API de administración de permisos (consultar/editar) por rol, módulo y acción.
+## 6) Convivencia temporal con autenticación actual
 
-## 10) Impacto en backend, frontend y documentación
+1. **Autenticación no cambia en esta iteración**
+   - login, emisión de token, refresh y sesión continúan con arquitectura vigente.
+
+2. **Autorización evoluciona por capas**
+   - Nuevas verificaciones módulo/acción se agregan en backend sin romper pipeline de autenticación.
+
+3. **Compatibilidad temporal**
+   - Policies nuevas deben convivir con claims/roles actuales hasta completar backfill.
+
+4. **Feature flags recomendados**
+   - `Authorization:UseRobustMatrix` (on/off por entorno).
+   - `Authorization:EnableLegacyFallback` (solo transición).
+
+---
+
+## 7) Token/claims vs resolución backend
+
+## 7.1 Debe mantenerse en token/claims
+- `sub` (usuario).
+- identificadores de sesión (`sid` o equivalente).
+- roles resumidos (`role`) para compatibilidad y UI básica.
+- metadata mínima de seguridad (issuer, exp, etc.).
+
+## 7.2 Debe resolverse desde backend (fuente de verdad)
+- autorización efectiva módulo/acción.
+- validación de precondición módulo->acción.
+- invalidación inmediata por cambios de permisos (sin esperar expiración larga del token).
+
+## 7.3 Recomendación operativa
+- No embutir matriz completa en claims.
+- Usar servicio central `IAuthorizationMatrixService` + caché corta por usuario/rol con invalidación por versión.
+
+---
+
+## 8) Riesgos técnicos y de migración
+
+1. **Deriva entre legacy y nuevo modelo** en ventana dual-write.
+2. **Mapeos incompletos** de `PermissionsJson` a catálogo nuevo.
+3. **Incidencias de performance** si cada request consulta matriz sin caché.
+4. **Stale authorization** por caché no invalidada tras cambios administrativos.
+5. **Riesgo de sobreasignación** en seeds iniciales si no se valida matriz por negocio.
+6. **Impacto UX** si frontend asume autorizaciones locales y backend deniega.
+
+Mitigaciones mínimas:
+- reporte de migración,
+- invalidación de caché por versión,
+- pruebas de regresión 401/403,
+- rollout por feature flags.
+
+---
+
+## 9) Orden recomendado de implementación real (sin ejecutar aún reemplazo total)
+
+1. **DB**: crear tablas nuevas + constraints + índices.
+2. **Seed**: roles/módulos/acciones/matriz base.
+3. **Backfill**: mapear usuarios/legacy a nuevo modelo.
+4. **Backend service**: implementar `IAuthorizationMatrixService` con deny by default.
+5. **Policies**: migrar endpoints críticos a verificación módulo+acción.
+6. **Auth pipeline**: activar dual-read/fallback temporal.
+7. **Frontend incremental**:
+   - primero consumo de capacidades efectivas (solo lectura),
+   - después herramientas mínimas operativas de administración,
+   - **sin implementar aún UI administrativa completa de permisos**.
+8. **Observabilidad y auditoría básica** de cambios de autorización.
+9. **Cierre de transición** y retiro legacy en iteración posterior.
+
+---
+
+## 10) Impacto por capa
 
 ### Backend
-- Nuevas entidades/tablas para catálogos y matriz de autorización.
-- Refactor de policies para validación explícita módulo+acción.
-- Ajustes de emisión de claims y/o consulta de matriz autorizada.
-- Migración progresiva desde estado serializado actual.
+- Nuevas entidades EF y migraciones.
+- Servicio central de autorización módulo/acción.
+- Policies específicas por caso de uso.
+- Endpoints de consulta de matriz/capacidades (si se habilitan en fase siguiente).
 
 ### Frontend
-- Pantalla de administración de permisos alineada al patrón Grid/documental vigente.
-- Gestión por rol explícito + módulos + acciones (sin dependencia de listas ad-hoc).
-- Mensajería de autorización consistente con backend (`401`/`403`).
-- Mantener criterios de UX reusable documentados en `grid-view-standard.md` y límites de reutilización ya identificados en `grid-view-users-reference.md`.
+- Mantener patrón grid/documental vigente.
+- Adaptar visibilidad/acciones a capacidades resueltas por backend.
+- Evitar decisiones de seguridad solo cliente.
+
+### Auth
+- Sin rediseño del flujo de autenticación en esta iteración.
+- Ajuste de claims mínimos + resolución server-side.
 
 ### Documentación
-- Mantener este documento como definición viva de Bloque B / Fase 4 abierta.
-- Actualizar contratos API y modelo de datos cuando se cierre la implementación de catálogos/matriz.
-- Mantener trazabilidad explícita de decisiones abiertas para evitar cierres implícitos no confirmados.
+- Mantener trazabilidad explícita de Fase 4 abierta.
+- Actualizar `docs/database/data-model.md` con el esquema lógico de autorización.
+- Actualizar estado del proyecto para registrar que el diseño técnico quedó definido pero no implementado completamente.
+
+---
+
+## 11) Decisiones abiertas que deben cerrarse antes de implementación completa
+
+1. Política oficial de multi-rol (permitido en runtime o restringido a rol único).
+2. Regla exacta cuando acción=true y módulo=false (rechazo estricto vs autocorrección).
+3. Matriz final de autorización por rol validada por negocio (no solo baseline técnico).
+4. Estrategia formal de auditoría de cambios de permisos (tabla/evento y retención).
+5. Contrato API definitivo para administración de permisos por rol.
+6. Política de caché/invalidez distribuida para autorización en entornos con múltiples instancias.
+7. Fecha de retiro final de `RolesJson`/`PermissionsJson`.
+
+---
+
+## 12) Qué sigue explícitamente fuera de alcance en esta iteración
+
+- No implementar UI administrativa completa de permisos.
+- No ejecutar reemplazo total del modelo actual sin cerrar transición.
+- No cerrar Fase 4.
+- No incorporar Fase 5 ni NLog en este flujo.
