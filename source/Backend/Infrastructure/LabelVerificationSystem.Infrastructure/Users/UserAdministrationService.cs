@@ -160,6 +160,9 @@ public sealed class UserAdministrationService : IUserAdministrationService
             UpdatedByUserAgent = Truncate(userAgent, 512)
         });
 
+        var normalizedRoles = NormalizeValues(request.Roles);
+        await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return MapToDetail(user);
     }
@@ -189,7 +192,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
         user.DisplayName = displayName;
         user.Email = email;
         user.IsActive = request.IsActive;
-        user.RolesJson = SerializeList(NormalizeValues(request.Roles));
+        var normalizedRoles = NormalizeValues(request.Roles);
+        user.RolesJson = SerializeList(normalizedRoles);
         user.PermissionsJson = SerializeList(NormalizeValues(request.Permissions));
         user.UpdatedAtUtc = nowUtc;
 
@@ -219,6 +223,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
             }
         }
 
+        await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
         return MapToDetail(user);
     }
@@ -237,6 +243,70 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         return MapToDetail(user);
+    }
+
+    private async Task SyncUserRoleAssignmentsAsync(SystemUser user, IReadOnlyList<string> requestedRoleCodes, DateTime nowUtc, CancellationToken cancellationToken)
+    {
+        var availableRoles = await _dbContext.RoleCatalogs
+            .Where(x => x.IsActive)
+            .ToListAsync(cancellationToken);
+
+        var availableByCode = availableRoles
+            .GroupBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
+
+        var targetRoles = requestedRoleCodes
+            .Where(x => availableByCode.ContainsKey(x))
+            .Select(x => availableByCode[x])
+            .DistinctBy(x => x.Id)
+            .ToList();
+
+        if (targetRoles.Count == 0 && availableByCode.TryGetValue("Operators", out var fallbackRole))
+        {
+            targetRoles.Add(fallbackRole);
+        }
+
+        var targetRoleIds = targetRoles.Select(x => x.Id).ToHashSet();
+        var currentMappings = await _dbContext.SystemUserRoles
+            .Where(x => x.SystemUserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var mapping in currentMappings.Where(x => !targetRoleIds.Contains(x.RoleId)))
+        {
+            _dbContext.SystemUserRoles.Remove(mapping);
+        }
+
+        foreach (var targetRole in targetRoles)
+        {
+            if (currentMappings.All(x => x.RoleId != targetRole.Id))
+            {
+                _dbContext.SystemUserRoles.Add(new SystemUserRole
+                {
+                    Id = Guid.NewGuid(),
+                    SystemUserId = user.Id,
+                    RoleId = targetRole.Id,
+                    IsPrimary = false,
+                    AssignedAtUtc = nowUtc
+                });
+            }
+        }
+
+        var primaryRoleId = targetRoles.FirstOrDefault()?.Id;
+
+        foreach (var mapping in _dbContext.SystemUserRoles.Local.Where(x => x.SystemUserId == user.Id))
+        {
+            mapping.IsPrimary = primaryRoleId.HasValue && mapping.RoleId == primaryRoleId.Value;
+        }
+
+        foreach (var mapping in currentMappings)
+        {
+            if (_dbContext.Entry(mapping).State == EntityState.Deleted)
+            {
+                continue;
+            }
+
+            mapping.IsPrimary = primaryRoleId.HasValue && mapping.RoleId == primaryRoleId.Value;
+        }
     }
 
     private static UserListItemDto MapToListItem(SystemUser user)

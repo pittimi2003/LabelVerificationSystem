@@ -12,4 +12,7 @@ public sealed class SystemUser
     public string PermissionsJson { get; set; } = "[]";
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+
+    public ICollection<SystemUserRole> Roles { get; set; } = new List<SystemUserRole>();
+    public ICollection<SystemUserRole> AssignedRoles { get; set; } = new List<SystemUserRole>();
 }

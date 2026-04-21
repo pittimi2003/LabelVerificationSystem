@@ -353,3 +353,41 @@ Mitigaciones mínimas:
 - No ejecutar reemplazo total del modelo actual sin cerrar transición.
 - No cerrar Fase 4.
 - No incorporar Fase 5 ni NLog en este flujo.
+
+---
+
+## 7) Estado de implementación backend (esta iteración)
+
+> **Fase 4 permanece abierta**. Este avance no cierra Fase 4 y se mantiene en Bloque B.
+
+Implementado en backend:
+
+- Persistencia física de entidades del modelo robusto:
+  - `RoleCatalog`
+  - `ModuleCatalog`
+  - `ModuleActionCatalog`
+  - `RoleModuleAuthorization`
+  - `RoleModuleActionAuthorization`
+  - `SystemUserRole`
+- Configuración EF Core con:
+  - claves primarias,
+  - unicidades,
+  - índices,
+  - relaciones y FKs restrictivas,
+  - colación `NOCASE` para `Code` en catálogos.
+- Migración con seed inicial de:
+  - roles (`SuperAdmin`, `Operators`, `Managers`),
+  - módulos,
+  - acciones por módulo,
+  - matriz base rol/módulo y rol/acción.
+- Backfill inicial de usuarios existentes (`SystemUsers`) hacia `SystemUserRole` usando `RolesJson` cuando es traducible, con fallback de rol `Operators` si no hay rol reconocido.
+- Convivencia transitoria explícita mantenida:
+  - `RolesJson` y `PermissionsJson` **no se eliminan**,
+  - login/auth actual se conserva,
+  - escritura administrativa sigue manteniendo campos legacy y agrega sincronización hacia `SystemUserRole`.
+
+No implementado en esta iteración:
+
+- Reemplazo completo del motor de autorización legacy en runtime.
+- UI administrativa completa del nuevo modelo.
+- Retiro físico de `RolesJson` / `PermissionsJson`.
