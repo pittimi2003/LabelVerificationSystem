@@ -1,0 +1,583 @@
+<Application Name="APSFleetManager">
+  <UserGroup Name="*">
+    <Modules>
+      <Module Name="ViewManualCommand" Authorized="true">
+        <Actions>
+          <Action Name="SemiAutomaticMovements" Authorized="true" Permissions="reader|writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewTask" Authorized="true">
+        <Actions>
+          <Action Name="CancelTaskProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Resend" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Reassing" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ReassignBySelection" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Cancel" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="FinishSemiAutomatic" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Finish" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewMovement" Authorized="true">
+        <Actions>
+          <Action Name="CancelMovementProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ResendMovementProcess" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="APS3DStatus" Authorized="true">
+        <Actions>
+          <Action Name="Extract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisabledAPS" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteAPS" Authorized="true" Permissions="reader | writer"/>
+		  <Action Name="WorkModeDinamic" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ValidationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="CalibrationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="WorkMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceMode" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewChannel" Authorized="true">
+        <Actions>
+          <Action Name="UnlockByUser" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="UnlockChannelByFleetManager" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="IsBufferAPS" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewStation" Authorized="true">
+        <Actions>
+          <Action Name="EditItem" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EnableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="InverseSelectElevator" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewListContainers" Authorized="true">
+        <Actions>
+          <Action Name="AddContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EditContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteContainerType" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewParameter" Authorized="true">
+        <Actions>
+          <Action Name="Edit" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewLevelStatus" Authorized="true">
+        <Actions/>
+      </Module>
+      <Module Name="MaintenanceStations" Authorized="true">
+        <Actions>
+          <Action Name="MoveToStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ExecuteRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Insert" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="SendToRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionExtract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionReintegrate" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceDialogExectute" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="AccessManagementView" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewScada" Authorized="true">
+        <Actions>
+          <Action Name="UnlockChannel" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="BatteryManagement" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Edit" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+    </Modules>
+  </UserGroup>
+  <UserGroup Name="writer">
+    <Modules>
+      <Module Name="ViewManualCommand" Authorized="true">
+        <Actions>
+          <Action Name="SemiAutomaticMovements" Authorized="true" Permissions="reader|writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewTask" Authorized="true">
+        <Actions>
+          <Action Name="CancelTaskProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Resend" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Reassing" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ReassignBySelection" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Cancel" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="FinishSemiAutomatic" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Finish" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewMovement" Authorized="true">
+        <Actions>
+          <Action Name="CancelMovementProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ResendMovementProcess" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="APS3DStatus" Authorized="true">
+        <Actions>
+          <Action Name="Extract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisabledAPS" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteAPS" Authorized="true" Permissions="reader | writer"/>
+		  <Action Name="WorkModeDinamic" Authorized="true" Permissions="reader | writer"/>
+		  <Action Name="ValidationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="CalibrationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="WorkMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceMode" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewChannel" Authorized="true">
+        <Actions>
+          <Action Name="UnlockByUser" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="UnlockChannelByFleetManager" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="IsBufferAPS" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewStation" Authorized="true">
+        <Actions>
+          <Action Name="EditItem" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EnableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="InverseSelectElevator" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewListContainers" Authorized="true">
+        <Actions>
+          <Action Name="AddContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EditContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteContainerType" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewParameter" Authorized="true">
+        <Actions>
+          <Action Name="Edit" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewLevelStatus" Authorized="true">
+        <Actions/>
+      </Module>
+      <Module Name="MaintenanceStations" Authorized="true">
+        <Actions>
+          <Action Name="MoveToStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ExecuteRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Insert" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="SendToRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionExtract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionReintegrate" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceDialogExectute" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="AccessManagementView" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewScada" Authorized="true">
+        <Actions>
+          <Action Name="UnlockChannel" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="BatteryManagement" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Edit" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+    </Modules>
+  </UserGroup>
+  <UserGroup Name="reader">
+    <Modules>
+      <Module Name="ViewManualCommand" Authorized="true">
+        <Actions>
+          <Action Name="SemiAutomaticMovements" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewTask" Authorized="true">
+        <Actions>
+          <Action Name="CancelTaskProcess" Authorized="true" Permissions="reader"/>
+          <Action Name="Resend" Authorized="true" Permissions="reader"/>
+          <Action Name="Reassing" Authorized="true" Permissions="reader"/>
+          <Action Name="ReassignBySelection" Authorized="true" Permissions="reader"/>
+          <Action Name="Cancel" Authorized="true" Permissions="reader"/>
+          <Action Name="FinishSemiAutomatic" Authorized="true" Permissions="reader"/>
+          <Action Name="Finish" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewMovement" Authorized="true">
+        <Actions>
+          <Action Name="CancelMovementProcess" Authorized="true" Permissions="reader"/>
+          <Action Name="ResendMovementProcess" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="APS3DStatus" Authorized="true">
+        <Actions>
+          <Action Name="Extract" Authorized="true" Permissions="reader"/>
+          <Action Name="DisabledAPS" Authorized="true" Permissions="reader"/>
+          <Action Name="DeleteAPS" Authorized="true" Permissions="reader"/>
+			<Action Name="WorkModeDinamic" Authorized="true" Permissions="reader | writer"/>
+			<Action Name="ValidationMode" Authorized="true" Permissions="reader"/>
+          <Action Name="CalibrationMode" Authorized="true" Permissions="reader"/>
+          <Action Name="WorkMode" Authorized="true" Permissions="reader"/>
+          <Action Name="MaintenanceMode" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewChannel" Authorized="true">
+        <Actions>
+          <Action Name="UnlockByUser" Authorized="true" Permissions="reader"/>
+          <Action Name="UnlockChannelByFleetManager" Authorized="true" Permissions="reader"/>
+          <Action Name="IsBufferAPS" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewStation" Authorized="true">
+        <Actions>
+          <Action Name="EditItem" Authorized="true" Permissions="reader"/>
+          <Action Name="EnableLiftingStation" Authorized="true" Permissions="reader"/>
+          <Action Name="DisableLiftingStation" Authorized="true" Permissions="reader"/>
+          <Action Name="InverseSelectElevator" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewListContainers" Authorized="true">
+        <Actions>
+          <Action Name="AddContainerType" Authorized="true" Permissions="reader"/>
+          <Action Name="EditContainerType" Authorized="true" Permissions="reader"/>
+          <Action Name="DeleteContainerType" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewParameter" Authorized="true">
+        <Actions>
+          <Action Name="Edit" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewLevelStatus" Authorized="true">
+        <Actions/>
+      </Module>
+      <Module Name="MaintenanceStations" Authorized="true">
+        <Actions>
+          <Action Name="MoveToStation" Authorized="true" Permissions="reader"/>
+          <Action Name="ExecuteRescue" Authorized="true" Permissions="reader"/>
+          <Action Name="Insert" Authorized="true" Permissions="reader"/>
+          <Action Name="SendToRescue" Authorized="true" Permissions="reader"/>
+          <Action Name="ActionExtract" Authorized="true" Permissions="reader"/>
+          <Action Name="ActionReintegrate" Authorized="true" Permissions="reader"/>
+          <Action Name="MaintenanceDialogExectute" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="AccessManagementView" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewScada" Authorized="true">
+        <Actions>
+          <Action Name="UnlockChannel" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+      <Module Name="BatteryManagement" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="true" Permissions="reader"/>
+          <Action Name="Edit" Authorized="true" Permissions="reader"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader"/>
+        </Actions>
+      </Module>
+    </Modules>
+  </UserGroup>
+  <UserGroup Name="SuperAdmin">
+    <Modules>
+      <Module Name="ViewManualCommand" Authorized="true">
+        <Actions>
+          <Action Name="SemiAutomaticMovements" Authorized="true" Permissions="reader|writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewTask" Authorized="true">
+        <Actions>
+          <Action Name="CancelTaskProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Resend" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Reassing" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ReassignBySelection" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Cancel" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="FinishSemiAutomatic" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Finish" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewMovement" Authorized="true">
+        <Actions>
+          <Action Name="CancelMovementProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ResendMovementProcess" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="APS3DStatus" Authorized="true">
+        <Actions>
+          <Action Name="Extract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisabledAPS" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteAPS" Authorized="true" Permissions="reader | writer"/>
+			<Action Name="WorkModeDinamic" Authorized="true" Permissions="reader | writer"/>
+
+			<Action Name="ValidationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="CalibrationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="WorkMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceMode" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewChannel" Authorized="true">
+        <Actions>
+          <Action Name="UnlockByUser" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="UnlockChannelByFleetManager" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="IsBufferAPS" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewStation" Authorized="true">
+        <Actions>
+          <Action Name="EditItem" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EnableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="InverseSelectElevator" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewListContainers" Authorized="true">
+        <Actions>
+          <Action Name="AddContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EditContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteContainerType" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewParameter" Authorized="true">
+        <Actions>
+          <Action Name="Edit" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewLevelStatus" Authorized="true">
+        <Actions/>
+      </Module>
+      <Module Name="MaintenanceStations" Authorized="true">
+        <Actions>
+          <Action Name="MoveToStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ExecuteRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Insert" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="SendToRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionExtract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionReintegrate" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceDialogExectute" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="AccessManagementView" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewScada" Authorized="true">
+        <Actions>
+          <Action Name="UnlockChannel" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="BatteryManagement" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Edit" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+    </Modules>
+  </UserGroup>
+  <UserGroup Name="Operators">
+    <Modules>
+      <Module Name="ViewManualCommand" Authorized="true">
+        <Actions>
+          <Action Name="SemiAutomaticMovements" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewTask" Authorized="true">
+        <Actions>
+          <Action Name="CancelTaskProcess" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Resend" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Reassing" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="ReassignBySelection" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Cancel" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="FinishSemiAutomatic" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Finish" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewMovement" Authorized="true">
+        <Actions>
+          <Action Name="CancelMovementProcess" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="ResendMovementProcess" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="APS3DStatus" Authorized="true">
+        <Actions>
+          <Action Name="Extract" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="DisabledAPS" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="DeleteAPS" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="ValidationMode" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="CalibrationMode" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="WorkMode" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="MaintenanceMode" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewChannel" Authorized="true">
+        <Actions>
+          <Action Name="UnlockByUser" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="UnlockChannelByFleetManager" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="IsBufferAPS" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewStation" Authorized="true">
+        <Actions>
+          <Action Name="EditItem" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="EnableLiftingStation" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="DisableLiftingStation" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="InverseSelectElevator" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewListContainers" Authorized="true">
+        <Actions>
+          <Action Name="AddContainerType" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="EditContainerType" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="DeleteContainerType" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewParameter" Authorized="true">
+        <Actions>
+          <Action Name="Edit" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewLevelStatus" Authorized="true">
+        <Actions/>
+      </Module>
+      <Module Name="MaintenanceStations" Authorized="true">
+        <Actions>
+          <Action Name="MoveToStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ExecuteRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Insert" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="SendToRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionExtract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionReintegrate" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceDialogExectute" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="AccessManagementView" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewScada" Authorized="true">
+        <Actions>
+          <Action Name="UnlockChannel" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="BatteryManagement" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Edit" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+    </Modules>
+  </UserGroup>
+  <UserGroup Name="Managers">
+    <Modules>
+      <Module Name="ViewManualCommand" Authorized="true">
+        <Actions>
+          <Action Name="SemiAutomaticMovements" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewTask" Authorized="true">
+        <Actions>
+          <Action Name="CancelTaskProcess" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Resend" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Reassing" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ReassignBySelection" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Cancel" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="FinishSemiAutomatic" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Finish" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewMovement" Authorized="true">
+        <Actions>
+          <Action Name="CancelMovementProcess" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="ResendMovementProcess" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="APS3DStatus" Authorized="true">
+        <Actions>
+          <Action Name="Extract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisabledAPS" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteAPS" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="ValidationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="CalibrationMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="WorkMode" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceMode" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewChannel" Authorized="true">
+        <Actions>
+          <Action Name="UnlockByUser" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="UnlockChannelByFleetManager" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="IsBufferAPS" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewStation" Authorized="true">
+        <Actions>
+          <Action Name="EditItem" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EnableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DisableLiftingStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="InverseSelectElevator" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewListContainers" Authorized="true">
+        <Actions>
+          <Action Name="AddContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="EditContainerType" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="DeleteContainerType" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewParameter" Authorized="true">
+        <Actions>
+          <Action Name="Edit" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewLevelStatus" Authorized="true">
+        <Actions/>
+      </Module>
+      <Module Name="MaintenanceStations" Authorized="true">
+        <Actions>
+          <Action Name="MoveToStation" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ExecuteRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="Insert" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="SendToRescue" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionExtract" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="ActionReintegrate" Authorized="true" Permissions="reader | writer"/>
+          <Action Name="MaintenanceDialogExectute" Authorized="true" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="AccessManagementView" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="ViewScada" Authorized="true">
+        <Actions>
+          <Action Name="UnlockChannel" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+      <Module Name="BatteryManagement" Authorized="true">
+        <Actions>
+          <Action Name="Add" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Edit" Authorized="false" Permissions="reader | writer"/>
+          <Action Name="Delete" Authorized="false" Permissions="reader | writer"/>
+        </Actions>
+      </Module>
+    </Modules>
+  </UserGroup>
+</Application>
