@@ -3,9 +3,9 @@
 ## Estado y alcance de este estándar
 
 - Este documento define un **estándar reusable** para pedir y evaluar nuevas vistas administrativas tipo Grid en LabelVerificationSystem.
-- Este documento **no introduce funcionalidad nueva** por sí mismo; solo formaliza patrón documental y reusable.
-- Este documento se alinea al estado actual validado del proyecto.
-- Contexto actual del proyecto: **Fase 4 sigue abierta** (informativo, no regla universal del estándar).
+- Este documento **no introduce funcionalidad nueva**; solo formaliza patrón documental reusable.
+- Se alinea al estado actual validado del proyecto.
+- Contexto de proyecto vigente (informativo): **Fase 4 sigue abierta**.
 - Este estándar no mezcla alcance con Fase 5, NLog ni cambios backend no confirmados.
 
 ---
@@ -26,14 +26,14 @@ La vista debe operar sobre contratos reales del backend, evitando suposiciones.
 
 ## 2) Composición mínima de la vista (obligatoria)
 
-Toda vista Grid debe incluir, como bloques explícitos y distinguibles:
+Toda vista Grid debe incluir, de forma **explícita** y distinguible:
 
 1. **Encabezado / toolbar**
    - título y subtítulo,
    - acción de recarga,
    - acción primaria de alta cuando backend soporte creación.
 2. **Filtros**
-   - bloque dedicado, no mezclado con toolbar,
+   - bloque dedicado separado de toolbar,
    - controles alineados al contrato backend real.
 3. **Resultados / grid**
    - tabla principal con columnas reales,
@@ -66,7 +66,7 @@ Reglas de filtro:
 - `SearchField` define **qué campo backend** se está filtrando.
 - `SearchText` envía valor normalizado (trim, nulo si vacío).
 - `StatusFilter` es **obligatorio** cuando el modelo tenga estado operativo real (activo/inactivo o equivalente confirmado).
-- `StatusFilter` es **opcional/no aplicable** cuando ese concepto no exista en el modelo destino.
+- `StatusFilter` es **no aplicable** cuando ese concepto no exista en el modelo destino.
 - `Limpiar filtros` debe restaurar valores iniciales y recargar la primera página.
 - Cambiar cualquier filtro debe resetear la página actual a 1.
 
@@ -152,15 +152,27 @@ No se deben agregar acciones “previstas” pero no implementadas por backend.
 
 ## 8) Contrato mínimo frontend ↔ backend (obligatorio por vista nueva)
 
-Para cada nueva vista Grid, se debe documentar explícitamente:
+Para cada nueva vista Grid, se debe documentar explícitamente y con evidencia real:
 
 1. **Endpoint de listado** (ruta y método).
 2. **Query params soportados** (filtros, `page`, `pageSize`, otros reales).
 3. **Respuesta paginada** (estructura y metadatos).
 4. **DTO/item real** (campos efectivamente usados en grid y formularios).
-5. **Acciones por fila reales** (y su endpoint asociado).
+5. **Acciones por fila reales** (y endpoint asociado).
 6. **Autorización requerida** (policy/rol/permiso real, si aplica).
 7. **Limitaciones abiertas** (faltantes o restricciones confirmadas).
+
+Plantilla mínima sugerida por vista:
+
+| Elemento | Valor confirmado |
+|---|---|
+| Endpoint listado | `GET /...` |
+| Query params | `searchField`, `searchText`, `status`, `page`, `pageSize` (solo si existen) |
+| Respuesta paginada | `{ items, page, pageSize, totalItems, totalPages }` (o contrato real equivalente) |
+| DTO/item real | Campos usados en columnas y drawers |
+| Acciones por fila | Acción + endpoint + método |
+| Autorización | Policy/rol/permiso aplicado |
+| Limitaciones abiertas | Lista explícita |
 
 Reglas duras:
 
@@ -196,7 +208,7 @@ Necesito una vista administrativa tipo Grid para el modelo <MODELO_X> en LabelVe
 Condiciones obligatorias:
 - Reutilizar el estándar docs/frontend/grid-view-standard.md.
 - No inventar campos, filtros, catálogos ni acciones no soportadas por backend.
-- Mantener patrón UX validado: SearchField, SearchText, StatusFilter (si aplica), Limpiar filtros.
+- Mantener patrón UX validado: SearchField, SearchText, StatusFilter (obligatorio si existe estado operativo real; no aplicable si no existe), Limpiar filtros.
 - Mantener filtros/paginación backend-driven cuando backend lo soporte.
 - Resolver campos multivalor con multiselección (no CSV).
 - Mantener contrato visual con la shell actual.
@@ -211,7 +223,7 @@ Entregables obligatorios:
 2) Propuesta de filtros.
 3) Estados de la vista (carga inicial, carga en filtros/paginación, vacío, error, guardado, éxito/error de operación).
 4) Acciones soportadas y no soportadas.
-5) Mapeo contra backend real (endpoints, params, DTOs, paginación, autorización).
+5) Mapeo contra backend real (endpoints, params, respuesta paginada, DTOs/items, autorización).
 6) Limitaciones abiertas.
 7) Documentación afectada y actualizada.
 8) Checklist de cumplimiento del estándar.

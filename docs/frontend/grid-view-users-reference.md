@@ -60,34 +60,17 @@ Estado explícito:
 
 ## 2) Reutilización segura (matriz operativa)
 
-### A) Reutilizable tal cual
-
-- estructura general de vista: toolbar + filtros + grid + paginación;
-- patrón de recarga por cambio de filtros/paginación;
-- feedback de carga/operación con snackbar;
-- uso de multiselección para campos multivalor (no CSV).
-
-### B) Reutilizable con adaptación
-
-- catálogo y orden de columnas (debe ajustarse al DTO real del módulo destino);
-- opciones de `SearchField` (deben existir en backend real del módulo destino);
-- presencia y semántica de `StatusFilter` (solo si hay estado operativo real);
-- drawers create/edit/detail/reset (solo los soportados por endpoints reales);
-- textos UX (labels, tooltips, mensajes) contextualizados al módulo.
-
-### C) No reutilizable sin revalidación
-
-- acciones específicas de identidad (`reset password`);
-- suposición de estado `isActive` o activación/desactivación;
-- estructura exacta de DTOs de usuario (`CreateUserRequestDto` / `UpdateUserRequestDto`);
-- reglas de validación de contraseñas/identidad;
-- mapeo de roles/permisos basado en el comportamiento actual del módulo usuarios.
+| Categoría | Qué entra aquí | Condición de uso |
+|---|---|---|
+| **Reutilizable tal cual** | Estructura base toolbar + filtros + grid + paginación; recarga por filtros/paginación; feedback de carga/operación; multiselección para multivalor (no CSV). | Puede copiarse sin cambio estructural si el módulo también es Grid administrativo. |
+| **Reutilizable con adaptación** | Columnas; opciones de `SearchField`; semántica/presencia de `StatusFilter`; drawers create/edit/detail/reset; labels/tooltips/mensajes. | Debe mapearse a DTO, contratos y acciones reales del backend del módulo destino. |
+| **No reutilizable sin revalidación** | `reset password`; semántica `isActive`; DTOs `CreateUserRequestDto`/`UpdateUserRequestDto`; validaciones de identidad/contraseña; mapeo actual de roles/permisos. | Requiere confirmación funcional y contractual previa, módulo por módulo. |
 
 ---
 
 ## 3) Dependencias funcionales actuales de UsersAdmin
 
-El funcionamiento real actual de UsersAdmin queda condicionado por:
+El funcionamiento real actual de UsersAdmin depende de:
 
 1. **Contrato backend de listado de usuarios**
    - disponibilidad de filtros soportados y paginación real.
@@ -99,6 +82,8 @@ El funcionamiento real actual de UsersAdmin queda condicionado por:
    - la UI actual depende de información recibida en respuestas de usuarios.
 5. **Autorización vigente de administración**
    - acceso y ejecución de acciones sujetos a políticas/permisos activos del sistema.
+6. **Disponibilidad operativa de catálogos auxiliares**
+   - en ausencia de catálogo global independiente de roles/permisos, la vista opera con lo disponible en los datos cargados.
 
 Estas dependencias deben verificarse antes de intentar reutilización en otros módulos.
 
@@ -121,10 +106,11 @@ Estas decisiones son de usuarios y **no deben promoverse automáticamente como e
 
 En el estado actual, siguen abiertas (no cerrar como estándar definitivo):
 
-1. **Catálogo global de roles/permisos (limitación importante)**
+1. **Catálogo global de roles/permisos (limitación importante y visible para reutilización)**
    - actualmente se detecta desde datos disponibles en respuestas cargadas,
    - no existe un catálogo independiente, centralizado y completo garantizado para todo el universo de datos,
-   - esto condiciona la reutilización directa de filtros/edición de roles-permisos en otros módulos.
+   - impacto directo: no se puede asumir reutilización literal de filtros/edición de roles-permisos en otros módulos sin revalidación backend previa,
+   - impacto directo: cualquier nueva vista que requiera roles/permisos debe declarar explícitamente esta dependencia como limitación abierta si no hay endpoint catálogo dedicado.
 
 2. **Modelo final roles/permisos**
    - sigue abierto a cierre de fase (normalización final vs representación actual).
