@@ -19,6 +19,12 @@ public sealed class AppDbContext : DbContext
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<UserPasswordCredential> UserPasswordCredentials => Set<UserPasswordCredential>();
     public DbSet<SystemUser> SystemUsers => Set<SystemUser>();
+    public DbSet<RoleCatalog> RoleCatalogs => Set<RoleCatalog>();
+    public DbSet<ModuleCatalog> ModuleCatalogs => Set<ModuleCatalog>();
+    public DbSet<ModuleActionCatalog> ModuleActionCatalogs => Set<ModuleActionCatalog>();
+    public DbSet<RoleModuleAuthorization> RoleModuleAuthorizations => Set<RoleModuleAuthorization>();
+    public DbSet<RoleModuleActionAuthorization> RoleModuleActionAuthorizations => Set<RoleModuleActionAuthorization>();
+    public DbSet<SystemUserRole> SystemUserRoles => Set<SystemUserRole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -147,6 +153,116 @@ public sealed class AppDbContext : DbContext
             entity.HasIndex(x => x.Username).IsUnique();
             entity.HasIndex(x => x.Email);
             entity.HasIndex(x => x.IsActive);
+        });
+
+        modelBuilder.Entity<RoleCatalog>(entity =>
+        {
+            entity.ToTable("RoleCatalog");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).IsRequired().UseCollation("NOCASE");
+            entity.Property(x => x.Name).IsRequired();
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => x.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<ModuleCatalog>(entity =>
+        {
+            entity.ToTable("ModuleCatalog");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).IsRequired().UseCollation("NOCASE");
+            entity.Property(x => x.Name).IsRequired();
+            entity.Property(x => x.DisplayOrder).IsRequired();
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => x.Code).IsUnique();
+            entity.HasIndex(x => x.DisplayOrder).IsUnique();
+        });
+
+        modelBuilder.Entity<ModuleActionCatalog>(entity =>
+        {
+            entity.ToTable("ModuleActionCatalog");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Code).IsRequired().UseCollation("NOCASE");
+            entity.Property(x => x.Name).IsRequired();
+            entity.Property(x => x.DisplayOrder).IsRequired();
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => new { x.ModuleId, x.Code }).IsUnique();
+            entity.HasIndex(x => new { x.ModuleId, x.DisplayOrder }).IsUnique();
+
+            entity.HasOne(x => x.Module)
+                .WithMany(x => x.Actions)
+                .HasForeignKey(x => x.ModuleId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RoleModuleAuthorization>(entity =>
+        {
+            entity.ToTable("RoleModuleAuthorization");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Authorized).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => new { x.RoleId, x.ModuleId }).IsUnique();
+
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.ModuleAuthorizations)
+                .HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Module)
+                .WithMany(x => x.RoleAuthorizations)
+                .HasForeignKey(x => x.ModuleId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RoleModuleActionAuthorization>(entity =>
+        {
+            entity.ToTable("RoleModuleActionAuthorization");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Authorized).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => new { x.RoleId, x.ModuleActionId }).IsUnique();
+
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.ModuleActionAuthorizations)
+                .HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.ModuleAction)
+                .WithMany(x => x.RoleAuthorizations)
+                .HasForeignKey(x => x.ModuleActionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SystemUserRole>(entity =>
+        {
+            entity.ToTable("SystemUserRole");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.IsPrimary).IsRequired().HasDefaultValue(false);
+            entity.Property(x => x.AssignedAtUtc).IsRequired();
+            entity.HasIndex(x => new { x.SystemUserId, x.RoleId }).IsUnique();
+            entity.HasIndex(x => new { x.SystemUserId, x.IsPrimary }).HasFilter("IsPrimary = 1").IsUnique();
+
+            entity.HasOne(x => x.SystemUser)
+                .WithMany(x => x.Roles)
+                .HasForeignKey(x => x.SystemUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.UserRoles)
+                .HasForeignKey(x => x.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.AssignedByUser)
+                .WithMany(x => x.AssignedRoles)
+                .HasForeignKey(x => x.AssignedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

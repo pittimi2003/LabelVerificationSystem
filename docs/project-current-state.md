@@ -678,3 +678,22 @@ Se consolidó la propuesta técnica implementable y migrable del modelo de autor
 - no se implementa todavía UI administrativa completa de permisos;
 - no se ejecuta todavía reemplazo completo del modelo legacy sin cierre de transición;
 - no se mezcla este avance con Fase 5 ni NLog.
+
+## Avance implementado: Bloque B autorización robusta (Fase 4 abierta)
+
+Se implementó en backend la persistencia inicial del modelo robusto de autorización definido para Bloque B, manteniendo transición con el modelo legacy.
+
+### Implementado
+- Nuevas tablas/entidades de autorización robusta: `RoleCatalog`, `ModuleCatalog`, `ModuleActionCatalog`, `RoleModuleAuthorization`, `RoleModuleActionAuthorization`, `SystemUserRole`.
+- Seed inicial de catálogos y matriz base de autorización (roles/módulos/acciones).
+- Backfill de `SystemUsers` a `SystemUserRole` basado en `RolesJson` cuando existe equivalencia.
+- Fallback de asignación de rol `Operators` para usuarios sin rol legacy reconocible.
+- `UserAdministrationService` sincroniza en alta/edición tanto el modelo legacy (`RolesJson`) como `SystemUserRole`.
+
+### No implementado en este corte
+- Reemplazo total del runtime de autorización hacia la nueva matriz.
+- Eliminación de `RolesJson` y `PermissionsJson`.
+- UI administrativa completa de permisos.
+
+### Estado de fase
+- **Fase 4 sigue abierta**.

@@ -92,6 +92,12 @@ Se incorpora como diseño lógico implementable (aún no reemplazo total activo)
 - Se considera diseño de transición/migración desde `RolesJson` y `PermissionsJson`.
 - El retiro del modelo legacy queda pendiente de una iteración posterior de cierre de transición.
 
+### Estado de implementación física (actualización)
+- Se implementó persistencia EF Core/migraciones para `RoleCatalog`, `ModuleCatalog`, `ModuleActionCatalog`, `RoleModuleAuthorization`, `RoleModuleActionAuthorization` y `SystemUserRole`.
+- Se aplicó seed inicial de roles, módulos, acciones y matriz base de autorización.
+- Se mantiene convivencia transitoria con `RolesJson` y `PermissionsJson`; no hay retiro legacy en este corte.
+- **Fase 4 continúa abierta**.
+
 ---
 
 # 1. Part
