@@ -5,7 +5,7 @@
 - Este documento define un **estándar reusable** para pedir y evaluar nuevas vistas administrativas tipo Grid en LabelVerificationSystem.
 - Este documento **no introduce funcionalidad nueva** por sí mismo; solo formaliza patrón documental y reusable.
 - Este documento se alinea al estado actual validado del proyecto.
-- **Fase 4 sigue abierta**; por tanto, este estándar no debe interpretarse como cierre de fase.
+- Contexto actual del proyecto: **Fase 4 sigue abierta** (informativo, no regla universal del estándar).
 - Este estándar no mezcla alcance con Fase 5, NLog ni cambios backend no confirmados.
 
 ---
@@ -24,52 +24,49 @@ La vista debe operar sobre contratos reales del backend, evitando suposiciones.
 
 ---
 
-## 2) Estructura visual obligatoria
+## 2) Composición mínima de la vista (obligatoria)
 
-La estructura base obligatoria es:
+Toda vista Grid debe incluir, como bloques explícitos y distinguibles:
 
-1. **Contenedor principal tipo página administrativa** (`div` raíz del módulo).
-2. **Card principal** (`MudPaper` o equivalente) con separación interna.
-3. **Stack vertical** con bloques claramente diferenciados:
-   - cabecera/toolbar,
-   - bloque de filtros,
-   - estado de carga o tabla,
-   - bloque de paginación.
+1. **Encabezado / toolbar**
+   - título y subtítulo,
+   - acción de recarga,
+   - acción primaria de alta cuando backend soporte creación.
+2. **Filtros**
+   - bloque dedicado, no mezclado con toolbar,
+   - controles alineados al contrato backend real.
+3. **Resultados / grid**
+   - tabla principal con columnas reales,
+   - estado de carga y estado vacío visibles.
+4. **Paginación**
+   - metadatos (`Página X de Y`, `Total`),
+   - cambio de página y tamaño.
+5. **Drawers**
+   - create/edit/detail/reset (solo si existe soporte real),
+   - con cierre, validación y acciones claras.
+6. **Feedback / errores**
+   - mensajes para carga y operaciones,
+   - sin fallos silenciosos.
 
-No se deben introducir estructuras visuales paralelas que rompan el patrón actual del módulo administrativo.
-
----
-
-## 3) Toolbar / cabecera
-
-La cabecera debe incluir como mínimo:
-
-- título del módulo,
-- subtítulo descriptivo breve,
-- acción de recarga del listado (`Actualizar` o equivalente),
-- acción primaria de alta (`Nuevo ...`) cuando el backend soporte creación.
-
-Reglas:
-
-- Los botones deben respetar estado de carga/guardado para evitar operaciones duplicadas.
-- No exponer acciones que el backend no soporte.
+No se deben introducir estructuras visuales paralelas que rompan este patrón.
 
 ---
 
-## 4) Patrón de filtros obligatorio
+## 3) Patrón de filtros obligatorio
 
 El patrón UX validado y obligatorio para nuevas vistas Grid es:
 
 - `SearchField`
 - `SearchText`
-- `StatusFilter`
+- `StatusFilter` (ver regla de aplicabilidad)
 - `Limpiar filtros`
 
 Reglas de filtro:
 
 - `SearchField` define **qué campo backend** se está filtrando.
 - `SearchText` envía valor normalizado (trim, nulo si vacío).
-- `StatusFilter` representa estado (`Todos` / activo / inactivo o equivalente real del módulo).
+- `StatusFilter` es **obligatorio** cuando el modelo tenga estado operativo real (activo/inactivo o equivalente confirmado).
+- `StatusFilter` es **opcional/no aplicable** cuando ese concepto no exista en el modelo destino.
 - `Limpiar filtros` debe restaurar valores iniciales y recargar la primera página.
 - Cambiar cualquier filtro debe resetear la página actual a 1.
 
@@ -81,19 +78,40 @@ Prohibiciones explícitas:
 
 ---
 
-## 5) Tabla / grid
+## 4) Estados mínimos obligatorios de la vista
+
+Toda vista Grid debe contemplar y documentar explícitamente estos estados:
+
+1. **Carga inicial**
+   - primer fetch de datos al abrir la vista.
+2. **Carga al filtrar/paginar**
+   - transición visible al cambiar filtros, página o tamaño.
+3. **Estado vacío**
+   - mensaje operativo cuando no hay resultados.
+4. **Error de carga**
+   - feedback claro si falla el listado.
+5. **Guardado en curso**
+   - bloqueo/previsión de doble submit en drawers o formularios.
+6. **Éxito/error de operación**
+   - feedback posterior a create/edit/toggle/reset/detail (según aplique).
+
+Estos estados son de cumplimiento obligatorio en diseño, validación y documentación.
+
+---
+
+## 5) Grid y datos
 
 El grid debe:
 
 - reflejar columnas reales del contrato backend,
-- mostrar estados vacíos claros cuando no hay resultados,
-- mostrar estado de carga claro durante fetch,
-- mantener orden de columnas coherente con uso administrativo.
+- mantener orden de columnas coherente con operación administrativa,
+- mostrar placeholder explícito para opcionales (ej. `—`),
+- presentar colecciones (roles/permisos/categorías) de forma legible (chips/lista), sin serialización cruda.
 
-Reglas de datos:
+Regla multivalor obligatoria:
 
-- Campos opcionales deben mostrar placeholder explícito (ej. `—`).
-- Colecciones (roles/permisos/categorías) deben presentarse de forma legible (chips/lista), sin serializaciones crudas.
+- Campos multivalor se capturan con **multiselección**.
+- **No usar CSV** como mecanismo de edición multivalor.
 
 ---
 
@@ -103,7 +121,7 @@ El patrón de paginación es obligatorio:
 
 - metadatos visibles (`Página X de Y`, `Total backend`),
 - selector de tamaño de página,
-- control de navegación por página.
+- control de navegación.
 
 Reglas:
 
@@ -113,7 +131,7 @@ Reglas:
 
 ---
 
-## 7) Acciones por fila
+## 7) Acciones por fila y drawers
 
 Acciones por fila permitidas:
 
@@ -121,48 +139,28 @@ Acciones por fila permitidas:
 - con affordance visual clara (icono + tooltip),
 - con feedback de éxito/error.
 
-Ejemplos de tipo de acción (según módulo):
+Patrón de drawers:
 
-- editar,
-- activar/desactivar,
-- reset,
-- detalle.
+- encabezado con título + cierre,
+- cuerpo con controles alineados al DTO real,
+- footer con `Cancelar` y `Guardar/Aplicar`,
+- estado `isSaving` o equivalente para prevenir doble submit.
 
 No se deben agregar acciones “previstas” pero no implementadas por backend.
 
 ---
 
-## 8) Drawers o patrón de formularios (create/edit/detail/reset)
+## 8) Contrato mínimo frontend ↔ backend (obligatorio por vista nueva)
 
-Patrón obligatorio:
+Para cada nueva vista Grid, se debe documentar explícitamente:
 
-- formularios laterales (`MudDrawer` o equivalente) para operaciones administrativas,
-- encabezado con título y cierre explícito,
-- cuerpo con controles alineados al contrato,
-- acciones `Cancelar` y `Guardar/Aplicar` al pie.
-
-Reglas de formularios:
-
-- Validar campos requeridos antes de invocar backend.
-- En modo edición, bloquear campos inmutables si así lo exige contrato.
-- Cerrar drawer y refrescar grid tras operación exitosa.
-- Mantener estado `isSaving` para prevenir doble submit.
-
-Regla multivalor obligatoria:
-
-- Campos multivalor se capturan con **multiselección**.
-- **No usar CSV** como mecanismo de edición multivalor.
-
----
-
-## 9) Reglas de integración con backend
-
-Cada vista Grid debe mapear explícitamente:
-
-- endpoint de listado paginado,
-- endpoint(s) por acción (create/edit/toggle/reset/detail),
-- parámetros de filtro reales,
-- contrato de request/response.
+1. **Endpoint de listado** (ruta y método).
+2. **Query params soportados** (filtros, `page`, `pageSize`, otros reales).
+3. **Respuesta paginada** (estructura y metadatos).
+4. **DTO/item real** (campos efectivamente usados en grid y formularios).
+5. **Acciones por fila reales** (y su endpoint asociado).
+6. **Autorización requerida** (policy/rol/permiso real, si aplica).
+7. **Limitaciones abiertas** (faltantes o restricciones confirmadas).
 
 Reglas duras:
 
@@ -171,27 +169,11 @@ Reglas duras:
 - No inventar catálogos.
 - No inventar acciones no soportadas por backend.
 
-Si falta un dato o capacidad en backend, debe declararse como limitación abierta, no improvisarse en UI.
+Si falta capacidad backend, se declara como limitación abierta; no se improvisa en UI.
 
 ---
 
-## 10) Manejo de errores
-
-Debe existir manejo de errores de usuario y operativo:
-
-- feedback visible (snackbar/toast/mensaje inline),
-- mensajes diferenciados para carga vs guardado,
-- limpieza/control de estados de carga en `finally`.
-
-Recomendaciones de consistencia:
-
-- evitar mensajes genéricos vacíos,
-- mantener texto entendible para operación administrativa,
-- no ocultar fallo silenciosamente.
-
----
-
-## 11) Contrato visual con la shell actual
+## 9) Contrato visual con la shell actual
 
 Toda nueva vista Grid debe respetar:
 
@@ -204,24 +186,7 @@ No introducir un estilo aislado incompatible con el resto de la aplicación admi
 
 ---
 
-## 12) Criterios obligatorios para nuevas vistas
-
-Una nueva vista “tipo grid del modelo X” se considera correcta solo si cumple:
-
-1. Usa la estructura visual obligatoria.
-2. Implementa el patrón de filtros (`SearchField`, `SearchText`, `StatusFilter`, `Limpiar filtros`).
-3. Consume backend con filtros/paginación reales.
-4. Muestra acciones por fila solo cuando existen en backend.
-5. Implementa formularios laterales coherentes con contrato.
-6. Usa multiselección en campos multivalor (sin CSV).
-7. Expone manejo de errores visible y consistente.
-8. Declara explícitamente limitaciones abiertas sin inventar soluciones.
-9. Mantiene compatibilidad visual con shell actual.
-10. Mantiene explícito que **Fase 4 sigue abierta** cuando aplique al bloque documental vigente.
-
----
-
-## 13) Prompt estándar reutilizable
+## 10) Prompt estándar reusable (endurecido)
 
 Usar este prompt base para pedir una nueva vista administrativa tipo Grid:
 
@@ -231,8 +196,8 @@ Necesito una vista administrativa tipo Grid para el modelo <MODELO_X> en LabelVe
 Condiciones obligatorias:
 - Reutilizar el estándar docs/frontend/grid-view-standard.md.
 - No inventar campos, filtros, catálogos ni acciones no soportadas por backend.
-- Mantener patrón UX validado: SearchField, SearchText, StatusFilter, Limpiar filtros.
-- Mantener filtros/paginación backend-driven.
+- Mantener patrón UX validado: SearchField, SearchText, StatusFilter (si aplica), Limpiar filtros.
+- Mantener filtros/paginación backend-driven cuando backend lo soporte.
 - Resolver campos multivalor con multiselección (no CSV).
 - Mantener contrato visual con la shell actual.
 - Separar claramente:
@@ -240,26 +205,27 @@ Condiciones obligatorias:
   2) decisiones específicas del módulo <MODELO_X>,
   3) limitaciones abiertas.
 - No mezclar con Fase 5, NLog ni cambios backend fuera de alcance.
-- Mantener explícito que Fase 4 sigue abierta si el trabajo corresponde a Bloque B en esa fase.
 
-Entregables esperados:
-1) Diseño de la vista (estructura, filtros, grid, paginación, acciones por fila, drawers).
-2) Mapeo exacto contra contratos backend existentes.
-3) Lista de limitaciones abiertas sin suposiciones.
-4) Checklist de cumplimiento del estándar.
+Entregables obligatorios:
+1) Propuesta de columnas.
+2) Propuesta de filtros.
+3) Estados de la vista (carga inicial, carga en filtros/paginación, vacío, error, guardado, éxito/error de operación).
+4) Acciones soportadas y no soportadas.
+5) Mapeo contra backend real (endpoints, params, DTOs, paginación, autorización).
+6) Limitaciones abiertas.
+7) Documentación afectada y actualizada.
+8) Checklist de cumplimiento del estándar.
 ```
 
 ---
 
-## Checklist rápido de revisión
+## 11) Checklist rápido de revisión
 
-- [ ] Estructura de card + toolbar + filtros + tabla + paginación.
-- [ ] Filtros en patrón validado.
+- [ ] Composición mínima completa: toolbar, filtros, grid, paginación, drawers, feedback/errores.
+- [ ] `StatusFilter` aplicado correctamente (obligatorio si existe estado operativo; no aplicable si no existe).
+- [ ] Estados mínimos obligatorios documentados y visibles en UX.
 - [ ] Backend-driven real (sin inventar contrato).
-- [ ] Multivalor en multiselección.
+- [ ] Multivalor en multiselección (sin CSV).
 - [ ] Acciones por fila confirmadas en backend.
-- [ ] Drawers coherentes por operación.
-- [ ] Manejo de errores visible.
-- [ ] Compatibilidad con shell.
-- [ ] Limitaciones abiertas documentadas.
-- [ ] Sin mezclar con Fase 5/NLog y con Fase 4 explícitamente abierta cuando corresponda.
+- [ ] Contrato frontend↔backend documentado completo.
+- [ ] Limitaciones abiertas declaradas explícitamente.
