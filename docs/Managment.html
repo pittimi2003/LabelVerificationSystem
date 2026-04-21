@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>APS-FM · Administrar permisos (XML)</title>
+<style>
+  :root{
+    --brand:#005098; --bg-info:#E5F1FB; --err:#EB5160;
+    --soft:#F5F6F7; --text:#2E4052; --muted:#889DB8; --white:#fff;
+    --radius:14px; --shadow:0 8px 22px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--soft);color:var(--text);
+       font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,Arial}
+  header{background:var(--brand);color:#fff;padding:14px 16px}
+  header h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.2px}
+  .wrap{max-width:1200px;margin:auto;padding:14px}
+  .panel{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px;margin-bottom:12px}
+  .toolbar{position:sticky;top:0;z-index:999;border:1px solid #e6eaf0}
+  .toolbar .row{align-items:center}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1}
+  button{border:0;padding:9px 12px;border-radius:10px;background:var(--brand);color:#fff;cursor:pointer}
+  button.ghost{background:#e8eef7;color:#14324b}
+  button.warn{background:var(--err)}
+  select,input[type="checkbox"]{transform:translateY(1px)}
+  .hint{color:var(--muted)}
+  .tag{display:inline-flex;gap:6px;align-items:center;background:#eef4fb;color:#14324b;border-radius:999px;padding:3px 8px;font-size:12px}
+  .grid{border:1px solid #e6eaf0;border-radius:12px;overflow:auto}
+  table{border-collapse:collapse;width:100%;min-width:860px}
+  th,td{padding:10px 8px;border-bottom:1px solid #eef2f6;text-align:left}
+  th{background:var(--bg-info);color:#14324b;font-weight:600;position:sticky;top:0;z-index:1}
+  .pill{padding:2px 8px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:12px;display:inline-flex;gap:6px;align-items:center}
+  textarea{width:100%;min-height:120px;font-family:ui-monospace,Consolas,monospace;padding:10px;border:1px solid #d1d9e0;border-radius:10px}
+  .name{font-weight:600}
+  .file{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px;display:inline-block;vertical-align:bottom}
+  .sep{height:1px;background:#e8edf2;margin:8px 0}
+  .spacer{flex:1}
+</style>
+</head>
+<body>
+<header><h1>APS-FM · Administrar permisos (STS + Permissions.xml)</h1></header>
+<div class="wrap">
+
+  <!-- BARRA FLOTANTE -->
+  <div class="panel toolbar">
+    <div class="row">
+      <button id="btnOpenDir" class="ghost">Seleccionar carpeta…</button>
+      <button id="btnOpen">Abrir Permissions.xml</button>
+      <div class="spacer"></div>
+      <label class="row">
+        <span class="hint">Modo guardado:</span>
+        <select id="saveMode">
+          <option value="full">Completo (todo el árbol)</option>
+          <option value="onOnly">Solo ON (limpia OFF)</option>
+        </select>
+      </label>
+      <button id="btnSave" class="ghost">Guardar</button>
+      <button id="btnSaveAs" class="ghost">Guardar como…</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <span class="tag">Archivo: <span id="fileLabel" class="file">—</span></span>
+      <span class="tag">Grupos: <b id="groupsCount">0</b></span>
+      <span class="tag">Módulos únicos: <b id="modulesCount">0</b></span>
+      <span id="supportNote" class="hint"></span>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="panel">
+    <div class="row">
+      <label>Grupo:</label>
+      <select id="groupFilter"></select>
+      <label class="row"><input type="checkbox" id="hideOff" checked> Ocultar acciones OFF</label>
+      <span class="hint">“Add” en AccessManagementView se guarda siempre como OFF.</span>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="panel">
+    <div class="grid">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:24%">Módulo</th>
+            <th style="width:12%">Authorized (módulo)</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- XML crudo -->
+  <div class="panel">
+    <div class="row">
+      <div class="grow">
+        <div class="row" style="justify-content:space-between">
+          <span class="hint">XML crudo (lectura/escritura opcional)</span>
+          <div class="row">
+            <button id="btnReloadFromText" class="ghost">Cargar desde textarea</button>
+            <button id="btnDumpToText" class="ghost">Volcar a textarea</button>
+          </div>
+        </div>
+        <div class="sep"></div>
+        <textarea id="xmlText" placeholder="Aquí podrás ver/editar el XML si lo deseas…"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(()=> {
+  const $ = s => document.querySelector(s);
+  let dom = null;                 // DOM del XML
+  let groups = [];                // lista de <UserGroup>
+  let currentGroup = null;        // nombre del grupo en vista
+  let fileHandle = null;          // FileSystemFileHandle actual
+  let baseDirHandle = null;       // Carpeta del proyecto (HTML + XML)
+  let currentFileName = "—";
+
+  // Soporte
+  const supportsFSA = !!(window.showOpenFilePicker && window.showSaveFilePicker);
+  $("#supportNote").textContent = supportsFSA
+    ? "Guardado directo habilitado (File System Access API)."
+    : "Tu navegador no soporta guardado directo; usaré descarga como fallback.";
+
+  // ---------- Utilidades XML ----------
+  function parseXml(text){
+    const p = new DOMParser();
+    const xml = p.parseFromString(text, "application/xml");
+    const err = xml.querySelector("parsererror");
+    if (err) throw new Error(err.textContent || "Error de parseo XML");
+    return xml;
+  }
+  function serializeXml(xml){
+    return new XMLSerializer().serializeToString(xml);
+  }
+  function updateStatsAndFilters(){
+    groups = Array.from(dom.querySelectorAll("Application > UserGroup"));
+    $("#groupsCount").textContent = groups.length;
+    const setMods = new Set();
+    groups.forEach(g => g.querySelectorAll(":scope > Modules > Module")
+      .forEach(m => setMods.add(m.getAttribute("Name"))));
+    $("#modulesCount").textContent = setMods.size;
+
+    const sel = $("#groupFilter");
+    sel.innerHTML = "";
+    groups.forEach(g => {
+      const opt = document.createElement("option");
+      opt.value = g.getAttribute("Name");
+      opt.textContent = opt.value;
+      sel.appendChild(opt);
+    });
+    currentGroup = groups[0]?.getAttribute("Name") || null;
+    if (currentGroup) sel.value = currentGroup;
+  }
+  function forceGlobalDenyAddAccess(xmlRoot){
+    xmlRoot.querySelectorAll(`Application > UserGroup > Modules > Module[Name="AccessManagementView"] > Actions > Action[Name="Add"]`)
+      .forEach(a => a.setAttribute("Authorized","false"));
+  }
+
+  // ---------- Render ----------
+  function render(){
+    if(!currentGroup) return;
+    const g = groups.find(x => x.getAttribute("Name") === currentGroup);
+    const hideOff = $("#hideOff").checked;
+    const tbody = $("#tbody");
+    tbody.innerHTML = "";
+    if(!g) return;
+
+    const mods = Array.from(g.querySelectorAll(":scope > Modules > Module"))
+      .sort((a,b)=>a.getAttribute("Name").localeCompare(b.getAttribute("Name")));
+
+    mods.forEach(mod => {
+      const tr = document.createElement("tr");
+      // módulo
+      const tdM = document.createElement("td");
+      tdM.innerHTML = `<span class="name">${mod.getAttribute("Name")}</span>`;
+      tr.appendChild(tdM);
+
+      // authorized módulo
+      const tdAuth = document.createElement("td");
+      const mAuth = (mod.getAttribute("Authorized")||"false").toLowerCase()==="true";
+      tdAuth.innerHTML = `
+        <label class="pill">
+          <input type="checkbox" ${mAuth?"checked":""}
+            data-k="module" data-module="${mod.getAttribute("Name")}"> ON
+        </label>`;
+      tr.appendChild(tdAuth);
+
+      // acciones
+      const tdActs = document.createElement("td");
+      const acts = Array.from(mod.querySelectorAll(":scope > Actions > Action"));
+      if(acts.length===0){
+        tdActs.innerHTML = `<span class="hint">Sin acciones</span>`;
+      }else{
+        const wrap = document.createElement("div"); wrap.className="row";
+        acts.forEach(a=>{
+          const n = a.getAttribute("Name") || "(unnamed)";
+          const aAuth = (a.getAttribute("Authorized")||"false").toLowerCase()==="true";
+          const isAddAccess = (mod.getAttribute("Name")==="AccessManagementView" && n==="Add");
+          const visible = aAuth || !hideOff || isAddAccess; // mostrar "Add" aunque esté OFF (para evidenciarlo)
+          if(!visible) return;
+          const lbl = document.createElement("label"); lbl.className="pill";
+          lbl.style.opacity = isAddAccess ? .55 : 1;
+          lbl.innerHTML = `
+            <input type="checkbox" ${aAuth && !isAddAccess ? "checked":""}
+              ${isAddAccess ? "disabled":""}
+              data-k="action" data-module="${mod.getAttribute("Name")}" data-action="${n}">
+            ${n}
+          `;
+          wrap.appendChild(lbl);
+        });
+        tdActs.appendChild(wrap);
+      }
+      tr.appendChild(tdActs);
+      $("#tbody").appendChild(tr);
+    });
+  }
+
+  // ---------- Eventos UI ----------
+  $("#tbody").addEventListener("change", (e)=>{
+    const el = e.target;
+    if(!el.dataset.k) return;
+    const g = groups.find(x => x.getAttribute("Name")===currentGroup);
+    if(!g) return;
+
+    if(el.dataset.k==="module"){
+      const m = g.querySelector(`:scope > Modules > Module[Name="${CSS.escape(el.dataset.module)}"]`);
+      if(m) m.setAttribute("Authorized", el.checked ? "true" : "false");
+    }
+    if(el.dataset.k==="action"){
+      const m = g.querySelector(`:scope > Modules > Module[Name="${CSS.escape(el.dataset.module)}"]`);
+      const a = m?.querySelector(`:scope > Actions > Action[Name="${CSS.escape(el.dataset.action)}"]`);
+      if(a) a.setAttribute("Authorized", el.checked ? "true" : "false");
+    }
+  });
+
+  $("#groupFilter").addEventListener("change", (e)=>{ currentGroup = e.target.value; render(); });
+  $("#hideOff").addEventListener("change", render);
+
+  // ---------- Archivo: abrir / guardar ----------
+  async function openFile(startInHandle){
+    try{
+      const pickerOpts = {
+        types:[{description:"XML", accept:{"application/xml":[".xml"], "text/xml":[".xml"]}}],
+        multiple:false
+      };
+      if(startInHandle) pickerOpts.startIn = startInHandle;
+      const [handle] = await showOpenFilePicker(pickerOpts);
+      fileHandle = handle;
+      const file = await fileHandle.getFile();
+      currentFileName = file.name;
+      const text = await file.text();
+      dom = parseXml(text);
+      $("#xmlText").value = text;
+      updateStatsAndFilters();
+      render();
+      $("#fileLabel").textContent = currentFileName;
+    }catch(err){
+      if(err?.name!=="AbortError") alert("No se pudo abrir el archivo: "+err.message);
+    }
+  }
+
+  async function openFromProjectDir(){
+    if(!window.showDirectoryPicker){
+      alert("Tu navegador no permite seleccionar carpeta.");
+      return;
+    }
+    try{
+      baseDirHandle = await showDirectoryPicker({mode:"readwrite"});
+      // intenta abrir Permissions.xml dentro de la carpeta (si no existe, créalo vacío)
+      try{
+        fileHandle = await baseDirHandle.getFileHandle("Permissions.xml", {create:false});
+      }catch{
+        fileHandle = await baseDirHandle.getFileHandle("Permissions.xml", {create:true});
+        // escribe esqueleto mínimo
+        const minimal = `<Application Name="APSFleetManager">\n</Application>\n`;
+        const writable = await fileHandle.createWritable(); await writable.write(minimal); await writable.close();
+      }
+      const file = await fileHandle.getFile();
+      const text = await file.text();
+      dom = parseXml(text);
+      $("#xmlText").value = text;
+      updateStatsAndFilters();
+      render();
+      $("#fileLabel").textContent = `${file.name} (en carpeta seleccionada)`;
+    }catch(err){
+      if(err?.name!=="AbortError") alert("No se pudo abrir la carpeta: "+err.message);
+    }
+  }
+
+  async function saveToHandle(handle, text){
+    const writable = await handle.createWritable();
+    await writable.write(text);
+    await writable.close();
+  }
+
+  function buildForSave(mode){
+    if(!dom) throw new Error("Carga primero un XML.");
+    forceGlobalDenyAddAccess(dom);
+    if(mode==="full"){
+      return serializeXml(dom);
+    }
+    // solo ON
+    const clone = dom.cloneNode(true);
+    clone.querySelectorAll("Module").forEach(m=>{
+      const modAuth = (m.getAttribute("Authorized")||"false").toLowerCase()==="true";
+      if(!modAuth){
+        m.querySelectorAll(":scope > Actions > Action").forEach(a=>a.remove());
+      }else{
+        m.querySelectorAll(':scope > Actions > Action[Authorized="false"], :scope > Actions > Action[Authorized="False"]')
+          .forEach(a=>a.remove());
+      }
+    });
+    forceGlobalDenyAddAccess(clone);
+    return serializeXml(clone);
+  }
+
+  async function saveFile(saveAs=false){
+    try{
+      const mode = $("#saveMode").value; // full | onOnly
+      const text = buildForSave(mode);
+
+      if(supportsFSA){
+        let handle = fileHandle;
+        if(saveAs || !handle){
+          const opts = {
+            suggestedName: fileHandle? currentFileName : "Permissions.xml",
+            types:[{description:"XML", accept:{"application/xml":[".xml"], "text/xml":[".xml"]}}]
+          };
+          if(baseDirHandle) opts.startIn = baseDirHandle;
+          handle = await showSaveFilePicker(opts);
+          fileHandle = handle;
+          currentFileName = (await handle.getFile()).name;
+          $("#fileLabel").textContent = currentFileName;
+        }
+        await saveToHandle(fileHandle, text);
+        alert("Guardado correctamente en "+ currentFileName);
+      }else{
+        // Fallback a descarga
+        const blob = new Blob([text], {type:"application/xml"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = currentFileName==="—" ? "Permissions.xml" : currentFileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    }catch(err){
+      if(err?.name!=="AbortError") alert("No se pudo guardar: "+err.message);
+    }
+  }
+
+  // ---------- Botones ----------
+  $("#btnOpenDir").addEventListener("click", openFromProjectDir);
+  $("#btnOpen").addEventListener("click", ()=>openFile(baseDirHandle));
+  $("#btnSave").addEventListener("click", ()=>saveFile(false));
+  $("#btnSaveAs").addEventListener("click", ()=>saveFile(true));
+
+  $("#btnDumpToText").addEventListener("click", ()=>{
+    if(!dom){ alert("Sin XML cargado."); return; }
+    $("#xmlText").value = serializeXml(dom);
+  });
+  $("#btnReloadFromText").addEventListener("click", ()=>{
+    try{
+      const txt = $("#xmlText").value.trim();
+      if(!txt){ alert("Pega XML primero."); return; }
+      dom = parseXml(txt);
+      updateStatsAndFilters();
+      render();
+    }catch(e){ alert("XML inválido: "+e.message); }
+  });
+
+  // ---------- Intento de carga automática ./Permissions.xml ----------
+  (async ()=>{
+    try{
+      const res = await fetch("./Permissions.xml", {cache:"no-store"});
+      if(res.ok){
+        const text = await res.text();
+        dom = parseXml(text);
+        $("#xmlText").value = text;
+        updateStatsAndFilters();
+        render();
+        $("#fileLabel").textContent = "Permissions.xml (relativo al HTML)";
+      }
+    }catch(_){}
+  })();
+
+})();
+</script>
+</body>
+</html>
