@@ -27,6 +27,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IExcelUploadService, ExcelUploadService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IAuthorizationMatrixService, AuthorizationMatrixService>();
+        services.AddScoped<IAuthorizationAdministrationService, AuthorizationAdministrationService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
 
         return services;

@@ -1,0 +1,279 @@
+@page "/authorization-matrix"
+@using LabelVerificationSystem.Web.Components.Authorization
+@inject AuthorizationAdministrationApiClient AuthorizationAdministrationApiClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Administración de matriz de autorización</PageTitle>
+
+<div class="auth-matrix-page d-flex flex-column gap-4">
+    <MudPaper Class="auth-matrix-card pa-4" Outlined="true">
+        <MudStack Spacing="3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="auth-matrix-toolbar flex-wrap gap-2">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h5">Administración de matriz de autorización</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Bloque B / Fase 4 abierta · edición por rol sobre módulos y acciones.</MudText>
+                </MudStack>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadRolesAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" Disabled="@(!CanSave)" OnClick="SaveAsync" StartIcon="@Icons.Material.Filled.Save">Guardar cambios</MudButton>
+                </MudStack>
+            </MudStack>
+
+            <MudPaper Class="pa-3" Outlined="true">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="string" Value="@SelectedRoleCode" ValueChanged="OnRoleChangedAsync" Label="Rol" Variant="Variant.Outlined" Disabled="@IsLoading">
+                            @foreach (var role in Roles)
+                            {
+                                <MudSelectItem Value="@role.RoleCode">@role.RoleName (@role.RoleCode)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6" Class="d-flex align-center">
+                        <MudText Typo="Typo.caption" Class="text-muted">La matriz se carga/guarda contra <code>/api/authorization-matrix/roles/{{roleCode}}</code>.</MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (IsLoading)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Cargando matriz...</MudText>
+                </div>
+            }
+            else if (CurrentMatrix is null)
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">No hay rol seleccionado o no se pudo cargar la matriz.</MudAlert>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    Role actual: <strong>@CurrentMatrix.RoleName (@CurrentMatrix.RoleCode)</strong>
+                </MudAlert>
+
+                <MudTable Hover="true" Elevation="0" Items="@CurrentMatrix.Modules" Breakpoint="Breakpoint.Md" Bordered="true">
+                    <HeaderContent>
+                        <MudTh>Módulo</MudTh>
+                        <MudTh>Module Authorized</MudTh>
+                        <MudTh>Acciones del módulo</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2" Class="fw-semibold">@context.ModuleName</MudText>
+                                <MudText Typo="Typo.caption" Class="text-muted">@context.ModuleCode</MudText>
+                            </MudStack>
+                        </MudTd>
+                        <MudTd>
+                            <MudSwitch T="bool"
+                                       Value="@context.ModuleAuthorized"
+                                       ValueChanged="(value) => SetModuleAuthorization(context.ModuleId, value)"
+                                       Color="Color.Primary"
+                                       Label="@(context.ModuleAuthorized ? "Habilitado" : "No habilitado")" />
+                        </MudTd>
+                        <MudTd>
+                            <div class="d-flex flex-column gap-2">
+                                @foreach (var action in context.Actions)
+                                {
+                                    <MudPaper Outlined="true" Class="pa-2">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
+                                            <MudStack Spacing="0">
+                                                <MudText Typo="Typo.body2">@action.ActionName</MudText>
+                                                <MudText Typo="Typo.caption" Class="text-muted">@action.ActionCode</MudText>
+                                            </MudStack>
+                                            <MudSwitch T="bool"
+                                                       Value="@action.Authorized"
+                                                       ValueChanged="(value) => SetActionAuthorization(context.ModuleId, action.ActionId, value)"
+                                                       Disabled="@(!context.ModuleAuthorized)"
+                                                       Color="Color.Secondary"
+                                                       Label="@(action.Authorized ? "Action Authorized = true" : "Action Authorized = false")" />
+                                        </MudStack>
+                                    </MudPaper>
+                                }
+                            </div>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2">No hay módulos activos en el catálogo actual.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+            }
+        </MudStack>
+    </MudPaper>
+</div>
+
+@code {
+    private bool IsLoading { get; set; }
+    private bool IsSaving { get; set; }
+    private string SelectedRoleCode { get; set; } = string.Empty;
+    private List<AuthorizationRoleDto> Roles { get; } = [];
+    private RoleAuthorizationMatrixDto? CurrentMatrix { get; set; }
+
+    private bool CanSave => !IsLoading && !IsSaving && CurrentMatrix is not null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRolesAsync();
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        IsLoading = true;
+
+        try
+        {
+            var roles = await AuthorizationAdministrationApiClient.ListRolesAsync(CancellationToken.None);
+            Roles.Clear();
+            Roles.AddRange(roles.OrderBy(x => x.RoleName));
+
+            if (string.IsNullOrWhiteSpace(SelectedRoleCode) || Roles.All(x => x.RoleCode != SelectedRoleCode))
+            {
+                SelectedRoleCode = Roles.FirstOrDefault()?.RoleCode ?? string.Empty;
+            }
+
+            await LoadMatrixForSelectedRoleAsync();
+        }
+        catch (Exception ex)
+        {
+            CurrentMatrix = null;
+            Snackbar.Add($"No se pudo cargar el catálogo de roles: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task OnRoleChangedAsync(string? roleCode)
+    {
+        SelectedRoleCode = roleCode ?? string.Empty;
+        await LoadMatrixForSelectedRoleAsync();
+    }
+
+    private async Task LoadMatrixForSelectedRoleAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedRoleCode))
+        {
+            CurrentMatrix = null;
+            return;
+        }
+
+        IsLoading = true;
+
+        try
+        {
+            var matrix = await AuthorizationAdministrationApiClient.GetRoleMatrixAsync(SelectedRoleCode, CancellationToken.None);
+            CurrentMatrix = CloneMatrix(matrix);
+        }
+        catch (Exception ex)
+        {
+            CurrentMatrix = null;
+            Snackbar.Add($"No se pudo cargar la matriz del rol seleccionado: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void SetModuleAuthorization(Guid moduleId, bool authorized)
+    {
+        if (CurrentMatrix is null)
+        {
+            return;
+        }
+
+        var updatedModules = CurrentMatrix.Modules
+            .Select(module =>
+            {
+                if (module.ModuleId != moduleId)
+                {
+                    return module;
+                }
+
+                var actions = module.Actions
+                    .Select(action => action with { Authorized = authorized && action.Authorized })
+                    .ToList();
+
+                return module with
+                {
+                    ModuleAuthorized = authorized,
+                    Actions = actions
+                };
+            })
+            .ToList();
+
+        CurrentMatrix = CurrentMatrix with { Modules = updatedModules };
+    }
+
+    private void SetActionAuthorization(Guid moduleId, Guid actionId, bool authorized)
+    {
+        if (CurrentMatrix is null)
+        {
+            return;
+        }
+
+        var updatedModules = CurrentMatrix.Modules
+            .Select(module =>
+            {
+                if (module.ModuleId != moduleId)
+                {
+                    return module;
+                }
+
+                var actions = module.Actions
+                    .Select(action => action.ActionId == actionId ? action with { Authorized = authorized } : action)
+                    .ToList();
+
+                return module with { Actions = actions };
+            })
+            .ToList();
+
+        CurrentMatrix = CurrentMatrix with { Modules = updatedModules };
+    }
+
+    private async Task SaveAsync()
+    {
+        if (CurrentMatrix is null)
+        {
+            return;
+        }
+
+        IsSaving = true;
+
+        try
+        {
+            var request = new UpdateRoleAuthorizationMatrixRequestDto(
+                CurrentMatrix.Modules
+                    .Select(module => new UpdateRoleModuleAuthorizationDto(
+                        module.ModuleId,
+                        module.ModuleAuthorized,
+                        module.Actions.Select(action => new UpdateRoleModuleActionAuthorizationDto(action.ActionId, action.Authorized)).ToList()))
+                    .ToList());
+
+            var updated = await AuthorizationAdministrationApiClient.UpdateRoleMatrixAsync(CurrentMatrix.RoleCode, request, CancellationToken.None);
+            CurrentMatrix = CloneMatrix(updated);
+            Snackbar.Add("Matriz de autorización guardada correctamente.", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo guardar la matriz de autorización: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private static RoleAuthorizationMatrixDto CloneMatrix(RoleAuthorizationMatrixDto matrix)
+        => matrix with
+        {
+            Modules = matrix.Modules
+                .Select(module => module with
+                {
+                    Actions = module.Actions.Select(action => action with { }).ToList()
+                })
+                .ToList()
+        };
+}

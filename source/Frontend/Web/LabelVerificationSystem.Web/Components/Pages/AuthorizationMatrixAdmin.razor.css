@@ -1,0 +1,11 @@
+.auth-matrix-page {
+    width: 100%;
+}
+
+.auth-matrix-card {
+    border-radius: 0.75rem;
+}
+
+.auth-matrix-toolbar code {
+    font-size: 0.8rem;
+}

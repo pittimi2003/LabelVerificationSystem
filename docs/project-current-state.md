@@ -731,3 +731,29 @@ Se implementó la resolución efectiva de autorización en backend usando el mod
 
 ### Estado de fase
 - **Fase 4 sigue abierta**.
+
+## Avance implementado: primera vista administrativa de matriz por rol (Bloque B / Fase 4 abierta)
+
+Se implementó la primera pantalla administrativa para gestión de permisos por rol sobre módulos y acciones, adaptada al shell actual y conectada a backend real.
+
+### Implementado en backend
+- Nuevo servicio de aplicación/infra para administración de matriz: `IAuthorizationAdministrationService` + `AuthorizationAdministrationService`.
+- Nuevos endpoints:
+  - `GET /api/authorization-matrix/roles`
+  - `GET /api/authorization-matrix/roles/{roleCode}`
+  - `PUT /api/authorization-matrix/roles/{roleCode}`
+- Los endpoints operan sobre catálogos y matriz robusta ya existente (`RoleCatalog`, `ModuleCatalog`, `ModuleActionCatalog`, `RoleModuleAuthorization`, `RoleModuleActionAuthorization`), sin retirar `RolesJson`/`PermissionsJson`.
+
+### Implementado en frontend
+- Nueva ruta `/authorization-matrix` para administrar autorización por rol.
+- UX aplicada:
+  - selector de rol,
+  - listado de módulos,
+  - switch `Module Authorized`,
+  - switches de acciones hijas por módulo,
+  - guardado explícito de cambios.
+- La implementación toma como referencia conceptual `docs/Managment.html`, sin copiarla literal, y mantiene patrón visual del shell actual.
+
+### Estado de fase
+- **Fase 4 sigue abierta**.
+- Este avance no se mezcla con Fase 5 ni con NLog.
