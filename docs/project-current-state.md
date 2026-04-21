@@ -640,3 +640,23 @@ Se documentó la propuesta completa para robustecer autorización en Bloque B, t
 - cierre definitivo de catálogo de módulos/acciones contra endpoints finales por módulo.
 - estrategia de migración de almacenamiento serializado actual (`RolesJson`/`PermissionsJson`) a tablas normalizadas.
 - trazabilidad/auditoría de cambios de autorización a nivel rol/módulo/acción.
+
+## Avance documental vigente: robustecimiento de autorización (Bloque B / Fase 4 abierta)
+
+Se consolidó la propuesta documental del modelo robusto de autorización para Bloque B con estas definiciones confirmadas:
+
+- catálogo explícito de roles (`SuperAdmin`, `Operators`, `Managers`),
+- catálogo de módulos,
+- catálogo de acciones por módulo,
+- autorización separada por módulo y por acción,
+- lineamiento de traslado de protección por ruta a validación explícita módulo+acción.
+
+Este avance se mantiene en **Fase 4 abierta** y no implica cierre de fase.
+También se mantiene fuera de alcance cualquier mezcla con Fase 5 o NLog.
+
+Referencias de trabajo utilizadas y trazadas en documentación:
+
+- `docs/Permissions.xml` (estructura histórica de árbol de permisos),
+- `docs/Managment.html` (referencia conceptual de UX de administración),
+- `docs/frontend/grid-view-standard.md`,
+- `docs/frontend/grid-view-users-reference.md`.
