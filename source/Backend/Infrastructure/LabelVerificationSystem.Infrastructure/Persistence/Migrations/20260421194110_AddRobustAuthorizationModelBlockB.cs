@@ -235,7 +235,7 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                 columns: new[] { "SystemUserId", "RoleId" },
                 unique: true);
 
-            migrationBuilder.Sql(@"""
+            migrationBuilder.Sql("""
 INSERT INTO RoleCatalog (Id, Code, Name, IsActive, CreatedAtUtc, UpdatedAtUtc) VALUES
 ('2f60c809-f9da-4631-a3b0-bf6c11b96524', 'SuperAdmin', 'SuperAdmin', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('592767f7-b026-4cd6-b0d6-7050c302e259', 'Operators', 'Operators', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
