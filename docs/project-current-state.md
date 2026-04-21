@@ -590,3 +590,21 @@ Se atendió el caso reproducido con `Authentication:Bypass:Enabled=false` y logi
 ### Estado explícito de fase
 - **Fase 4 continúa abierta**.
 - Este avance corresponde únicamente al **Bloque B**.
+
+## Avance documental: Bloque B en Fase 4 (abierta) — Estándar reusable para nuevas vistas Grid administrativas
+
+Se formalizó una base documental reusable para pedir nuevas vistas administrativas tipo Grid, separando estándar general y referencia concreta del módulo de usuarios.
+
+### Documentos incorporados
+- `docs/frontend/grid-view-standard.md`
+- `docs/frontend/grid-view-users-reference.md`
+
+### Alcance explícito
+- Trabajo estrictamente documental reusable; no agrega implementación funcional nueva.
+- No mezcla alcance con Fase 5, NLog ni cambios backend no necesarios.
+- Se mantiene regla de no inventar campos/filtros/catálogos/acciones no soportadas por backend.
+- Se formaliza como patrón UX validado: `SearchField`, `SearchText`, `StatusFilter`, `Limpiar filtros`.
+- Se formaliza que campos multivalor deben resolverse con multiselección (no CSV).
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
