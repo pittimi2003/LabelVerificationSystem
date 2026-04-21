@@ -564,6 +564,17 @@ Códigos esperados:
 - El filtrado por `role` y `permission` sigue atado al almacenamiento serializado actual y podrá refinarse cuando se cierre el modelo final de roles/permisos.
 
 
+#### Avance documental activo: modelo robusto de autorización (Bloque B / Fase 4 abierta)
+- Se fija como objetivo de evolución un modelo normalizado por catálogo de `roles`, `módulos` y `acciones por módulo`.
+- Catálogo de roles inicial cerrado: `SuperAdmin`, `Operators`, `Managers`.
+- Semántica base confirmada:
+  - `Module Authorized` => acceso al módulo.
+  - `Action Authorized` => capacidad operativa por acción (`true` ejecuta, `false` deniega).
+- Referencias estructurales/UX de origen: `docs/Permissions.xml` y `docs/Managment.html` (solo como guía conceptual, no como contrato final).
+- Documento normativo de este avance: `docs/security-authorization-model-block-b-phase4.md`.
+
+
+
 ## Convención inicial de respuestas
 
 ## Respuesta exitosa conceptual

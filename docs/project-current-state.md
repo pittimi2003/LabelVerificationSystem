@@ -608,3 +608,35 @@ Se formalizó una base documental reusable para pedir nuevas vistas administrati
 
 ### Estado explícito de fase
 - **Fase 4 continúa abierta**.
+
+## Avance documental: Bloque B en Fase 4 (abierta) — Propuesta robusta de modelo de roles/módulos/acciones
+
+Se documentó la propuesta completa para robustecer autorización en Bloque B, tomando como referencia estructural `docs/Permissions.xml` y referencia conceptual UX `docs/Managment.html`, sin copiar esos artefactos como modelo final.
+
+### Decisiones funcionales cerradas en esta iteración
+- roles como catálogo explícito (no inferido/libre): `SuperAdmin`, `Operators`, `Managers`.
+- autorización separada por módulo y por acción.
+- semántica base confirmada:
+  - `Module Authorized` controla acceso al módulo.
+  - `Action Authorized` controla ejecución de la acción.
+- el atributo `Permissions` del XML no se usa como centro del modelo final.
+
+### Entregable documental incorporado
+- `docs/security-authorization-model-block-b-phase4.md` con:
+  - propuesta conceptual integral,
+  - entidades/relaciones,
+  - catálogo base,
+  - persistencia recomendada,
+  - traducción a políticas backend,
+  - uso correcto de referencias XML/HTML,
+  - decisiones abiertas e impacto por capa.
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
+- Este avance corresponde únicamente al **Bloque B**.
+- No mezcla alcance con Fase 5 ni con NLog.
+
+### Decisiones abiertas que continúan en Fase 4 (Bloque B)
+- cierre definitivo de catálogo de módulos/acciones contra endpoints finales por módulo.
+- estrategia de migración de almacenamiento serializado actual (`RolesJson`/`PermissionsJson`) a tablas normalizadas.
+- trazabilidad/auditoría de cambios de autorización a nivel rol/módulo/acción.

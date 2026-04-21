@@ -498,6 +498,18 @@ Decisiones abiertas explícitas:
 - definir política de borrado final.
 - endurecer normalización case-insensitive para unicidad en distintos motores.
 
+Evolución documental definida para Bloque B / Fase 4 (abierta):
+- modelo objetivo basado en catálogos y matriz de autorización:
+  - `RoleCatalog`
+  - `ModuleCatalog`
+  - `ModuleActionCatalog`
+  - `RoleModuleAuthorization`
+  - `RoleModuleActionAuthorization`
+  - `SystemUserRole`
+- catálogo inicial de roles cerrado: `SuperAdmin`, `Operators`, `Managers`.
+- `RolesJson`/`PermissionsJson` se consideran estado transitorio hasta migración.
+- detalle funcional/relacional consolidado en `docs/security-authorization-model-block-b-phase4.md`.
+
 
 ## Relaciones principales del modelo
 
