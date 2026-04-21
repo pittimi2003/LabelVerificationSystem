@@ -2,6 +2,7 @@ using ApexCharts;
 using BlazorColorPicker;
 using LabelVerificationSystem.Web.Components;
 using LabelVerificationSystem.Web.Components.Auth;
+using LabelVerificationSystem.Web.Components.Authorization;
 using LabelVerificationSystem.Web.Components.Services;
 using LabelVerificationSystem.Web.Components.Users;
 using Microsoft.AspNetCore.Components.Web;
@@ -61,6 +62,13 @@ namespace LabelVerificationSystem.Web
                 var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
                 var authSessionService = sp.GetRequiredService<AuthSessionService>();
                 return new UserAdministrationApiClient(backendApiClient, authSessionService);
+            });
+            builder.Services.AddScoped(sp =>
+            {
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
+                var authSessionService = sp.GetRequiredService<AuthSessionService>();
+                return new AuthorizationAdministrationApiClient(backendApiClient, authSessionService);
             });
 
             await builder.Build().RunAsync();

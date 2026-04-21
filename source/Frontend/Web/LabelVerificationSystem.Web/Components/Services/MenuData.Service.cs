@@ -45,6 +45,15 @@ public class MenuDataService
                     active: false,
                     dirChange: false
                 ),
+                new MainMenuItems (
+                    path: "/authorization-matrix",
+                    type: "link",
+                    icon: "",
+                    title: "Permisos por Rol",
+                    selected: false,
+                    active: false,
+                    dirChange: false
+                ),
             }
         ),
 

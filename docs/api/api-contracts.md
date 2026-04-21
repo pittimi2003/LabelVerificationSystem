@@ -1074,3 +1074,68 @@ Este documento debe actualizarse cuando ocurra cualquiera de estas situaciones:
 - Se fija Carga de Excel como primer módulo con prioridad de formalización.
 - Se definen endpoints iniciales propuestos sin fijar aún payloads definitivos.
 - Se deja explícito qué aspectos del contrato siguen pendientes de decisión.
+
+## Actualización Bloque B / Fase 4 abierta: administración de matriz de autorización por rol
+
+Se incorpora el contrato HTTP inicial para administrar la matriz robusta por rol, usando los catálogos y tablas ya implementados en backend.
+
+### `GET /api/authorization-matrix/roles`
+Retorna el catálogo activo de roles (`SuperAdmin`, `Operators`, `Managers` en seed actual).
+
+### `GET /api/authorization-matrix/roles/{roleCode}`
+Retorna la matriz por rol con módulos y acciones hijas.
+
+Respuesta (shape simplificado):
+
+```json
+{
+  "roleId": "guid",
+  "roleCode": "SuperAdmin",
+  "roleName": "SuperAdmin",
+  "modules": [
+    {
+      "moduleId": "guid",
+      "moduleCode": "UsersAdministration",
+      "moduleName": "Users Administration",
+      "moduleAuthorized": true,
+      "displayOrder": 1,
+      "actions": [
+        {
+          "actionId": "guid",
+          "actionCode": "View",
+          "actionName": "View",
+          "authorized": true,
+          "displayOrder": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+### `PUT /api/authorization-matrix/roles/{roleCode}`
+Actualiza la matriz para el rol indicado.
+
+Request:
+
+```json
+{
+  "modules": [
+    {
+      "moduleId": "guid",
+      "moduleAuthorized": true,
+      "actions": [
+        {
+          "actionId": "guid",
+          "authorized": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+Notas de alcance:
+- Este contrato pertenece a Bloque B y mantiene explícitamente **Fase 4 abierta**.
+- No implica retiro de `RolesJson`/`PermissionsJson` en este corte.
+- No mezcla alcance con Fase 5 ni con NLog.
