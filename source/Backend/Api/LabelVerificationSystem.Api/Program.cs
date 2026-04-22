@@ -110,6 +110,18 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.AuthorizationMatrixAdministration, AuthModuleActions.Manage));
     });
+
+    options.AddPolicy(AuthAuthorizationPolicies.ExcelUploadsRead, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.ExcelUploads, AuthModuleActions.View));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.ExcelUploadsUpload, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.ExcelUploads, AuthModuleActions.Upload));
+    });
 });
 
 builder.Services.AddScoped<IAuthorizationHandler, ModuleActionAuthorizationHandler>();

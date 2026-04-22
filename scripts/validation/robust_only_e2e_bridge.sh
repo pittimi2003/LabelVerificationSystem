@@ -19,6 +19,8 @@ export Authorization__RobustOnlyCutover__Scopes__1=UsersAdministration:Create
 export Authorization__RobustOnlyCutover__Scopes__2=UsersAdministration:Edit
 export Authorization__RobustOnlyCutover__Scopes__3=UsersAdministration:ActivateDeactivate
 export Authorization__RobustOnlyCutover__Scopes__4=AuthorizationMatrixAdministration:Manage
+export Authorization__RobustOnlyCutover__Scopes__5=ExcelUploads:View
+export Authorization__RobustOnlyCutover__Scopes__6=ExcelUploads:Upload
 export Authentication__ConfiguredUsersRobustBridge__Enabled=true
 
 mkdir -p "$(dirname "$LOG_FILE")"
@@ -62,6 +64,12 @@ users_roles_code="$(curl -sS -o /tmp/robust_users_roles.json -w '%{http_code}' -
 users_code="$(curl -sS -o /tmp/robust_users.json -w '%{http_code}' -H "Authorization: Bearer $token" "$BASE_URL/api/users")"
 user_detail_code="$(curl -sS -o /tmp/robust_users_admin.json -w '%{http_code}' -H "Authorization: Bearer $token" "$BASE_URL/api/users/admin-001")"
 matrix_roles_code="$(curl -sS -o /tmp/robust_matrix_roles.json -w '%{http_code}' -H "Authorization: Bearer $token" "$BASE_URL/api/authorization-matrix/roles")"
+excel_history_code="$(curl -sS -o /tmp/robust_excel_history.json -w '%{http_code}' -H "Authorization: Bearer $token" "$BASE_URL/api/excel-uploads")"
+excel_upload_admin_code="$(curl -sS -o /tmp/robust_excel_upload_admin.json -w '%{http_code}' \
+  -X POST \
+  -H "Authorization: Bearer $token" \
+  -F "file=@/dev/null;filename=empty.xlsx;type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+  "$BASE_URL/api/excel-uploads")"
 
 manager_login_response="$(curl -sS -w '\n%{http_code}' \
   -H 'Content-Type: application/json' \
@@ -86,6 +94,12 @@ manager_create_code="$(curl -sS -o /tmp/robust_manager_create.json -w '%{http_co
   -H "Authorization: Bearer $manager_token" \
   -d '{"username":"manager-should-not-create","displayName":"Denied","email":"denied@local.test","password":"Manager123!","roles":["Operators"],"permissions":[],"isActive":true}' \
   "$BASE_URL/api/users")"
+manager_excel_history_code="$(curl -sS -o /tmp/robust_manager_excel_history.json -w '%{http_code}' -H "Authorization: Bearer $manager_token" "$BASE_URL/api/excel-uploads")"
+manager_excel_upload_code="$(curl -sS -o /tmp/robust_manager_excel_upload.json -w '%{http_code}' \
+  -X POST \
+  -H "Authorization: Bearer $manager_token" \
+  -F "file=@/dev/null;filename=empty.xlsx;type=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" \
+  "$BASE_URL/api/excel-uploads")"
 
 suffix="$(date +%s)"
 create_payload="$(cat <<JSON
@@ -138,7 +152,9 @@ for expected_ok in \
   "$create_code" \
   "$update_code" \
   "$activation_code" \
-  "$matrix_roles_code"; do
+  "$matrix_roles_code" \
+  "$excel_history_code" \
+  "$manager_excel_history_code"; do
   if [[ ! "$expected_ok" =~ ^2 ]]; then
     echo "Validación robust-only selectiva falló con código HTTP: $expected_ok" >&2
     exit 1
@@ -147,6 +163,16 @@ done
 
 if [[ "$manager_create_code" -ne 403 ]]; then
   echo "Se esperaba 403 para POST /api/users con manager robust-only (scope fuera de perímetro). Código: $manager_create_code" >&2
+  exit 1
+fi
+
+if [[ "$manager_excel_upload_code" -ne 403 ]]; then
+  echo "Se esperaba 403 para POST /api/excel-uploads con manager robust-only (scope Upload fuera de perímetro). Código: $manager_excel_upload_code" >&2
+  exit 1
+fi
+
+if [[ "$excel_upload_admin_code" -ne 400 ]]; then
+  echo "Se esperaba 400 para POST /api/excel-uploads con admin robust-only (autorizado; request inválido por archivo vacío). Código: $excel_upload_admin_code" >&2
   exit 1
 fi
 
@@ -165,6 +191,10 @@ echo "POST /api/users (manager, expected 403) => $manager_create_code"
 echo "PUT /api/users/{created_user_id} => $update_code"
 echo "PATCH /api/users/{created_user_id}/activation => $activation_code"
 echo "GET /api/authorization-matrix/roles => $matrix_roles_code"
+echo "GET /api/excel-uploads => $excel_history_code"
+echo "GET /api/excel-uploads (manager) => $manager_excel_history_code"
+echo "POST /api/excel-uploads (admin, expected 400) => $excel_upload_admin_code"
+echo "POST /api/excel-uploads (manager, expected 403) => $manager_excel_upload_code"
 echo "ME sample: $(head -c 180 /tmp/robust_me.json)"
 echo "USERS ROLES sample: $(head -c 180 /tmp/robust_users_roles.json)"
 echo "USERS sample: $(head -c 180 /tmp/robust_users.json)"

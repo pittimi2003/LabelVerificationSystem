@@ -662,6 +662,18 @@ Consulta de una carga específica.
 - Si faltan columnas mínimas obligatorias en el encabezado, la carga se rechaza como archivo inválido (HTTP 400).
 - La respuesta del `POST` devuelve resultado final de la carga con resumen y errores por fila.
 
+### Policies de autorización vigentes (Bloque B / Fase 4 abierta)
+- `ExcelUploadsRead` => `Module=ExcelUploads` + `Action=View` para:
+  - `GET /api/excel-uploads`
+  - `GET /api/excel-uploads/{id}`
+  - `GET /api/excel-uploads/{id}/details`
+- `ExcelUploadsUpload` => `Module=ExcelUploads` + `Action=Upload` para:
+  - `POST /api/excel-uploads`
+
+Convivencia transitoria:
+- en scope incluido en `Authorization:RobustOnlyCutover`, no se usa fallback legacy por claims;
+- fuera de ese scope, se mantiene fallback legacy controlado por `Authorization:EnableLegacyFallback`.
+
 ### Response de `GET /api/excel-uploads` y `GET /api/excel-uploads/{id}` (v1)
 - `uploadId`: identificador de la carga.
 - `originalFileName`: nombre original del archivo cargado.
@@ -673,8 +685,12 @@ Consulta de una carga específica.
 
 ### Status codes de historial (v1)
 - `GET /api/excel-uploads`: `200 OK`.
+- `GET /api/excel-uploads`: `401 Unauthorized` cuando no hay token válido.
+- `GET /api/excel-uploads`: `403 Forbidden` cuando no cumple policy `ExcelUploadsRead`.
 - `GET /api/excel-uploads/{id}`:
   - `200 OK` cuando la carga existe.
+  - `401 Unauthorized` cuando no hay token válido.
+  - `403 Forbidden` cuando no cumple policy `ExcelUploadsRead`.
   - `404 Not Found` cuando el id no existe.
 
 ### `GET /api/excel-uploads/{id}/details`
@@ -693,6 +709,8 @@ Consulta detallada de una carga específica para UX de inspección histórica.
 ### Status codes de detalle (v1.2)
 - `GET /api/excel-uploads/{id}/details`:
   - `200 OK` cuando la carga existe.
+  - `401 Unauthorized` cuando no hay token válido.
+  - `403 Forbidden` cuando no cumple policy `ExcelUploadsRead`.
   - `404 Not Found` cuando el id no existe.
 
 ### Response de `POST /api/excel-uploads` (v1)
@@ -705,6 +723,13 @@ Consulta detallada de una carga específica para UX de inspección histórica.
   - `rowNumber`
   - `partNumber`
   - `error`
+
+### Status codes de carga (v1)
+- `POST /api/excel-uploads`:
+  - `200 OK` cuando el archivo es válido y se procesa.
+  - `400 Bad Request` para request inválido (ej. archivo ausente/vacío o formato inválido).
+  - `401 Unauthorized` cuando no hay token válido.
+  - `403 Forbidden` cuando no cumple policy `ExcelUploadsUpload`.
 
 ### Reglas funcionales cerradas reflejadas en el contrato
 - Solo inserta nuevas partes.
@@ -1233,7 +1258,7 @@ Se amplía el perímetro robust-only selectivo a un perfil adicional con evidenc
 Configuración de referencia:
 
 ```json
-"RobustOnlyCutover": {
+  "RobustOnlyCutover": {
   "Enabled": true,
   "UserIds": ["admin-001", "manager-001"],
   "Scopes": [
@@ -1241,7 +1266,9 @@ Configuración de referencia:
     "UsersAdministration:Create",
     "UsersAdministration:Edit",
     "UsersAdministration:ActivateDeactivate",
-    "AuthorizationMatrixAdministration:Manage"
+    "AuthorizationMatrixAdministration:Manage",
+    "ExcelUploads:View",
+    "ExcelUploads:Upload"
   ]
 }
 ```
@@ -1251,3 +1278,27 @@ Validación contractual del nuevo perfil:
 - permitido en robust-only para scope cubierto (`UsersAdministration:View`): `GET /api/users`, `GET /api/users/roles`;
 - sesión robust-only operativa (`POST /api/auth/login`, `GET /api/auth/me`);
 - fuera de scope, denegación esperada y confirmada: `POST /api/users` retorna `403` para `manager-001`.
+
+## Actualización Bloque B / Fase 4 abierta: expansión parcial adicional a `ExcelUploads` (2026-04-22)
+
+> Estado explícito: **Fase 4 sigue abierta**.  
+> Sin apagado global legacy en esta iteración.
+
+Ampliación del perímetro robust-only selectivo (sin retiro global):
+
+- se incorporan scopes `ExcelUploads:View` y `ExcelUploads:Upload` en `Authorization:RobustOnlyCutover` para `admin-001` y `manager-001`;
+- se aplican policies por módulo/acción en `/api/excel-uploads`:
+  - `ExcelUploadsRead` para endpoints de lectura;
+  - `ExcelUploadsUpload` para carga.
+
+Evidencia contractual ejecutada con `scripts/validation/robust_only_e2e_bridge.sh`:
+
+- `GET /api/excel-uploads` (`admin`) => `200`;
+- `GET /api/excel-uploads` (`manager`) => `200`;
+- `POST /api/excel-uploads` (`manager`) => `403` esperado (fuera de permiso robusto);
+- `POST /api/excel-uploads` (`admin`) => `400` esperado por request inválido (archivo vacío), confirmando que la autorización sí permitió llegar a validación funcional.
+
+Transición que permanece:
+
+- fuera del subconjunto cutover, se mantiene fallback legacy por claims;
+- se mantiene convivencia con `RolesJson`/`PermissionsJson` para perfiles no totalmente migrados.
