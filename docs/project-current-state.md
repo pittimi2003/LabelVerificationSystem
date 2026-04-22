@@ -1213,3 +1213,62 @@ Se atendió exclusivamente el fallo `TypeError: Failed to fetch` durante `GET /a
 
 ### Estado explícito de fase
 - **Fase 4 continúa abierta**.
+
+## Avance reciente: Bloque B / Fase 4 abierta (validación del siguiente candidato post-`operator-001`, 2026-04-22)
+
+- Estado de fase: **Fase 4 sigue abierta** (esta iteración no cierra fase).
+- Alcance exclusivo: **Bloque B / validación robust-ready del siguiente perfil candidato**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Identificación del siguiente candidato más maduro
+
+Con base en los perfiles locales/configurados vigentes, el siguiente candidato potencial después de `admin-001`, `manager-001` y `operator-001` es `bypass-system` (identidad `Authentication:Bypass`).
+
+Evidencia de inventario ejecutada:
+
+- `Authentication:Users` contiene exactamente: `manager-001`, `operator-001`, `admin-001`.
+- `Authentication:Bypass` mantiene `UserId=bypass-system` y `Enabled=false` por defecto.
+
+### Revisión de alineación con `RoleCatalog`
+
+- `bypass-system` está alineado nominalmente con rol robusto (`SuperAdmin`) en configuración.
+- No se detecta desalineación de naming de rol en este perfil.
+
+### Revisión de permisos/scopes robustos aplicables
+
+Se confirmó por implementación que `Bypass` no utiliza resolución robusta de `SystemUserRole` + matriz para construir sesión ni permisos efectivos:
+
+- en modo bypass, `AuthService` devuelve `/me` directamente desde `Authentication:Bypass` (`Roles`/`Permissions` configurados),
+- y bloquea `login`/`refresh` de usuario convencional mientras bypass está habilitado.
+
+Por diseño actual, este perfil **no es candidato robust-ready para `RobustOnlyCutover`** en el mismo sentido que los perfiles de usuario autenticado normal.
+
+### Validación reproducible ejecutada en esta iteración
+
+Se re-ejecutaron validaciones E2E ya consolidadas para verificar no regresión del perímetro endurecido actual (sin ampliar corte):
+
+- `scripts/validation/robust_only_e2e_bridge.sh`
+- `scripts/validation/robust_only_e2e_operator.sh`
+
+Resultados consolidados (sin cambios funcionales en contratos):
+
+- `admin-001` y `manager-001` mantienen comportamiento esperado sobre sesión, `/users`, `/authorization-matrix` y `/excel-uploads`.
+- `operator-001` mantiene comportamiento robust-only validado:
+  - `2xx` en sesión y `GET /api/excel-uploads`,
+  - `403` en `/users` y `/authorization-matrix`,
+  - `400` en `POST /api/excel-uploads` con payload inválido (autorización efectiva, validación funcional rechaza request).
+
+### Decisión de cutover para esta iteración
+
+- **No se amplía `Authorization:RobustOnlyCutover`** en esta iteración.
+- `bypass-system` queda **no elegible** para corte robust-only mientras su flujo permanezca basado en configuración bypass (no matriz robusta runtime).
+- Se mantiene el subconjunto vigente:
+  - `admin-001`
+  - `manager-001`
+  - `operator-001`
+
+### Decisiones abiertas (se mantienen)
+
+- Definir el siguiente candidato de corte entre perfiles de autenticación de usuario estándar (no bypass), con evidencia E2E robust-only equivalente.
+- Mantener transición legacy fuera del perímetro endurecido actual hasta contar con evidencia suficiente por perfil/scope.
+- **Fase 4 continúa abierta**.
