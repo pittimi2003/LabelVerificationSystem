@@ -764,6 +764,7 @@ Se implementó la primera pantalla administrativa para gestión de permisos por 
 - Estado de fase: **Fase 4 continúa abierta** (no cerrada en esta iteración).
 - El módulo `/users` quedó integrado para priorizar asignación de roles sobre `RoleCatalog` + `SystemUserRole`.
 - Se mantiene convivencia transitoria explícita con `RolesJson` / `PermissionsJson` para compatibilidad de transición.
+- En altas/ediciones de `/users`, `RolesJson` se conserva solo como espejo transitorio de roles ya sincronizados en `SystemUserRole` (sin arrastrar nuevos roles legacy fuera de catálogo).
 - No se incorporaron cambios de Fase 5 ni NLog en este avance.
 
 ## Avance reciente: Bloque B / Fase 4 abierta (consolidación runtime por policies)

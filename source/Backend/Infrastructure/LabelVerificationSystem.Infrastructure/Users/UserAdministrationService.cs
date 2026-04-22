@@ -180,7 +180,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         var normalizedRoles = NormalizeValues(request.Roles);
         var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
-        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(normalizedRoles, syncedRoles));
+        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(syncedRoles));
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
@@ -243,7 +243,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
         }
 
         var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
-        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(normalizedRoles, syncedRoles));
+        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(syncedRoles));
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
@@ -368,9 +368,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
         return result;
     }
 
-    private static IReadOnlyList<string> BuildLegacyRolesSnapshot(IReadOnlyList<string> requestedRoles, IReadOnlyList<string> synchronizedRoles)
-        => requestedRoles
-            .Concat(synchronizedRoles)
+    private static IReadOnlyList<string> BuildLegacyRolesSnapshot(IReadOnlyList<string> synchronizedRoles)
+        => synchronizedRoles
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
