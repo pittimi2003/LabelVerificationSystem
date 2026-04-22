@@ -809,3 +809,44 @@ Se implementó la primera pantalla administrativa para gestión de permisos por 
   - `SystemUserRole` correctamente asignado,
   - matriz robusta (`RoleModuleAuthorization` + `RoleModuleActionAuthorization`) completa para los módulos/acciones requeridos.
 - Bypass y usuarios no migrados continúan dependiendo de fallback legacy; por eso no se ejecuta corte total en esta iteración.
+
+## Avance reciente: Bloque B / Fase 4 abierta (validación controlada de modo robust-only)
+
+- Estado de fase: **Fase 4 continúa abierta** (sin cierre de fase en este corte).
+- Alcance acotado a Bloque B: validación controlada de autorización con `EnableLegacyFallback=false`, sin mezclar con Fase 5 ni con NLog.
+
+### Validación ejecutada (2026-04-22)
+
+Se comparó comportamiento real en entorno local controlado:
+
+- escenario transición (`EnableLegacyFallback=true`), y
+- escenario robust-only controlado (`EnableLegacyFallback=false`).
+
+Flujos/endpoints verificados:
+
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/users`
+- `GET /api/authorization-matrix/roles`
+
+### Resultado resumido
+
+- Con fallback habilitado: login, `/me`, `/users` y `/authorization-matrix/roles` operan correctamente.
+- Con fallback deshabilitado (mismo usuario configurado en `Authentication:Users`): login y `/me` operan, pero `/users` y `/authorization-matrix/roles` responden `403`.
+
+### Lectura del resultado
+
+- El sistema ya soporta validaciones robust-only por subconjuntos, pero **no** está listo para apagado global del legacy.
+- Persisten dependencias de transición para perfiles no migrados completamente a `SystemUsers` + `SystemUserRole`.
+
+### Dependencias legacy que siguen activas/bloqueantes
+
+- fallback legacy por claims (`EnableLegacyFallback`),
+- `RolesJson` en trayectorias de transición,
+- `PermissionsJson` en resolución efectiva de permisos de sesión.
+
+### Decisiones abiertas que continúan
+
+- definir y ejecutar plan por subconjuntos/perfiles robust-ready antes de cualquier corte global;
+- cerrar migración operativa de usuarios que hoy viven solo en `Authentication:Users` hacia identidad/roles robustos persistidos;
+- mantener Fase 4 abierta hasta cerrar validación robust-only de endpoints críticos sin fallback.
