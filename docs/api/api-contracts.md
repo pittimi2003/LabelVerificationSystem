@@ -1217,3 +1217,36 @@ Expansión controlada validada en Bloque B / Fase 4 abierta:
 - para `admin-001` se habilita cutover selectivo también en `UsersAdministration:Create`, `UsersAdministration:Edit` y `UsersAdministration:ActivateDeactivate`;
 - esto cubre de forma robust-only selectiva (sin fallback legacy para ese subconjunto/scope): `POST /api/users`, `PUT /api/users/{userId}` y `PATCH /api/users/{userId}/activation`;
 - se mantiene sin cambios que el resto de usuarios/scopes fuera de ese perímetro continúan en transición dual.
+
+## Actualización Bloque B / Fase 4 abierta: expansión controlada a perfil `manager-001` (2026-04-22)
+
+> Estado explícito: **Fase 4 sigue abierta**.  
+> Sin apagado global legacy en esta iteración.
+
+Se amplía el perímetro robust-only selectivo a un perfil adicional con evidencia verificable:
+
+- usuario local/configurado `manager-001` (`username: manager`);
+- rol `Managers` alineado con `RoleCatalog` (sin alias fuera de catálogo);
+- incorporación en `Authorization:RobustOnlyCutover:UserIds` en Development.
+
+Configuración de referencia:
+
+```json
+"RobustOnlyCutover": {
+  "Enabled": true,
+  "UserIds": ["admin-001", "manager-001"],
+  "Scopes": [
+    "UsersAdministration:View",
+    "UsersAdministration:Create",
+    "UsersAdministration:Edit",
+    "UsersAdministration:ActivateDeactivate",
+    "AuthorizationMatrixAdministration:Manage"
+  ]
+}
+```
+
+Validación contractual del nuevo perfil:
+
+- permitido en robust-only para scope cubierto (`UsersAdministration:View`): `GET /api/users`, `GET /api/users/roles`;
+- sesión robust-only operativa (`POST /api/auth/login`, `GET /api/auth/me`);
+- fuera de scope, denegación esperada y confirmada: `POST /api/users` retorna `403` para `manager-001`.

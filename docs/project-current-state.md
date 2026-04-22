@@ -984,3 +984,50 @@ Fuera de ese subconjunto, la transición actual se mantiene intacta:
 - No hay retiro global de legacy.
 - No hay mezcla con Fase 5.
 - No se incorpora NLog.
+
+## Avance reciente: Bloque B / Fase 4 abierta (expansión controlada a perfil manager robust-ready)
+
+- Estado de fase: **Fase 4 sigue abierta**.
+- Alcance exclusivo de **Bloque B**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Perfil adicional robust-ready identificado y validado
+
+- Nuevo perfil validado: `manager-001` (usuario local/configurado `manager`).
+- Base robusta confirmada:
+  - rol `Managers` existe en `RoleCatalog`,
+  - bridge de usuarios configurados/locales sincroniza a `SystemUserRole`,
+  - cutover selectivo activo por `Authorization:RobustOnlyCutover`.
+
+### Perímetro ampliado (sin corte global)
+
+En Development, `Authorization:RobustOnlyCutover:UserIds` queda:
+
+- `admin-001`
+- `manager-001`
+
+Scopes se mantienen (sin ampliar módulos nuevos):
+
+- `UsersAdministration:View`
+- `UsersAdministration:Create`
+- `UsersAdministration:Edit`
+- `UsersAdministration:ActivateDeactivate`
+- `AuthorizationMatrixAdministration:Manage`
+
+### Evidencia ejecutada en esta iteración
+
+Con `scripts/validation/robust_only_e2e_bridge.sh` (Development, bridge ON, fallback global ON):
+
+- `manager`:
+  - `POST /api/auth/login` => `200`,
+  - `GET /api/auth/me` => `200`,
+  - `GET /api/users` => `200`,
+  - `GET /api/users/roles` => `200`,
+  - `POST /api/users` => `403` esperado (fuera de alcance robust-ready del perfil).
+- `admin` mantiene validación robust-only E2E para `/users` y `/authorization-matrix`.
+
+### Dependencias legacy que siguen vivas fuera del perímetro ampliado
+
+- fallback legacy por claims (`EnableLegacyFallback`) para usuarios/scopes fuera de cutover;
+- fallback transitorio por `RolesJson` y mezcla por `PermissionsJson` fuera de usuarios en cutover;
+- transición dual permanece activa para escenarios no robust-ready.

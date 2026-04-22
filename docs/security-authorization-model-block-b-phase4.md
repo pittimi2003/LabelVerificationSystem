@@ -705,3 +705,34 @@ Con esta evidencia, el subconjunto `admin-001` queda robust-ready también para 
   - fallback legacy por claims (si `EnableLegacyFallback=true`);
   - compatibilidad transitoria con `RolesJson` y `PermissionsJson`.
 - No se incorpora en esta iteración ningún nuevo módulo/policy fuera de `/api/users` y `/api/authorization-matrix`.
+
+## 20) Expansión controlada a nuevo perfil robust-ready `manager-001` (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Decisión aplicada
+
+Se incorpora un segundo usuario en cutover selectivo para validar expansión por perfil (no por apagado global):
+
+- `manager-001` (`username: manager`) agregado como usuario local/configurado;
+- rol configurado `Managers` (coincide exactamente con `RoleCatalog.Code`);
+- agregado en `Authorization:RobustOnlyCutover:UserIds` en Development.
+
+### Evidencia real de robust-ready para el nuevo perfil
+
+Ejecución de `scripts/validation/robust_only_e2e_bridge.sh` en Development:
+
+- `POST /api/auth/login` (manager) => `200`
+- `GET /api/auth/me` (manager) => `200`
+- `GET /api/users` (manager) => `200`
+- `GET /api/users/roles` (manager) => `200`
+- `POST /api/users` (manager) => `403` esperado (acción fuera del scope `UsersAdministration:View`)
+
+Interpretación: el perfil `manager-001` queda robust-ready para el subconjunto de lectura de users (`UsersAdministration:View`) y conserva deny-by-default fuera del perímetro, sin necesidad de fallback legacy en ese alcance de cutover.
+
+### Estado de transición tras la expansión
+
+- Se mantiene transición dual para usuarios/scopes fuera de `RobustOnlyCutover`.
+- Continúan vigentes dependencias transitorias (`EnableLegacyFallback`, `RolesJson`, `PermissionsJson`) fuera del perímetro ampliado.
+- No hay cambios de contrato en `login`, `refresh`, `/me`, `/users` y `/authorization-matrix`; solo cambia el origen de decisión (robusto estricto) en el subconjunto aplicado.
