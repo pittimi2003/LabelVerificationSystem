@@ -384,7 +384,8 @@ Implementado en backend:
 - Convivencia transitoria explícita mantenida:
   - `RolesJson` y `PermissionsJson` **no se eliminan**,
   - login/auth actual se conserva,
-  - escritura administrativa sigue manteniendo campos legacy y agrega sincronización hacia `SystemUserRole`.
+  - escritura administrativa sigue manteniendo campos legacy y agrega sincronización hacia `SystemUserRole`,
+  - `RolesJson` se mantiene como espejo transitorio de roles efectivamente sincronizados en catálogo (sin arrastrar roles no catalogados en nuevas altas/ediciones).
 
 No implementado en esta iteración:
 
@@ -428,6 +429,23 @@ No implementado en esta iteración runtime:
 - migración de todos los endpoints/policies al modelo robusto (en este corte se migran `/api/users` y `/api/authorization-matrix`);
 - invalidación distribuida/caché avanzada de matriz;
 - retiro de `RolesJson`/`PermissionsJson`.
+
+## 14) Avance de consolidación final (Bloque B, iteración actual; Fase 4 abierta)
+
+> **Fase 4 permanece abierta**. No hay cierre de fase ni retiro total legacy en esta iteración.
+
+Implementado en esta iteración:
+
+- Reducción incremental de escritura legacy en `/api/users`:
+  - al crear/editar usuarios, `SystemUserRole` sigue siendo la fuente robusta principal;
+  - `RolesJson` se persiste como snapshot alineado a roles robustos sincronizados, evitando propagar valores legacy no presentes en `RoleCatalog`.
+- Se mantiene compatibilidad:
+  - lectura de roles efectivos continúa priorizando `SystemUserRole` con fallback a `RolesJson` para usuarios todavía no migrados;
+  - no se altera el fallback legacy de claims en runtime para no romper bypass/transición.
+
+Estado transitorio explícito después del ajuste:
+- Sigue vivo: `PermissionsJson`, fallback legacy de claims, fallback por `RolesJson` cuando no hay asignación robusta.
+- Reducido: escritura de `RolesJson` desde `/api/users` (ya no conserva roles fuera de catálogo en nuevas operaciones administrativas).
 
 
 ## 10) Avance implementado en esta iteración (Bloque B / integración users)
