@@ -41,7 +41,7 @@ public sealed class BypassOptions
     public string Username { get; set; } = "system-bypass";
     public string DisplayName { get; set; } = "System Bypass";
     public string? Email { get; set; }
-    public List<string> Roles { get; set; } = ["Administrator"];
+    public List<string> Roles { get; set; } = ["SuperAdmin"];
     public List<string> Permissions { get; set; } = ["excel.upload.create", "users.read", "users.manage"];
 }
 

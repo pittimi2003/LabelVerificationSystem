@@ -894,3 +894,42 @@ Por lo tanto, en esta iteración se **formaliza el patrón** y se deja el candid
 - definir policies explícitas por endpoint en `/api/auth` que no impacten login/refresh;
 - construir evidencia E2E robust-only específica de `me/logout` antes de incluir ese scope en cutover;
 - mantener explícitamente **Fase 4 abierta** hasta completar más módulos robust-ready sin apagado global legacy.
+
+## 24) Alineación de perfiles configurados/locales con `RoleCatalog` (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Iteración acotada a **Bloque B** (alineación de perfiles).  
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Diagnóstico de perfiles revisados
+
+Se revisaron perfiles locales/configurados de autenticación:
+
+- `admin-001`
+- `manager-001`
+- `operator-001`
+- `bypass-system` (bypass local de configuración)
+
+Clasificación de inconsistencias detectadas:
+
+- **naming inconsistente**: `operator-001` (`Operator` en config vs `Operators` en `RoleCatalog`);
+- **configuración legacy incompatible**: `admin-001` y `bypass-system` incluían `Administrator`, código no presente en `RoleCatalog`;
+- **mapeo completo sin cambios**: `manager-001` ya alineado con `Managers`.
+
+### Correcciones aplicadas
+
+- `operator-001`: `Roles=["Operators"]`.
+- `admin-001`: se retira `Administrator`; se conserva `SuperAdmin`.
+- `bypass-system`: se retira `Administrator`; se conserva `SuperAdmin`.
+- `BypassOptions.Roles` (default backend): pasa de `["Administrator"]` a `["SuperAdmin"]`.
+
+### Impacto en runtime y cutover
+
+- No cambia la lógica de autorización ni la estrategia de cutover por subconjunto.
+- Mejora la consistencia de bridge y sincronización `SystemUserRole` al evitar códigos fuera de catálogo en perfiles locales.
+- Se mantiene el subconjunto robust-ready vigente (`admin-001`, `manager-001`) sin ampliación automática en esta iteración.
+
+### Siguiente candidato robust-ready
+
+- `operator-001` queda **preparado por alineación nominal** (rol catálogo correcto).
+- Sigue pendiente validación E2E robust-only del perfil antes de incorporarlo en `Authorization:RobustOnlyCutover`.
