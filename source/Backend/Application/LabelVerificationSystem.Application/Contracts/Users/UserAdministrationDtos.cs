@@ -30,6 +30,8 @@ public sealed record UserListResponse(
     int TotalItems,
     int TotalPages);
 
+public sealed record UserRoleCatalogItemDto(Guid RoleId, string RoleCode, string RoleName, bool IsActive);
+
 public sealed record UserDetailDto(
     string UserId,
     string Username,

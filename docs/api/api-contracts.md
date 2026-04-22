@@ -1139,3 +1139,32 @@ Notas de alcance:
 - Este contrato pertenece a Bloque B y mantiene explícitamente **Fase 4 abierta**.
 - No implica retiro de `RolesJson`/`PermissionsJson` en este corte.
 - No mezcla alcance con Fase 5 ni con NLog.
+
+
+---
+
+## Avance Bloque B / Fase 4 abierta: Users + catálogo real de roles
+
+> Estado explícito: **Fase 4 sigue abierta**.
+
+Se implementó integración del módulo de usuarios con el catálogo robusto de roles sin retirar todavía el legacy transitorio.
+
+### `GET /api/users/roles`
+Devuelve el catálogo de roles persistido en `RoleCatalog` para uso del formulario de alta/edición de usuarios.
+
+#### Response DTO (200)
+```json
+[
+  {
+    "roleId": "guid",
+    "roleCode": "SuperAdmin",
+    "roleName": "Super Admin",
+    "isActive": true
+  }
+]
+```
+
+#### Notas de convivencia transitoria
+- El alta/edición de usuarios prioriza asignación robusta en `SystemUserRole` usando este catálogo.
+- `RolesJson` y `PermissionsJson` continúan temporalmente para compatibilidad mientras cierre la transición de Fase 4.
+- La resolución efectiva de roles para listados y detalle de `/api/users` prioriza `SystemUserRole` y hace fallback a `RolesJson` solo si el usuario aún no tiene asignaciones robustas.

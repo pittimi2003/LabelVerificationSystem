@@ -11,7 +11,7 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="users-admin-toolbar flex-wrap gap-2">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">Administración de usuarios</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/users</code>.</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/users</code> y catálogo real en <code>/api/users/roles</code>.</MudText>
                 </MudStack>
                 <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadUsersAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
@@ -167,7 +167,7 @@
             </MudSelect>
             @if (AvailableRoles.Count == 0)
             {
-                <MudText Typo="Typo.caption" Class="text-muted">No hay roles detectados aún en los datos reales disponibles.</MudText>
+                <MudText Typo="Typo.caption" Class="text-muted">No hay roles activos en el catálogo real.</MudText>
             }
 
             <MudSelect T="string"
@@ -233,7 +233,7 @@
     private string SearchText { get; set; } = string.Empty;
     private string ActiveFilter { get; set; } = AnyFilterValue;
 
-    private HashSet<string> AvailableRoles { get; } = [];
+    private List<string> AvailableRoles { get; set; } = [];
     private HashSet<string> AvailablePermissions { get; } = [];
 
     private bool IsEditorDrawerOpen { get; set; }
@@ -272,6 +272,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadRoleCatalogAsync();
         await LoadUsersAsync();
     }
 
@@ -285,7 +286,7 @@
 
             _users.Clear();
             _users.AddRange(response.Items);
-            RefreshAvailableRolesAndPermissions();
+            RefreshAvailablePermissions();
 
             CurrentPage = response.Page;
             PageSize = response.PageSize;
@@ -300,6 +301,25 @@
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private async Task LoadRoleCatalogAsync()
+    {
+        try
+        {
+            var roles = await UserAdministrationApiClient.ListRolesAsync(CancellationToken.None);
+            AvailableRoles = roles
+                .Where(x => x.IsActive)
+                .Select(x => x.RoleCode)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            AvailableRoles = [];
+            Snackbar.Add($"No se pudo cargar el catálogo de roles: {ex.Message}", Severity.Warning);
         }
     }
 
@@ -389,7 +409,9 @@
         EditorDisplayName = string.Empty;
         EditorEmail = string.Empty;
         EditorPassword = string.Empty;
-        EditorSelectedRoles = [];
+        EditorSelectedRoles = AvailableRoles.Contains("Operators", StringComparer.OrdinalIgnoreCase)
+            ? ["Operators"]
+            : [];
         EditorSelectedPermissions = [];
         EditorIsActive = true;
         IsEditorDrawerOpen = true;
@@ -408,7 +430,7 @@
             EditorEmail = detail.Email;
             EditorSelectedRoles = detail.Roles.ToHashSet(StringComparer.OrdinalIgnoreCase);
             EditorSelectedPermissions = detail.Permissions.ToHashSet(StringComparer.OrdinalIgnoreCase);
-            AddKnownValues(AvailableRoles, detail.Roles);
+            MergeEditorRolesIntoSelectableList(detail.Roles);
             AddKnownValues(AvailablePermissions, detail.Permissions);
             EditorIsActive = detail.IsActive;
             EditorPassword = string.Empty;
@@ -574,10 +596,18 @@
         return Task.CompletedTask;
     }
 
-    private void RefreshAvailableRolesAndPermissions()
+    private void RefreshAvailablePermissions()
     {
-        AddKnownValues(AvailableRoles, _users.SelectMany(x => x.Roles));
         AddKnownValues(AvailablePermissions, _users.SelectMany(x => x.Permissions));
+    }
+
+    private void MergeEditorRolesIntoSelectableList(IEnumerable<string> roles)
+    {
+        AvailableRoles = AvailableRoles
+            .Concat(roles.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static void AddKnownValues(HashSet<string> target, IEnumerable<string> source)

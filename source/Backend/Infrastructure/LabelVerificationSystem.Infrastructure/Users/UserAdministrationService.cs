@@ -20,6 +20,15 @@ public sealed class UserAdministrationService : IUserAdministrationService
         _dbContext = dbContext;
     }
 
+    public async Task<IReadOnlyList<UserRoleCatalogItemDto>> ListRolesAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.RoleCatalogs
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .Select(x => new UserRoleCatalogItemDto(x.Id, x.Code, x.Name, x.IsActive))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<UserListResponse> ListAsync(UserListQuery query, CancellationToken cancellationToken)
     {
         if (query.Page <= 0)
@@ -70,7 +79,13 @@ public sealed class UserAdministrationService : IUserAdministrationService
         var role = NormalizeFilter(query.Role);
         if (!string.IsNullOrWhiteSpace(role))
         {
-            usersQuery = usersQuery.Where(x => x.RolesJson.ToLower().Contains(role));
+            usersQuery = usersQuery.Where(x =>
+                _dbContext.SystemUserRoles.Any(r =>
+                    r.SystemUserId == x.Id
+                    && r.Role.IsActive
+                    && r.Role.Code.ToLower().Contains(role))
+                || (!_dbContext.SystemUserRoles.Any(r => r.SystemUserId == x.Id)
+                    && x.RolesJson.ToLower().Contains(role)));
         }
 
         var permission = NormalizeFilter(query.Permission);
@@ -92,7 +107,9 @@ public sealed class UserAdministrationService : IUserAdministrationService
             .Skip((query.Page - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(cancellationToken);
-        var items = users.Select(MapToListItem).ToList();
+
+        var roleMap = await ResolveEffectiveRolesAsync(users, cancellationToken);
+        var items = users.Select(user => MapToListItem(user, roleMap)).ToList();
 
         return new UserListResponse(items, query.Page, query.PageSize, totalItems, totalPages);
     }
@@ -107,7 +124,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
             throw new AuthUnauthorizedException("Usuario no encontrado.");
         }
 
-        return MapToDetail(user);
+        var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
+        return MapToDetail(user, roleMap);
     }
 
     public async Task<UserDetailDto> CreateAsync(CreateUserRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
@@ -142,7 +160,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
             DisplayName = displayName,
             Email = email,
             IsActive = request.IsActive,
-            RolesJson = SerializeList(NormalizeValues(request.Roles)),
+            RolesJson = SerializeList([]),
             PermissionsJson = SerializeList(NormalizeValues(request.Permissions)),
             CreatedAtUtc = nowUtc,
             UpdatedAtUtc = nowUtc
@@ -161,10 +179,12 @@ public sealed class UserAdministrationService : IUserAdministrationService
         });
 
         var normalizedRoles = NormalizeValues(request.Roles);
-        await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
+        var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
+        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(normalizedRoles, syncedRoles));
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapToDetail(user);
+        var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
+        return MapToDetail(user, roleMap);
     }
 
     public async Task<UserDetailDto> UpdateAsync(string userId, UpdateUserRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
@@ -193,7 +213,6 @@ public sealed class UserAdministrationService : IUserAdministrationService
         user.Email = email;
         user.IsActive = request.IsActive;
         var normalizedRoles = NormalizeValues(request.Roles);
-        user.RolesJson = SerializeList(normalizedRoles);
         user.PermissionsJson = SerializeList(NormalizeValues(request.Permissions));
         user.UpdatedAtUtc = nowUtc;
 
@@ -223,10 +242,12 @@ public sealed class UserAdministrationService : IUserAdministrationService
             }
         }
 
-        await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
+        var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
+        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(normalizedRoles, syncedRoles));
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapToDetail(user);
+        var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
+        return MapToDetail(user, roleMap);
     }
 
     public async Task<UserDetailDto> SetActivationAsync(string userId, bool isActive, CancellationToken cancellationToken)
@@ -242,10 +263,11 @@ public sealed class UserAdministrationService : IUserAdministrationService
         user.UpdatedAtUtc = DateTime.UtcNow;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        return MapToDetail(user);
+        var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
+        return MapToDetail(user, roleMap);
     }
 
-    private async Task SyncUserRoleAssignmentsAsync(SystemUser user, IReadOnlyList<string> requestedRoleCodes, DateTime nowUtc, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<string>> SyncUserRoleAssignmentsAsync(SystemUser user, IReadOnlyList<string> requestedRoleCodes, DateTime nowUtc, CancellationToken cancellationToken)
     {
         var availableRoles = await _dbContext.RoleCatalogs
             .Where(x => x.IsActive)
@@ -307,28 +329,72 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
             mapping.IsPrimary = primaryRoleId.HasValue && mapping.RoleId == primaryRoleId.Value;
         }
+
+        return targetRoles.Select(x => x.Code).ToList();
     }
 
-    private static UserListItemDto MapToListItem(SystemUser user)
+    private async Task<Dictionary<Guid, IReadOnlyList<string>>> ResolveEffectiveRolesAsync(IReadOnlyList<SystemUser> users, CancellationToken cancellationToken)
+    {
+        var result = users.ToDictionary(x => x.Id, _ => (IReadOnlyList<string>)[]);
+        if (users.Count == 0)
+        {
+            return result;
+        }
+
+        var userIds = users.Select(x => x.Id).ToList();
+        var assignedRoleRows = await _dbContext.SystemUserRoles
+            .AsNoTracking()
+            .Where(x => userIds.Contains(x.SystemUserId) && x.Role.IsActive)
+            .Select(x => new { x.SystemUserId, x.Role.Code })
+            .ToListAsync(cancellationToken);
+
+        var grouped = assignedRoleRows
+            .GroupBy(x => x.SystemUserId)
+            .ToDictionary(
+                x => x.Key,
+                x => (IReadOnlyList<string>)x.Select(y => y.Code).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(y => y, StringComparer.OrdinalIgnoreCase).ToList());
+
+        foreach (var user in users)
+        {
+            if (grouped.TryGetValue(user.Id, out var robustRoles) && robustRoles.Count > 0)
+            {
+                result[user.Id] = robustRoles;
+                continue;
+            }
+
+            result[user.Id] = DeserializeList(user.RolesJson);
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyList<string> BuildLegacyRolesSnapshot(IReadOnlyList<string> requestedRoles, IReadOnlyList<string> synchronizedRoles)
+        => requestedRoles
+            .Concat(synchronizedRoles)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+    private static UserListItemDto MapToListItem(SystemUser user, IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap)
         => new(
             user.UserId,
             user.Username,
             user.DisplayName,
             user.Email,
             user.IsActive,
-            DeserializeList(user.RolesJson),
+            roleMap.TryGetValue(user.Id, out var roles) ? roles : DeserializeList(user.RolesJson),
             DeserializeList(user.PermissionsJson),
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
 
-    private static UserDetailDto MapToDetail(SystemUser user)
+    private static UserDetailDto MapToDetail(SystemUser user, IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap)
         => new(
             user.UserId,
             user.Username,
             user.DisplayName,
             user.Email,
             user.IsActive,
-            DeserializeList(user.RolesJson),
+            roleMap.TryGetValue(user.Id, out var roles) ? roles : DeserializeList(user.RolesJson),
             DeserializeList(user.PermissionsJson),
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
