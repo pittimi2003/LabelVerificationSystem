@@ -1174,3 +1174,31 @@ Devuelve el catálogo de roles persistido en `RoleCatalog` para uso del formular
 - `RolesJson` y `PermissionsJson` continúan temporalmente para compatibilidad mientras cierre la transición de Fase 4.
 - En create/update de usuarios, `RolesJson` queda como snapshot transitorio de los roles efectivamente sincronizados en catálogo (no como fuente para introducir roles nuevos fuera de `RoleCatalog`).
 - La resolución efectiva de roles para listados y detalle de `/api/users` prioriza `SystemUserRole` y hace fallback a `RolesJson` solo si el usuario aún no tiene asignaciones robustas.
+
+## Actualización Bloque B / Fase 4 abierta: cutover robust-only por subconjuntos (runtime)
+
+> Estado explícito: **Fase 4 sigue abierta**.  
+> Sin apagado global legacy en esta iteración.
+
+Se incorpora configuración de runtime para aplicar robust-only en perímetros acotados ya validados:
+
+```json
+"Authorization": {
+  "UseRobustMatrix": true,
+  "EnableLegacyFallback": true,
+  "RobustOnlyCutover": {
+    "Enabled": true,
+    "UserIds": ["admin-001"],
+    "Scopes": [
+      "UsersAdministration:View",
+      "AuthorizationMatrixAdministration:Manage"
+    ]
+  }
+}
+```
+
+Regla contractual de evaluación:
+
+- si el request cae en un `UserId + Scope` incluido en `RobustOnlyCutover`, el runtime exige resolución robusta estricta para ese request;
+- en ese caso no aplica fallback legacy por claims ni fallback de roles desde `RolesJson`;
+- fuera de ese subconjunto, se mantiene transición actual con `EnableLegacyFallback`.
