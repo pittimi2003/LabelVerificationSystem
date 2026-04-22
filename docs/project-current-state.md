@@ -1067,3 +1067,50 @@ Fuera del subconjunto, se mantiene compatibilidad transitoria previa.
 - `RolesJson` y `PermissionsJson` siguen persistiéndose para compatibilidad fuera de cutover.
 - fallback legacy por claims (`EnableLegacyFallback`) sigue activo fuera de cutover.
 - permanece pendiente ampliar migración robusta de usuarios/perfiles antes de un retiro global.
+
+## Avance reciente: Bloque B / Fase 4 abierta (alineación de perfiles configurados con `RoleCatalog`, 2026-04-22)
+
+- Estado de fase: **Fase 4 sigue abierta** (sin cierre de fase en esta iteración).
+- Alcance exclusivo: **Bloque B / alineación de perfiles con catálogo robusto**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Perfiles configurados/locales revisados
+
+Perfiles evaluados en `Authentication:Users` y bypass local:
+
+- `admin-001` (`admin`)
+- `manager-001` (`manager`)
+- `operator-001` (`operator`)
+- `bypass-system` (`Authentication:Bypass`)
+
+### Inconsistencias detectadas y corrección aplicada
+
+1. **`operator-001`**
+   - Tipo: naming inconsistente (`Operator` vs `RoleCatalog.Code=Operators`).
+   - Corrección: rol configurado actualizado a `Operators`.
+
+2. **`admin-001`**
+   - Tipo: configuración legacy incompatible (`Administrator` fuera de `RoleCatalog`).
+   - Corrección: se elimina `Administrator` del perfil configurado y se mantiene `SuperAdmin` (rol robusto existente).
+
+3. **`bypass-system`**
+   - Tipo: configuración legacy incompatible (`Administrator` fuera de `RoleCatalog`).
+   - Corrección: se elimina `Administrator`; bypass queda con `SuperAdmin`.
+
+4. **Default de `BypassOptions.Roles`**
+   - Tipo: default legacy incompatible.
+   - Corrección: valor por defecto actualizado de `Administrator` a `SuperAdmin`.
+
+`manager-001` ya estaba alineado (`Managers`) y no requirió cambio.
+
+### Impacto técnico en bridge, auth runtime, users y cutover
+
+- **Bridge (`ConfiguredUsersRobustBridge`)**: al quedar roles configurados en códigos válidos de `RoleCatalog`, deja de depender de coincidencias parcialmente traducibles para estos perfiles.
+- **Auth runtime**: no cambia el mecanismo de autorización; se reduce riesgo de denegaciones por role-code no mapeable en perfiles locales.
+- **`/users`**: sin cambio de contrato ni de policies; mejora consistencia entre snapshot legacy y asignación robusta efectiva para perfiles configurados.
+- **Cutover selectivo**: no se amplía en esta iteración; se mantiene `UserIds=[admin-001, manager-001]` con scopes ya vigentes.
+
+### Siguiente perfil candidato robust-ready
+
+- **Candidato preparado (alineación nominal):** `operator-001`.
+- Estado: alineado en configuración con `RoleCatalog` (`Operators`) pero **aún pendiente** evidencia E2E robust-only específica antes de incorporarlo a `RobustOnlyCutover`.
