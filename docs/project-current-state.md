@@ -617,6 +617,34 @@ Correcciones acotadas aplicadas para lograrlo:
 
 Decisión de estado: no se retira legacy global; la validación cerrada aplica al escenario robust-only + bridge local validado en esta sesión.
 
+### Revalidación reproducible en sesión actual (2026-04-22, UTC)
+
+Se re-ejecutó la validación E2E en esta sesión para dejar evidencia operativa verificable (sin inferencia teórica) del camino robust-only con bridge local en Development.
+
+Comando ejecutado:
+
+- `bash scripts/validation/robust_only_e2e_bridge.sh`
+
+Configuración efectiva usada por el script:
+
+- `ASPNETCORE_ENVIRONMENT=Development`
+- `Authorization__UseRobustMatrix=true`
+- `Authorization__EnableLegacyFallback=false`
+- `Authentication__ConfiguredUsersRobustBridge__Enabled=true`
+
+Resultado por endpoint en esta revalidación:
+
+- `POST /api/auth/login` => `200`
+- `GET /api/auth/me` => `200`
+- `GET /api/users` => `200`
+- `GET /api/authorization-matrix/roles` => `200`
+
+Conclusión acotada de esta iteración:
+
+- El admin local/configurado (`Authentication:Users`, usuario `admin`) opera end-to-end en escenario robust-only + bridge habilitado en Development.
+- No se detectaron fallos pendientes en el flujo validado durante esta ejecución.
+- **Fase 4 sigue abierta**; esta evidencia no implica cierre de fase ni retiro global del legacy.
+
 ### Corrección aplicada
 - `UserAdministrationApiClient` ahora adjunta explícitamente el bearer token de la sesión real (`AuthSessionService`) antes de enviar cada request del módulo (`GET/POST/PUT/PATCH`).
 - El cliente de `/users` se registra usando `BackendApiRaw` + `AuthSessionService` para que el módulo utilice de forma determinística la misma sesión/token vigente del frontend.
