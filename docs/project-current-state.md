@@ -1183,3 +1183,25 @@ Se re-ejecutó `scripts/validation/robust_only_e2e_bridge.sh` y se mantiene evid
 
 - `admin-001` y `manager-001` continúan operativos en sesión + `/users` + `/authorization-matrix` + `/excel-uploads` dentro del perímetro ya validado.
 - `manager-001` conserva denegaciones esperadas (`403`) en acciones fuera de su alcance (`POST /api/users`, `POST /api/excel-uploads`).
+
+## Avance implementado: Bloque B / Fase 4 (abierta) — Diagnóstico de conectividad frontend↔backend en login/bootstrap (2026-04-22)
+
+Se atendió exclusivamente el fallo `TypeError: Failed to fetch` durante `GET /api/auth/me` y `POST /api/auth/login`, sin mezclar alcance con Fase 5, NLog ni cambios del modelo robusto.
+
+### Diagnóstico confirmado
+- La API sí levanta en `https://localhost:7131` (y `http://localhost:5041`) según `launchSettings` y arranque real.
+- El frontend en Development apunta a `Api:BaseUrl = https://localhost:7131/`.
+- Existía desalineación CORS para ejecución local con perfil HTTP del frontend (`http://localhost:5247`): el backend permitía por defecto solo `https://localhost:7219`.
+- Se confirmó también condición de certificado HTTPS de desarrollo no confiado en entorno local (Kestrel advierte certificado no confiado y `curl` estricto falla con error SSL).
+
+### Corrección aplicada
+- Se configuró `Cors:AllowedOrigins` en Development para incluir ambos orígenes locales del frontend:
+  - `https://localhost:7219`
+  - `http://localhost:5247`
+- No se alteró la lógica de login/auth ni el modelo robusto.
+
+### Nota operativa (sin cambio funcional)
+- Si persiste `Failed to fetch` contra `https://localhost:7131`, validar/trust del certificado de desarrollo (`dotnet dev-certs https --trust`) en la máquina del desarrollador.
+
+### Estado explícito de fase
+- **Fase 4 continúa abierta**.
