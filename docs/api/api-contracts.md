@@ -1308,3 +1308,54 @@ Transición que permanece:
 
 - fuera del subconjunto cutover, se mantiene fallback legacy por claims;
 - se mantiene convivencia con `RolesJson`/`PermissionsJson` para perfiles no totalmente migrados.
+
+## Actualización Bloque B / Fase 4 abierta: validación robust-only de `operator-001` y preparación de cutover (2026-04-22)
+
+> Estado explícito: **Fase 4 sigue abierta**.  
+> Sin apagado global legacy en esta iteración.
+
+Se completa validación controlada y reproducible del perfil local/configurado `operator-001` para decidir entrada al subconjunto robust-only selectivo.
+
+Matriz robusta confirmada para rol `Operators` (vía `GET /api/authorization-matrix/roles/Operators`):
+
+- permisos positivos en `ExcelUploads`: `View`, `Upload`;
+- denegación en `UsersAdministration`;
+- denegación en `AuthorizationMatrixAdministration:Manage`.
+
+Perímetro validado con cutover selectivo activo para `operator-001` y scopes ya vigentes:
+
+```json
+  "RobustOnlyCutover": {
+  "Enabled": true,
+  "UserIds": ["admin-001", "manager-001", "operator-001"],
+  "Scopes": [
+    "UsersAdministration:View",
+    "UsersAdministration:Create",
+    "UsersAdministration:Edit",
+    "UsersAdministration:ActivateDeactivate",
+    "AuthorizationMatrixAdministration:Manage",
+    "ExcelUploads:View",
+    "ExcelUploads:Upload"
+  ]
+}
+```
+
+Evidencia contractual ejecutada con `scripts/validation/robust_only_e2e_operator.sh`:
+
+- **autorizado (2xx/flujo permitido)**:
+  - `POST /api/auth/login` (`operator`) => `200`;
+  - `GET /api/auth/me` (`operator`) => `200`;
+  - `POST /api/auth/refresh` (`operator`) => `200`;
+  - `GET /api/excel-uploads` (`operator`) => `200`.
+- **autorizado y luego rechazado por validación funcional**:
+  - `POST /api/excel-uploads` (`operator`) => `400` esperado por archivo vacío.
+- **denegado por autorización (`403`)**:
+  - `GET /api/users` (`operator`) => `403`;
+  - `GET /api/users/roles` (`operator`) => `403`;
+  - `GET /api/users/admin-001` (`operator`) => `403`;
+  - `GET /api/authorization-matrix/roles` (`operator`) => `403`.
+
+Decisión de esta iteración:
+
+- `operator-001` queda robust-ready para el perímetro validado y se incorpora al subconjunto `Authorization:RobustOnlyCutover:UserIds` en Development.
+- Se mantiene transición dual fuera del subconjunto/scope (no hay retiro global legacy).

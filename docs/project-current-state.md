@@ -1114,3 +1114,72 @@ Perfiles evaluados en `Authentication:Users` y bypass local:
 
 - **Candidato preparado (alineación nominal):** `operator-001`.
 - Estado: alineado en configuración con `RoleCatalog` (`Operators`) pero **aún pendiente** evidencia E2E robust-only específica antes de incorporarlo a `RobustOnlyCutover`.
+
+## Avance reciente: Bloque B / Fase 4 abierta (validación E2E robust-only de `operator-001`, 2026-04-22)
+
+- Estado de fase: **Fase 4 sigue abierta** (esta iteración no cierra fase).
+- Alcance exclusivo: **Bloque B / validación E2E controlada de perfil robust-ready**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Matriz robusta real revisada para `Operators`
+
+Evidencia obtenida vía `GET /api/authorization-matrix/roles/Operators` (con admin autenticado):
+
+- `UsersAdministration`: módulo desautorizado para `Operators`.
+- `AuthorizationMatrixAdministration`: módulo/acción `Manage` desautorizados para `Operators`.
+- `ExcelUploads`:
+  - acción `View` autorizada,
+  - acción `Upload` autorizada.
+
+### Perímetro exacto validado para `operator-001`
+
+Con cutover selectivo activado para `operator-001` y scopes:
+
+- `UsersAdministration:View`
+- `UsersAdministration:Create`
+- `UsersAdministration:Edit`
+- `UsersAdministration:ActivateDeactivate`
+- `AuthorizationMatrixAdministration:Manage`
+- `ExcelUploads:View`
+- `ExcelUploads:Upload`
+
+Se validó de forma reproducible:
+
+- sesión (`login`, `refresh`, `/me`),
+- autorización positiva esperada (`2xx`/autorizado),
+- autorización negativa esperada (`403`),
+- continuidad operacional de `/users`, `/authorization-matrix` y `/excel-uploads` sin cambiar contratos.
+
+### Resultado E2E ejecutado en esta iteración
+
+Script reproducible: `scripts/validation/robust_only_e2e_operator.sh`.
+
+- **Esperados autorizados**:
+  - `POST /api/auth/login` (`operator`) => `200`.
+  - `GET /api/auth/me` (`operator`) => `200`.
+  - `POST /api/auth/refresh` (`operator`) => `200`.
+  - `GET /api/excel-uploads` (`operator`) => `200`.
+  - `POST /api/excel-uploads` (`operator`) => `400` esperado por archivo inválido/vacío (autorización efectiva confirmada).
+- **Esperados denegados (`403`)**:
+  - `GET /api/users` (`operator`) => `403`.
+  - `GET /api/users/roles` (`operator`) => `403`.
+  - `GET /api/users/admin-001` (`operator`) => `403`.
+  - `GET /api/authorization-matrix/roles` (`operator`) => `403`.
+
+### Decisión de cutover selectivo
+
+Con evidencia E2E robust-only suficiente para el perímetro validado, `operator-001` queda incorporado al subconjunto de cutover selectivo en Development:
+
+- `Authorization:RobustOnlyCutover:UserIds`:
+  - `admin-001`
+  - `manager-001`
+  - `operator-001`
+
+No se retiró fallback legacy global (`EnableLegacyFallback` permanece activo fuera del subconjunto/scope).
+
+### Verificación de no regresión sobre perfiles ya validados
+
+Se re-ejecutó `scripts/validation/robust_only_e2e_bridge.sh` y se mantiene evidencia previa:
+
+- `admin-001` y `manager-001` continúan operativos en sesión + `/users` + `/authorization-matrix` + `/excel-uploads` dentro del perímetro ya validado.
+- `manager-001` conserva denegaciones esperadas (`403`) en acciones fuera de su alcance (`POST /api/users`, `POST /api/excel-uploads`).
