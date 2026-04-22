@@ -639,11 +639,51 @@ public sealed class UserAdministrationService : IUserAdministrationService
                 select userRole.SystemUserId);
         }
 
+        if (candidatePermissions.Contains("excel.uploads.read", StringComparer.OrdinalIgnoreCase))
+        {
+            query = query.Union(
+                from userRole in _dbContext.SystemUserRoles.AsNoTracking()
+                where userRole.Role.IsActive
+                join moduleAuthorization in _dbContext.RoleModuleAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals moduleAuthorization.RoleId
+                join actionAuthorization in _dbContext.RoleModuleActionAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals actionAuthorization.RoleId
+                where moduleAuthorization.Module.IsActive
+                      && moduleAuthorization.Module.Code == "ExcelUploads"
+                      && moduleAuthorization.Authorized
+                      && actionAuthorization.ModuleAction.IsActive
+                      && actionAuthorization.ModuleAction.Module.IsActive
+                      && actionAuthorization.ModuleAction.Module.Code == "ExcelUploads"
+                      && actionAuthorization.ModuleAction.Code == "View"
+                      && actionAuthorization.Authorized
+                select userRole.SystemUserId);
+        }
+
+        if (candidatePermissions.Contains("excel.upload.create", StringComparer.OrdinalIgnoreCase))
+        {
+            query = query.Union(
+                from userRole in _dbContext.SystemUserRoles.AsNoTracking()
+                where userRole.Role.IsActive
+                join moduleAuthorization in _dbContext.RoleModuleAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals moduleAuthorization.RoleId
+                join actionAuthorization in _dbContext.RoleModuleActionAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals actionAuthorization.RoleId
+                where moduleAuthorization.Module.IsActive
+                      && moduleAuthorization.Module.Code == "ExcelUploads"
+                      && moduleAuthorization.Authorized
+                      && actionAuthorization.ModuleAction.IsActive
+                      && actionAuthorization.ModuleAction.Module.IsActive
+                      && actionAuthorization.ModuleAction.Module.Code == "ExcelUploads"
+                      && actionAuthorization.ModuleAction.Code == "Upload"
+                      && actionAuthorization.Authorized
+                select userRole.SystemUserId);
+        }
+
         return await query.Distinct().ToHashSetAsync(cancellationToken);
     }
 
     private static IReadOnlyList<string> GetKnownPermissionClaims()
-        => ["users.read", "users.manage", "authorization.matrix.manage"];
+        => ["users.read", "users.manage", "authorization.matrix.manage", "excel.uploads.read", "excel.upload.create"];
 
     private async Task<IReadOnlyList<string>> ResolveRobustPermissionsFromRolesAsync(IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
     {
@@ -655,6 +695,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
         var usersReadAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", "View", cancellationToken);
         var usersManageAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", UsersManageActions, cancellationToken);
         var authorizationMatrixManageAllowed = await HasAuthorizedActionAsync(roleCodes, "AuthorizationMatrixAdministration", "Manage", cancellationToken);
+        var excelUploadsReadAllowed = await HasAuthorizedActionAsync(roleCodes, "ExcelUploads", "View", cancellationToken);
+        var excelUploadsUploadAllowed = await HasAuthorizedActionAsync(roleCodes, "ExcelUploads", "Upload", cancellationToken);
 
         var permissions = new List<string>();
         if (usersReadAllowed)
@@ -670,6 +712,16 @@ public sealed class UserAdministrationService : IUserAdministrationService
         if (authorizationMatrixManageAllowed)
         {
             permissions.Add("authorization.matrix.manage");
+        }
+
+        if (excelUploadsReadAllowed)
+        {
+            permissions.Add("excel.uploads.read");
+        }
+
+        if (excelUploadsUploadAllowed)
+        {
+            permissions.Add("excel.upload.create");
         }
 
         return permissions;

@@ -901,6 +901,8 @@ public sealed class AuthService : IAuthService
         var usersReadAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", "View", cancellationToken);
         var usersManageAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", UsersManageActions, cancellationToken);
         var authorizationMatrixManageAllowed = await HasAuthorizedActionAsync(roleCodes, "AuthorizationMatrixAdministration", "Manage", cancellationToken);
+        var excelUploadsReadAllowed = await HasAuthorizedActionAsync(roleCodes, "ExcelUploads", "View", cancellationToken);
+        var excelUploadsUploadAllowed = await HasAuthorizedActionAsync(roleCodes, "ExcelUploads", "Upload", cancellationToken);
 
         var permissions = new List<string>();
         if (usersReadAllowed)
@@ -916,6 +918,16 @@ public sealed class AuthService : IAuthService
         if (authorizationMatrixManageAllowed)
         {
             permissions.Add("authorization.matrix.manage");
+        }
+
+        if (excelUploadsReadAllowed)
+        {
+            permissions.Add("excel.uploads.read");
+        }
+
+        if (excelUploadsUploadAllowed)
+        {
+            permissions.Add("excel.upload.create");
         }
 
         return permissions;

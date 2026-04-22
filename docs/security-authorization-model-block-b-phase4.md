@@ -765,3 +765,60 @@ En esta iteración se reduce dependencia operativa legacy dentro del subconjunto
 - usuarios fuera de cutover que todavía dependen de claims legacy;
 - usuarios sin migración robusta completa en `SystemUserRole`;
 - necesidad de completar cobertura robust-only en más políticas antes de apagar fallback global.
+
+## 22) Expansión parcial adicional a `ExcelUploads` (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Iteración acotada a **Bloque B**.  
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Perímetro adicional endurecido en esta iteración
+
+Se endurece el subconjunto robust-ready de `Authorization:RobustOnlyCutover` incorporando scope de `ExcelUploads`:
+
+- `ExcelUploads:View`
+- `ExcelUploads:Upload`
+
+Y se aplica enforcement por policy módulo/acción en backend para endpoints:
+
+- `GET /api/excel-uploads` (`ExcelUploads:View`)
+- `GET /api/excel-uploads/{id}` (`ExcelUploads:View`)
+- `GET /api/excel-uploads/{id}/details` (`ExcelUploads:View`)
+- `POST /api/excel-uploads` (`ExcelUploads:Upload`)
+
+### Qué deja de ser operativo en ese perímetro
+
+Para requests que caen en `UserId + Scope` dentro de `RobustOnlyCutover`:
+
+- no aplica fallback legacy por claims en runtime;
+- no aplica fallback a `RolesJson` para roles efectivos de sesión;
+- no aplica mezcla operativa de `PermissionsJson` en sesión.
+
+Además, para mantener transición fuera del perímetro ampliado:
+
+- el fallback legacy de claims se mantiene habilitado fuera de cutover e incorpora mapeo transitorio para `ExcelUploads` (`excel.uploads.read` / `excel.upload.create`).
+
+### Evidencia ejecutada (script reproducible robust-only)
+
+Validación en Development con `scripts/validation/robust_only_e2e_bridge.sh` ampliado:
+
+- `GET /api/excel-uploads` (admin) => `200`
+- `GET /api/excel-uploads` (manager) => `200`
+- `POST /api/excel-uploads` (manager) => `403` esperado (scope no autorizado para `Managers`)
+- `POST /api/excel-uploads` (admin) => `400` esperado por archivo vacío (autorización sí resuelta; falla validación funcional)
+
+Interpretación: `ExcelUploads` queda incluido en retiro parcial controlado dentro del subconjunto robust-ready validado, preservando deny-by-default y sin apagado global del legacy.
+
+### Estado de transición que sigue abierto
+
+Se mantiene explícitamente:
+
+- transición dual fuera del subconjunto cutover;
+- compatibilidad transitoria con `RolesJson`/`PermissionsJson` para perfiles no migrados;
+- fallback legacy por claims fuera del perímetro robust-only selectivo.
+
+Bloqueantes para ampliar más:
+
+- perfiles no migrados completamente a `SystemUserRole`;
+- dependencia residual de claims legacy en flujos no cubiertos por cutover;
+- falta de evidencia robust-only equivalente en otros endpoints antes de expandir más.

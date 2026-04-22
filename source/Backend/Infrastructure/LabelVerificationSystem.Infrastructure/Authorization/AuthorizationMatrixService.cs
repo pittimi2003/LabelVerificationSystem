@@ -206,6 +206,12 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
 
         return moduleCode switch
         {
+            "ExcelUploads" when string.Equals(actionCode, "View", StringComparison.OrdinalIgnoreCase) =>
+                roleSet.Contains("Administrator")
+                || permissionSet.Contains("excel.uploads.read")
+                || permissionSet.Contains("excel.upload.create"),
+            "ExcelUploads" when string.Equals(actionCode, "Upload", StringComparison.OrdinalIgnoreCase) =>
+                roleSet.Contains("Administrator") || permissionSet.Contains("excel.upload.create"),
             "UsersAdministration" when string.Equals(actionCode, "View", StringComparison.OrdinalIgnoreCase) =>
                 roleSet.Contains("Administrator") || permissionSet.Contains("users.read") || permissionSet.Contains("users.manage"),
             "UsersAdministration" when string.Equals(actionCode, "Create", StringComparison.OrdinalIgnoreCase) =>
