@@ -26,6 +26,7 @@ public sealed class AuthService : IAuthService
     private readonly IHostEnvironment _hostEnvironment;
     private readonly ILogger<AuthService> _logger;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly string[] UsersManageActions = ["Create", "Edit", "ActivateDeactivate"];
 
     public AuthService(
         AppDbContext dbContext,
@@ -542,6 +543,7 @@ public sealed class AuthService : IAuthService
         if (dbUser is not null)
         {
             var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
+            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, effectiveRoles, cancellationToken);
             return new ResolvedAuthUser(
                 dbUser.UserId,
                 dbUser.Username,
@@ -549,7 +551,7 @@ public sealed class AuthService : IAuthService
                 dbUser.Email,
                 dbUser.IsActive,
                 effectiveRoles,
-                DeserializeList(dbUser.PermissionsJson),
+                effectivePermissions,
                 null);
         }
 
@@ -581,6 +583,7 @@ public sealed class AuthService : IAuthService
         if (dbUser is not null)
         {
             var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
+            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, effectiveRoles, cancellationToken);
             return new ResolvedAuthUser(
                 dbUser.UserId,
                 dbUser.Username,
@@ -588,7 +591,7 @@ public sealed class AuthService : IAuthService
                 dbUser.Email,
                 dbUser.IsActive,
                 effectiveRoles,
-                DeserializeList(dbUser.PermissionsJson),
+                effectivePermissions,
                 null);
         }
 
@@ -671,5 +674,78 @@ public sealed class AuthService : IAuthService
         }
 
         return DeserializeList(dbUser.RolesJson);
+    }
+
+    private async Task<IReadOnlyList<string>> ResolveEffectivePermissionsAsync(SystemUser dbUser, IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
+    {
+        var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
+        var legacyPermissions = DeserializeList(dbUser.PermissionsJson);
+
+        return robustPermissions
+            .Concat(legacyPermissions)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task<IReadOnlyList<string>> ResolveRobustPermissionsFromRolesAsync(IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
+    {
+        if (roleCodes.Count == 0)
+        {
+            return [];
+        }
+
+        var usersReadAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", "View", cancellationToken);
+        var usersManageAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", UsersManageActions, cancellationToken);
+        var authorizationMatrixManageAllowed = await HasAuthorizedActionAsync(roleCodes, "AuthorizationMatrixAdministration", "Manage", cancellationToken);
+
+        var permissions = new List<string>();
+        if (usersReadAllowed)
+        {
+            permissions.Add("users.read");
+        }
+
+        if (usersManageAllowed)
+        {
+            permissions.Add("users.manage");
+        }
+
+        if (authorizationMatrixManageAllowed)
+        {
+            permissions.Add("authorization.matrix.manage");
+        }
+
+        return permissions;
+    }
+
+    private async Task<bool> HasAuthorizedActionAsync(
+        IReadOnlyList<string> roleCodes,
+        string moduleCode,
+        string actionCode,
+        CancellationToken cancellationToken)
+        => await HasAuthorizedActionAsync(roleCodes, moduleCode, [actionCode], cancellationToken);
+
+    private async Task<bool> HasAuthorizedActionAsync(
+        IReadOnlyList<string> roleCodes,
+        string moduleCode,
+        IReadOnlyList<string> actionCodes,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.RoleModuleActionAuthorizations
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.Role.IsActive
+                && roleCodes.Contains(x.Role.Code)
+                && x.Authorized
+                && x.ModuleAction.IsActive
+                && actionCodes.Contains(x.ModuleAction.Code)
+                && x.ModuleAction.Module.IsActive
+                && x.ModuleAction.Module.Code == moduleCode
+                && _dbContext.RoleModuleAuthorizations.Any(moduleAuth =>
+                    moduleAuth.RoleId == x.RoleId
+                    && moduleAuth.ModuleId == x.ModuleAction.ModuleId
+                    && moduleAuth.Module.IsActive
+                    && moduleAuth.Authorized),
+                cancellationToken);
     }
 }

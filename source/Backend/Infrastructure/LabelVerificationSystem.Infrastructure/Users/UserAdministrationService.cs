@@ -14,6 +14,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly AppDbContext _dbContext;
+    private static readonly string[] UsersManageActions = ["Create", "Edit", "ActivateDeactivate"];
 
     public UserAdministrationService(AppDbContext dbContext)
     {
@@ -91,7 +92,10 @@ public sealed class UserAdministrationService : IUserAdministrationService
         var permission = NormalizeFilter(query.Permission);
         if (!string.IsNullOrWhiteSpace(permission))
         {
-            usersQuery = usersQuery.Where(x => x.PermissionsJson.ToLower().Contains(permission));
+            var robustUserIds = await ResolveRobustPermissionUserIdsAsync(permission, cancellationToken);
+            usersQuery = usersQuery.Where(x =>
+                robustUserIds.Contains(x.Id)
+                || x.PermissionsJson.ToLower().Contains(permission));
         }
 
         if (query.IsActive.HasValue)
@@ -487,4 +491,87 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
     private static string? NormalizeFilter(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
+
+    private async Task<HashSet<Guid>> ResolveRobustPermissionUserIdsAsync(string normalizedPermission, CancellationToken cancellationToken)
+    {
+        var candidatePermissions = GetKnownPermissionClaims()
+            .Where(x => x.Contains(normalizedPermission, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (candidatePermissions.Count == 0)
+        {
+            return [];
+        }
+
+        IQueryable<Guid> query = _dbContext.SystemUserRoles
+            .AsNoTracking()
+            .Where(x => x.Role.IsActive)
+            .Select(x => x.SystemUserId)
+            .Where(_ => false);
+
+        if (candidatePermissions.Contains("users.read", StringComparer.OrdinalIgnoreCase))
+        {
+            query = query.Union(
+                from userRole in _dbContext.SystemUserRoles.AsNoTracking()
+                where userRole.Role.IsActive
+                join moduleAuthorization in _dbContext.RoleModuleAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals moduleAuthorization.RoleId
+                join actionAuthorization in _dbContext.RoleModuleActionAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals actionAuthorization.RoleId
+                where moduleAuthorization.Module.IsActive
+                      && moduleAuthorization.Module.Code == "UsersAdministration"
+                      && moduleAuthorization.Authorized
+                      && actionAuthorization.ModuleAction.IsActive
+                      && actionAuthorization.ModuleAction.Module.IsActive
+                      && actionAuthorization.ModuleAction.Module.Code == "UsersAdministration"
+                      && actionAuthorization.ModuleAction.Code == "View"
+                      && actionAuthorization.Authorized
+                select userRole.SystemUserId);
+        }
+
+        if (candidatePermissions.Contains("users.manage", StringComparer.OrdinalIgnoreCase))
+        {
+            query = query.Union(
+                from userRole in _dbContext.SystemUserRoles.AsNoTracking()
+                where userRole.Role.IsActive
+                join moduleAuthorization in _dbContext.RoleModuleAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals moduleAuthorization.RoleId
+                join actionAuthorization in _dbContext.RoleModuleActionAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals actionAuthorization.RoleId
+                where moduleAuthorization.Module.IsActive
+                      && moduleAuthorization.Module.Code == "UsersAdministration"
+                      && moduleAuthorization.Authorized
+                      && actionAuthorization.ModuleAction.IsActive
+                      && actionAuthorization.ModuleAction.Module.IsActive
+                      && actionAuthorization.ModuleAction.Module.Code == "UsersAdministration"
+                      && UsersManageActions.Contains(actionAuthorization.ModuleAction.Code)
+                      && actionAuthorization.Authorized
+                select userRole.SystemUserId);
+        }
+
+        if (candidatePermissions.Contains("authorization.matrix.manage", StringComparer.OrdinalIgnoreCase))
+        {
+            query = query.Union(
+                from userRole in _dbContext.SystemUserRoles.AsNoTracking()
+                where userRole.Role.IsActive
+                join moduleAuthorization in _dbContext.RoleModuleAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals moduleAuthorization.RoleId
+                join actionAuthorization in _dbContext.RoleModuleActionAuthorizations.AsNoTracking()
+                    on userRole.RoleId equals actionAuthorization.RoleId
+                where moduleAuthorization.Module.IsActive
+                      && moduleAuthorization.Module.Code == "AuthorizationMatrixAdministration"
+                      && moduleAuthorization.Authorized
+                      && actionAuthorization.ModuleAction.IsActive
+                      && actionAuthorization.ModuleAction.Module.IsActive
+                      && actionAuthorization.ModuleAction.Module.Code == "AuthorizationMatrixAdministration"
+                      && actionAuthorization.ModuleAction.Code == "Manage"
+                      && actionAuthorization.Authorized
+                select userRole.SystemUserId);
+        }
+
+        return await query.Distinct().ToHashSetAsync(cancellationToken);
+    }
+
+    private static IReadOnlyList<string> GetKnownPermissionClaims()
+        => ["users.read", "users.manage", "authorization.matrix.manage"];
 }

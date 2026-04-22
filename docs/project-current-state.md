@@ -785,3 +785,27 @@ Se implementó la primera pantalla administrativa para gestión de permisos por 
   - autorización inicial para `SuperAdmin`.
 - Se mantiene convivencia transitoria explícita con `RolesJson` / `PermissionsJson`; no hay retiro legacy en este corte.
 - No se incorporaron cambios de Fase 5 ni NLog en este avance.
+
+## Avance reciente: Bloque B / Fase 4 abierta (reducción incremental de lecturas legacy en runtime y `/users`)
+
+- Estado de fase: **Fase 4 continúa abierta** (no cerrada en esta iteración).
+- Esta iteración se limitó a reducción incremental en backend (sin mezclar con Fase 5 ni con NLog, y sin retiro total legacy).
+
+### Implementado
+- `AuthService` ahora prioriza también en lectura de permisos el modelo robusto:
+  - deriva permisos efectivos (`users.read`, `users.manage`, `authorization.matrix.manage`) desde `SystemUserRole` + matriz robusta,
+  - conserva `PermissionsJson` como complemento/fallback transitorio (unión sin pérdida) durante la transición.
+- `UserAdministrationService.ListAsync` reduce dependencia de `PermissionsJson` para filtros:
+  - el filtro `permission` incorpora resolución robusta por roles y matriz para permisos conocidos,
+  - mantiene evaluación legacy sobre `PermissionsJson` para compatibilidad de usuarios/claims todavía no migrados.
+
+### Sigue vivo en transición
+- `PermissionsJson` continúa activo para compatibilidad.
+- fallback legacy por claims sigue activo bajo `Authorization:EnableLegacyFallback`.
+- fallback de lectura por `RolesJson` se mantiene cuando usuario no tiene asignaciones robustas en `SystemUserRole`.
+
+### Validación de camino controlado a robust-only
+- Con `Authorization:EnableLegacyFallback=false`, ya es validable en entorno controlado el runtime robusto para usuarios con:
+  - `SystemUserRole` correctamente asignado,
+  - matriz robusta (`RoleModuleAuthorization` + `RoleModuleActionAuthorization`) completa para los módulos/acciones requeridos.
+- Bypass y usuarios no migrados continúan dependiendo de fallback legacy; por eso no se ejecuta corte total en esta iteración.
