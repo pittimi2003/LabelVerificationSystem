@@ -38,12 +38,19 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
             return new AuthorizationCheckResult(false, false, false, "module_code_required");
         }
 
+        var normalizedUserId = string.IsNullOrWhiteSpace(userId) ? null : userId.Trim();
+        var robustOnlyCutoverSubset = IsRobustOnlyCutoverSubset(normalizedUserId, moduleCode, actionCode);
+
         if (_options.UseRobustMatrix)
         {
-            var normalizedUserId = string.IsNullOrWhiteSpace(userId) ? null : userId.Trim();
             if (!string.IsNullOrWhiteSpace(normalizedUserId))
             {
-                var robustResult = await TryAuthorizeWithRobustModelAsync(normalizedUserId, moduleCode, actionCode, cancellationToken);
+                var robustResult = await TryAuthorizeWithRobustModelAsync(
+                    normalizedUserId,
+                    moduleCode,
+                    actionCode,
+                    allowLegacyRoleFallback: !robustOnlyCutoverSubset,
+                    cancellationToken);
                 if (robustResult is not null)
                 {
                     return robustResult;
@@ -51,7 +58,7 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
             }
         }
 
-        if (_options.EnableLegacyFallback)
+        if (_options.EnableLegacyFallback && !robustOnlyCutoverSubset)
         {
             var allowedByLegacy = IsAllowedByLegacyClaims(principal, moduleCode, actionCode);
             return new AuthorizationCheckResult(
@@ -68,6 +75,7 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
         string userId,
         string moduleCode,
         string? actionCode,
+        bool allowLegacyRoleFallback,
         CancellationToken cancellationToken)
     {
         var normalizedModuleCode = moduleCode.Trim();
@@ -96,7 +104,7 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        if (roleCodes.Count == 0 && _options.EnableLegacyFallback)
+        if (roleCodes.Count == 0 && allowLegacyRoleFallback && _options.EnableLegacyFallback)
         {
             roleCodes = DeserializeList(userSnapshot.RolesJson)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -142,6 +150,46 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
         }
 
         return new AuthorizationCheckResult(true, true, false, null);
+    }
+
+    private bool IsRobustOnlyCutoverSubset(string? userId, string moduleCode, string? actionCode)
+    {
+        var cutover = _options.RobustOnlyCutover;
+        if (!cutover.Enabled || string.IsNullOrWhiteSpace(userId))
+        {
+            return false;
+        }
+
+        var userIncluded = cutover.UserIds.Any(x => string.Equals(x?.Trim(), userId, StringComparison.OrdinalIgnoreCase));
+        if (!userIncluded)
+        {
+            return false;
+        }
+
+        var normalizedModule = moduleCode.Trim();
+        var normalizedAction = actionCode?.Trim();
+
+        return cutover.Scopes.Any(scope =>
+        {
+            if (string.IsNullOrWhiteSpace(scope))
+            {
+                return false;
+            }
+
+            var parts = scope.Split(':', 2, StringSplitOptions.TrimEntries);
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            if (!string.Equals(parts[0], normalizedModule, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return parts[1] == "*"
+                   || string.Equals(parts[1], normalizedAction, StringComparison.OrdinalIgnoreCase);
+        });
     }
 
     private static bool IsAllowedByLegacyClaims(ClaimsPrincipal principal, string moduleCode, string? actionCode)

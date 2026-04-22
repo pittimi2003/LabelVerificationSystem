@@ -913,3 +913,48 @@ Flujos/endpoints verificados:
 - definir y ejecutar plan por subconjuntos/perfiles robust-ready antes de cualquier corte global;
 - cerrar migración operativa de usuarios que hoy viven solo en `Authentication:Users` hacia identidad/roles robustos persistidos;
 - mantener Fase 4 abierta hasta cerrar validación robust-only de endpoints críticos sin fallback.
+
+## Avance reciente: Bloque B / Fase 4 abierta (cutover controlado por subconjuntos robust-ready)
+
+- Estado de fase: **Fase 4 sigue abierta** (sin cierre de fase en esta iteración).
+- Alcance exclusivo de **Bloque B**: reducción controlada de dependencia legacy en perímetros ya validados.
+- No hay apagado global de legacy, ni mezcla con Fase 5, ni NLog.
+
+### Subconjunto robust-ready aplicado
+
+Se habilitó un mecanismo de cutover por subconjuntos en runtime de autorización, con estas condiciones simultáneas:
+
+- usuario incluido explícitamente en `Authorization:RobustOnlyCutover:UserIds`,
+- scope módulo/acción incluido en `Authorization:RobustOnlyCutover:Scopes`,
+- evaluación robusta disponible (`SystemUsers` + `SystemUserRole` + matriz robusta).
+
+Configuración aplicada en Development para el perímetro validado:
+
+- `UserIds`: `admin-001`,
+- `Scopes`:
+  - `UsersAdministration:View`,
+  - `AuthorizationMatrixAdministration:Manage`.
+
+### Reducción legacy aplicada en ese subconjunto
+
+Para el subconjunto anterior, `AuthorizationMatrixService`:
+
+- **no** usa fallback de roles por `RolesJson` cuando faltan asignaciones robustas;
+- **no** ejecuta fallback legacy por claims aunque `EnableLegacyFallback=true`.
+
+Fuera de ese subconjunto, la transición actual se mantiene intacta:
+
+- fallback por claims legacy sigue activo bajo `EnableLegacyFallback`;
+- fallback por `RolesJson` sigue disponible para usuarios no migrados.
+
+### Impacto operativo
+
+- `login`, `refresh` y `/me` no cambian de contrato ni de flujo.
+- `/users` y `/authorization-matrix` mantienen políticas actuales; la diferencia es el origen de decisión (robusto estricto) solo para el subconjunto configurado.
+- Se mantiene deny-by-default para cualquier combinación no robust-ready.
+
+### Bloqueos explícitos para retiro más amplio
+
+- usuarios/perfiles aún dependientes de claims legacy;
+- usuarios sin asignación robusta completa en `SystemUserRole`;
+- coexistencia necesaria de `RolesJson`/`PermissionsJson` fuera de los subconjuntos ya validados.

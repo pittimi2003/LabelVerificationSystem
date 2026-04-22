@@ -607,3 +607,41 @@ Se añadió script ejecutable de validación:
 - `scripts/validation/robust_only_e2e_bridge.sh`
 
 Este script levanta API en Development con robust-only + bridge y reporta códigos HTTP de los cuatro endpoints críticos del alcance.
+
+## 18) Cutover controlado por subconjuntos (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Iteración acotada a **Bloque B**.  
+> Sin retiro global legacy, sin Fase 5 y sin NLog.
+
+Se implementó en runtime un mecanismo de **robust-only selectivo por subconjunto** para reducir dependencia legacy únicamente en perímetros ya validados.
+
+### Configuración introducida
+
+Dentro de `Authorization`:
+
+- `RobustOnlyCutover:Enabled` (bool)
+- `RobustOnlyCutover:UserIds` (lista de `UserId`)
+- `RobustOnlyCutover:Scopes` (lista `ModuleCode:ActionCode`, soporta `*` en acción)
+
+### Regla efectiva
+
+Si `(usuario ∈ UserIds) && (módulo/acción ∈ Scopes)`:
+
+1. la autorización se resuelve en modo robusto estricto;
+2. no se usa fallback de roles desde `RolesJson`;
+3. no se usa fallback legacy por claims aun con `EnableLegacyFallback=true`.
+
+Si no cumple el subconjunto, se conserva transición actual sin cambios.
+
+### Subconjunto aplicado en Development (perímetro validado)
+
+- `admin-001`
+- `UsersAdministration:View`
+- `AuthorizationMatrixAdministration:Manage`
+
+### Estado de transición tras este avance
+
+- Se reduce dependencia legacy solo en perímetro robust-ready validado.
+- Se mantiene compatibilidad transitoria para el resto (`RolesJson`, `PermissionsJson`, claims legacy).
+- Continúa pendiente el retiro más amplio/global hasta cerrar migración de perfiles no robust-ready.
