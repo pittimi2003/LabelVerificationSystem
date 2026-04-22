@@ -21,7 +21,7 @@ public sealed class AuthorizationMatrixController : ControllerBase
     }
 
     [HttpGet("roles")]
-    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
     [ProducesResponseType(typeof(IReadOnlyList<AuthorizationRoleDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<AuthorizationRoleDto>>> ListRoles(CancellationToken cancellationToken)
     {
@@ -30,7 +30,7 @@ public sealed class AuthorizationMatrixController : ControllerBase
     }
 
     [HttpGet("roles/{roleCode}")]
-    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
     [ProducesResponseType(typeof(RoleAuthorizationMatrixDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -52,7 +52,7 @@ public sealed class AuthorizationMatrixController : ControllerBase
     }
 
     [HttpPut("roles/{roleCode}")]
-    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
     [ProducesResponseType(typeof(RoleAuthorizationMatrixDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]

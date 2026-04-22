@@ -160,8 +160,16 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
         {
             "UsersAdministration" when string.Equals(actionCode, "View", StringComparison.OrdinalIgnoreCase) =>
                 roleSet.Contains("Administrator") || permissionSet.Contains("users.read") || permissionSet.Contains("users.manage"),
+            "UsersAdministration" when string.Equals(actionCode, "Create", StringComparison.OrdinalIgnoreCase) =>
+                roleSet.Contains("Administrator") || permissionSet.Contains("users.manage"),
             "UsersAdministration" when string.Equals(actionCode, "Edit", StringComparison.OrdinalIgnoreCase) =>
                 roleSet.Contains("Administrator") || permissionSet.Contains("users.manage"),
+            "UsersAdministration" when string.Equals(actionCode, "ActivateDeactivate", StringComparison.OrdinalIgnoreCase) =>
+                roleSet.Contains("Administrator") || permissionSet.Contains("users.manage"),
+            "AuthorizationMatrixAdministration" when string.Equals(actionCode, "Manage", StringComparison.OrdinalIgnoreCase) =>
+                roleSet.Contains("Administrator")
+                || permissionSet.Contains("authorization.matrix.manage")
+                || permissionSet.Contains("users.manage"),
             _ => false
         };
     }

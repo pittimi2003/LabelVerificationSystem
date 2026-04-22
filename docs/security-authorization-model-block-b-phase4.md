@@ -405,12 +405,15 @@ Implementado en backend para resolución efectiva en runtime:
   1. intenta resolver con modelo robusto (`RoleCatalog` + `SystemUserRole` + `RoleModuleAuthorization` + `RoleModuleActionAuthorization`);
   2. aplica precondición de módulo antes de acción;
   3. si no puede resolver robusto (usuario sin datos migrados / bypass / transición), aplica fallback legacy controlado por flag.
-- Policies existentes de `/api/users` (`UsersRead`, `UsersManage`) migradas internamente a requirement/handler basado en módulo+acción:
+- Policies de `/api/users` migradas internamente a requirement/handler basado en módulo+acción:
   - `UsersRead` => `UsersAdministration.View`
-  - `UsersManage` => `UsersAdministration.Edit`
+  - `UsersCreate` => `UsersAdministration.Create`
+  - `UsersEdit` => `UsersAdministration.Edit`
+  - `UsersActivateDeactivate` => `UsersAdministration.ActivateDeactivate`
+- Nueva policy dedicada para matriz de autorizaciones:
+  - `AuthorizationMatrixManage` => `AuthorizationMatrixAdministration.Manage`
 - Compatibilidad transitoria mantenida:
-  - policies conservan sus nombres;
-  - fallback legacy sigue reconociendo `role=Administrator` y claims `users.read` / `users.manage`;
+  - fallback legacy sigue reconociendo `role=Administrator` y claims `users.read` / `users.manage` / `authorization.matrix.manage`;
   - usuarios legacy y bypass continúan operativos mientras se completa transición.
 - Bypass ajustado para convivencia:
   - se mantiene flujo actual de bypass;
@@ -422,7 +425,7 @@ Implementado en backend para resolución efectiva en runtime:
 
 No implementado en esta iteración runtime:
 
-- migración de todos los endpoints/policies al modelo robusto (solo `/api/users` en este corte);
+- migración de todos los endpoints/policies al modelo robusto (en este corte se migran `/api/users` y `/api/authorization-matrix`);
 - invalidación distribuida/caché avanzada de matriz;
 - retiro de `RolesJson`/`PermissionsJson`.
 
