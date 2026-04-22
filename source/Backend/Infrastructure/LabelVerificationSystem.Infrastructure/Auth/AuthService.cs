@@ -6,6 +6,7 @@ using System.Text.Json;
 using LabelVerificationSystem.Application.Contracts.Auth;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Domain.Entities.Auth;
+using LabelVerificationSystem.Infrastructure.Authorization;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -23,6 +24,7 @@ public sealed class AuthService : IAuthService
 
     private readonly AppDbContext _dbContext;
     private readonly AuthenticationOptions _options;
+    private readonly AuthorizationRuntimeOptions _authorizationOptions;
     private readonly IHostEnvironment _hostEnvironment;
     private readonly ILogger<AuthService> _logger;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -31,11 +33,13 @@ public sealed class AuthService : IAuthService
     public AuthService(
         AppDbContext dbContext,
         IOptions<AuthenticationOptions> options,
+        IOptions<AuthorizationRuntimeOptions> authorizationOptions,
         IHostEnvironment hostEnvironment,
         ILogger<AuthService> logger)
     {
         _dbContext = dbContext;
         _options = options.Value;
+        _authorizationOptions = authorizationOptions.Value;
         _hostEnvironment = hostEnvironment;
         _logger = logger;
     }
@@ -851,12 +855,22 @@ public sealed class AuthService : IAuthService
             return catalogRoles;
         }
 
+        if (IsRobustOnlyCutoverUser(dbUser.UserId))
+        {
+            return [];
+        }
+
         return DeserializeList(dbUser.RolesJson);
     }
 
     private async Task<IReadOnlyList<string>> ResolveEffectivePermissionsAsync(SystemUser dbUser, IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
     {
         var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
+        if (IsRobustOnlyCutoverUser(dbUser.UserId))
+        {
+            return robustPermissions;
+        }
+
         var legacyPermissions = DeserializeList(dbUser.PermissionsJson);
 
         return robustPermissions
@@ -864,6 +878,17 @@ public sealed class AuthService : IAuthService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private bool IsRobustOnlyCutoverUser(string userId)
+    {
+        var cutover = _authorizationOptions.RobustOnlyCutover;
+        if (!cutover.Enabled)
+        {
+            return false;
+        }
+
+        return cutover.UserIds.Any(x => string.Equals(x?.Trim(), userId, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<IReadOnlyList<string>> ResolveRobustPermissionsFromRolesAsync(IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)

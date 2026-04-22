@@ -469,6 +469,24 @@ Fuera de alcance de esta iteración:
 
 > **Fase 4 permanece abierta**. No se realizó retiro total de legacy en este corte.
 
+### 15.1) Avance de iteración: cutover controlado en sesión auth (subconjunto robust-ready)
+
+> **Fase 4 permanece abierta**.  
+> Sin apagado global de legacy y sin mezcla con Fase 5/NLog.
+
+Se aplicó reducción adicional de dependencia legacy en el subconjunto robust-ready ya validado en Development:
+
+- subconjunto: `Authorization:RobustOnlyCutover.Enabled=true`, `UserIds=[admin-001]`, `Scopes=[UsersAdministration:View, AuthorizationMatrixAdministration:Manage]`.
+- en `AuthService`, para usuarios dentro de ese subconjunto:
+  - no hay fallback de roles a `RolesJson` cuando faltan asignaciones robustas;
+  - permisos efectivos de sesión se derivan únicamente de matriz robusta y no se fusionan con `PermissionsJson`.
+
+Se mantiene transición para lo no robust-ready:
+
+- usuarios fuera del subconjunto continúan con fallback actual (`RolesJson`/`PermissionsJson`);
+- `EnableLegacyFallback` sigue disponible para claims legacy en runtime de autorización;
+- no se ejecuta retiro global de campos legacy en persistencia.
+
 Implementado en esta iteración:
 
 - Prioridad robusta también en lectura de permisos de sesión (`AuthService`):

@@ -958,3 +958,29 @@ Fuera de ese subconjunto, la transición actual se mantiene intacta:
 - usuarios/perfiles aún dependientes de claims legacy;
 - usuarios sin asignación robusta completa en `SystemUserRole`;
 - coexistencia necesaria de `RolesJson`/`PermissionsJson` fuera de los subconjuntos ya validados.
+
+## Avance reciente: Bloque B / Fase 4 abierta (cutover de sesión auth por subconjunto robust-ready)
+
+- Estado de fase: **Fase 4 sigue abierta**.
+- Alcance acotado de esta iteración: endurecer el subconjunto ya validado (`admin-001` + scopes `UsersAdministration:View` y `AuthorizationMatrixAdministration:Manage`) sin apagar legacy global.
+
+### Ajuste aplicado
+
+- `AuthService` ahora respeta `Authorization:RobustOnlyCutover` para el usuario del subconjunto:
+  - si no hay roles robustos en `SystemUserRole`, **no** hace fallback a `RolesJson`;
+  - los permisos efectivos de sesión se resuelven solo desde matriz robusta para ese usuario, sin mezclar `PermissionsJson`.
+
+### Impacto real
+
+- `login`, `refresh`, `/me`, `/users` y `/authorization-matrix/roles` se mantienen funcionalmente compatibles para el subconjunto robust-ready ya validado.
+- Se reduce dependencia legacy en emisión/rehidratación de claims de sesión para ese subconjunto.
+- Fuera del subconjunto:
+  - sigue activo fallback de roles por `RolesJson`,
+  - sigue activa mezcla de `PermissionsJson`,
+  - se mantiene transición segura con `EnableLegacyFallback`.
+
+### Estado de transición después del ajuste
+
+- No hay retiro global de legacy.
+- No hay mezcla con Fase 5.
+- No se incorpora NLog.
