@@ -674,6 +674,12 @@ Convivencia transitoria:
 - en scope incluido en `Authorization:RobustOnlyCutover`, no se usa fallback legacy por claims;
 - fuera de ese scope, se mantiene fallback legacy controlado por `Authorization:EnableLegacyFallback`.
 
+### Patrón de migración por módulo (Bloque B / Fase 4 abierta, 2026-04-22)
+- El endurecimiento robust-only se aplica por módulo y por scope (`userId + module/action`) mediante `Authorization:RobustOnlyCutover`.
+- Cada módulo candidato debe completar antes: catálogo robusto de módulo/acciones, policy explícita backend y validación E2E reproducible.
+- En esta iteración no hay cambio de contrato para `/api/auth/*`; se mantiene análisis de `AuthSessionSelf` (`/api/auth/me`, `/api/auth/logout`) como siguiente candidato sin implementación forzada.
+- Se mantiene explícitamente transición dual fuera de cutover y **Fase 4 continúa abierta**.
+
 ### Response de `GET /api/excel-uploads` y `GET /api/excel-uploads/{id}` (v1)
 - `uploadId`: identificador de la carga.
 - `originalFileName`: nombre original del archivo cargado.

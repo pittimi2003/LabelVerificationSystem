@@ -822,3 +822,75 @@ Bloqueantes para ampliar más:
 - perfiles no migrados completamente a `SystemUserRole`;
 - dependencia residual de claims legacy en flujos no cubiertos por cutover;
 - falta de evidencia robust-only equivalente en otros endpoints antes de expandir más.
+
+## 23) Patrón formal de migración por módulo + siguiente candidato (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Iteración acotada a **Bloque B** (expansión controlada).  
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Patrón real validado para migrar un módulo al modelo robusto
+
+El patrón que ya se viene aplicando en `Users`, `AuthorizationMatrix` y `ExcelUploads` queda formalizado así:
+
+1. **Catálogo robusto de módulo/acciones**
+   - Definir `ModuleCatalog.Code` único del módulo.
+   - Definir `ModuleActionCatalog.Code` por acción de negocio.
+   - Mantener mapeos transitorios de permisos legacy solo para compatibilidad fuera de cutover.
+
+2. **Policies backend por módulo/acción**
+   - Exponer policy explícita por endpoint (o grupo de endpoints) con `ModuleActionAuthorizationRequirement(module, action)`.
+   - Reutilizar deny-by-default del runtime robusto para acciones no autorizadas.
+
+3. **Runtime auth robusto con cutover selectivo**
+   - Resolver autorización vía `AuthorizationMatrixService`.
+   - Aplicar modo robusto estricto solo cuando `userId + scope` cae en `Authorization:RobustOnlyCutover`.
+   - Mantener fallback legacy por claims fuera de cutover según `Authorization:EnableLegacyFallback`.
+
+4. **Sesión/auth (cuando corresponda)**
+   - Priorizar roles efectivos robustos (`SystemUserRole`) para usuarios en cutover.
+   - Priorizar permisos efectivos robustos (matriz) para usuarios en cutover.
+   - Mantener `RolesJson` / `PermissionsJson` como compatibilidad transitoria fuera de cutover.
+
+5. **Fallback transitorio explícito**
+   - Fallback legacy permitido únicamente fuera del perímetro robust-ready.
+   - No retirar persistencia legacy ni contratos de una sola vez.
+
+6. **Validación E2E reproducible antes de ampliar perímetro**
+   - Ejecutar script reproducible en Development (`scripts/validation/robust_only_e2e_bridge.sh`).
+   - Exigir evidencia de códigos HTTP esperados para endpoints críticos del módulo.
+   - Confirmar que no se rompe `login`, `refresh`, `/me` ni los módulos robust-ready previos.
+
+### Siguiente módulo candidato identificado
+
+**Candidato con mejor madurez funcional:** `AuthSessionSelf` (`/api/auth/me` y `/api/auth/logout`).
+
+Motivos:
+- endpoints reales de operación diaria (no demo);
+- ya dependen de sesión robusta y bridge de usuarios configurados;
+- forman parte del perímetro crítico que debe preservarse estable.
+
+### Decisión de esta iteración sobre el candidato
+
+**No se aplica aún migración robusta adicional del candidato** en este corte.
+
+Justificación (evidencia insuficiente para endurecer sin riesgo):
+- hoy `/api/auth/me` no está gobernado por una policy módulo/acción explícita en backend;
+- no existe todavía catálogo/acción robusta cerrada para semántica de sesión self-service (`me/logout`) documentada y validada E2E;
+- endurecer sin ese cierre podría introducir regresiones en el perímetro crítico de sesión (`login`, `refresh`, `/me`).
+
+Por lo tanto, en esta iteración se **formaliza el patrón** y se deja el candidato analizado, sin forzar implementación.
+
+### Impacto real de esta iteración
+
+- **Runtime auth:** sin cambios de comportamiento; continúa cutover selectivo robust-ready en módulos ya endurecidos.
+- **Sesión/auth:** sin cambios funcionales en `login`, `refresh`, `/me`, `logout`.
+- **Policies:** sin nuevas policies en código en este corte.
+- **Contratos:** sin cambios de contrato API; se actualiza documentación de patrón y decisión.
+
+### Pendientes abiertos para próximo avance de módulo candidato
+
+- cerrar catálogo `ModuleCatalog/ModuleActionCatalog` para sesión self-service;
+- definir policies explícitas por endpoint en `/api/auth` que no impacten login/refresh;
+- construir evidencia E2E robust-only específica de `me/logout` antes de incluir ese scope en cutover;
+- mantener explícitamente **Fase 4 abierta** hasta completar más módulos robust-ready sin apagado global legacy.
