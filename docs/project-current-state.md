@@ -30,6 +30,14 @@ La estructura arquitectónica del backend se mantiene y no será modificada como
 
 La funcionalidad real de negocio comienza a construirse a partir de esta base.
 
+### Actualización de estado (Bloque B / Fase 4 abierta, 2026-04-22)
+
+- El modelo robusto persistido de autorización (`RoleCatalog`, `ModuleCatalog`, `ModuleActionCatalog`, `RoleModuleAuthorization`, `RoleModuleActionAuthorization`, `SystemUserRole`) ya está en operación incremental.
+- Runtime robusto activo con `AuthorizationMatrixService` y cutover selectivo por subconjuntos robust-ready.
+- Integración robusta vigente en `/users`, `/authorization-matrix` y `/excel-uploads`.
+- Se formalizó patrón de migración por módulo para expansión controlada; no se ejecutó apagado global legacy.
+- Se mantiene explícitamente **Fase 4 abierta**.
+
 ---
 
 ## Línea base funcional de referencia
