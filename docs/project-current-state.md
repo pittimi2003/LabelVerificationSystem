@@ -591,6 +591,32 @@ Se atendió el caso reproducido con `Authentication:Bypass:Enabled=false` y logi
 - En el estado reproducido, la llamada de frontend a `GET /api/users` podía salir sin `Authorization: Bearer` al depender del pipeline genérico de `HttpClient` para adjuntar token.
 - El `401` observado corresponde a ausencia de identidad autenticada efectiva en la request de `/api/users` (no a falta de permisos, que sería `403`).
 
+## Avance implementado: Bloque B / Fase 4 (abierta) — validación E2E robust-only reproducible para bridge local (2026-04-22)
+
+Se ejecutó validación E2E controlada para usuarios configurados/locales bridgeados en Development, con alcance exclusivo de Bloque B y manteniendo **Fase 4 abierta**.
+
+Configuración usada en ejecución:
+
+- `ASPNETCORE_ENVIRONMENT=Development`
+- `Authorization:UseRobustMatrix=true`
+- `Authorization:EnableLegacyFallback=false`
+- `Authentication:ConfiguredUsersRobustBridge:Enabled=true`
+
+Resultado final validado para usuario `admin` de `Authentication:Users`:
+
+- `POST /api/auth/login` => `200`
+- `GET /api/auth/me` => `200`
+- `GET /api/users` => `200`
+- `GET /api/authorization-matrix/roles` => `200`
+
+Correcciones acotadas aplicadas para lograrlo:
+
+- normalización consistente de almacenamiento Guid en SQLite (string minúscula) para eliminar fallo FK en bridge robusto;
+- habilitación efectiva de descubrimiento de migración `20260422090000_AddAuthorizationMatrixAdministrationModule` (atributos EF), permitiendo aplicar el seed robusto faltante para políticas de `AuthorizationMatrixAdministration`;
+- script reproducible agregado: `scripts/validation/robust_only_e2e_bridge.sh`.
+
+Decisión de estado: no se retira legacy global; la validación cerrada aplica al escenario robust-only + bridge local validado en esta sesión.
+
 ### Corrección aplicada
 - `UserAdministrationApiClient` ahora adjunta explícitamente el bearer token de la sesión real (`AuthSessionService`) antes de enviar cada request del módulo (`GET/POST/PUT/PATCH`).
 - El cliente de `/users` se registra usando `BackendApiRaw` + `AuthSessionService` para que el módulo utilice de forma determinística la misma sesión/token vigente del frontend.

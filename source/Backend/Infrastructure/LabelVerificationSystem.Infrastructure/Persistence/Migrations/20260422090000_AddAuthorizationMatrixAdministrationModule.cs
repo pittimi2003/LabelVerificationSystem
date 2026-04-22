@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using LabelVerificationSystem.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20260422090000_AddAuthorizationMatrixAdministrationModule")]
     public partial class AddAuthorizationMatrixAdministrationModule : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
