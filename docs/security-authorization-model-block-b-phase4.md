@@ -464,3 +464,26 @@ Fuera de alcance de esta iteración:
 - cierre de Fase 4,
 - cambios de Fase 5,
 - incorporación de NLog.
+
+## 15) Avance de iteración: reducción incremental de lecturas legacy (Bloque B / Fase 4 abierta)
+
+> **Fase 4 permanece abierta**. No se realizó retiro total de legacy en este corte.
+
+Implementado en esta iteración:
+
+- Prioridad robusta también en lectura de permisos de sesión (`AuthService`):
+  - se derivan permisos efectivos conocidos (`users.read`, `users.manage`, `authorization.matrix.manage`) desde roles robustos (`SystemUserRole`) y matriz robusta (`RoleModuleAuthorization` + `RoleModuleActionAuthorization`);
+  - `PermissionsJson` permanece como compatibilidad transitoria, combinándose con el resultado robusto para no romper transición.
+- Reducción incremental en filtros de `/api/users` (`UserAdministrationService.ListAsync`):
+  - el filtro por `permission` ya no depende únicamente de `PermissionsJson`;
+  - incorpora resolución robusta por rol/matriz para permisos conocidos;
+  - mantiene fallback legacy por `PermissionsJson` para usuarios aún no migrados o permisos no mapeados.
+
+Dependencias legacy que permanecen explícitamente activas:
+- `PermissionsJson` (lectura y persistencia transitoria).
+- fallback por claims legacy en `AuthorizationMatrixService` controlado por `Authorization:EnableLegacyFallback`.
+- fallback a `RolesJson` cuando no hay roles robustos efectivos del usuario.
+
+Camino verificable a modo robust-only en entorno controlado:
+- ya es factible validar `Authorization:EnableLegacyFallback=false` para usuarios totalmente migrados (con `SystemUserRole` y matriz robusta completa);
+- no es seguro aún para bypass ni para usuarios sin migración completa, por lo que se mantiene transición dual.
