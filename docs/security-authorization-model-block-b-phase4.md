@@ -736,3 +736,32 @@ Interpretación: el perfil `manager-001` queda robust-ready para el subconjunto 
 - Se mantiene transición dual para usuarios/scopes fuera de `RobustOnlyCutover`.
 - Continúan vigentes dependencias transitorias (`EnableLegacyFallback`, `RolesJson`, `PermissionsJson`) fuera del perímetro ampliado.
 - No hay cambios de contrato en `login`, `refresh`, `/me`, `/users` y `/authorization-matrix`; solo cambia el origen de decisión (robusto estricto) en el subconjunto aplicado.
+
+## 21) Retiro parcial adicional en subconjunto robust-only validado (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Iteración acotada a **Bloque B**.  
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Reducción aplicada en `/api/users` para el subconjunto en cutover
+
+En esta iteración se reduce dependencia operativa legacy dentro del subconjunto `RobustOnlyCutover` ya validado:
+
+- resolución de roles efectiva en listados/detalle:
+  - si el usuario está en `RobustOnlyCutover:UserIds` y no tiene asignación robusta en `SystemUserRole`, ya no cae a `RolesJson`;
+- resolución de permisos efectiva en listados/detalle:
+  - para usuarios en cutover, se derivan desde matriz robusta (`RoleModuleAuthorization` + `RoleModuleActionAuthorization`) y no desde `PermissionsJson`;
+- filtros `/api/users` por `role` y `permission`:
+  - para usuarios en cutover, no se usa coincidencia por `RolesJson`/`PermissionsJson` como fuente operativa.
+
+### Compatibilidad que permanece explícitamente
+
+- Se mantiene escritura/snapshot transitorio de `RolesJson` y `PermissionsJson` para compatibilidad de perfiles fuera de cutover.
+- Se mantiene fallback legacy por claims en runtime para usuarios/scopes fuera de `RobustOnlyCutover` (según `EnableLegacyFallback`).
+- No hay retiro global del modelo legacy.
+
+### Bloqueantes para retiro más amplio
+
+- usuarios fuera de cutover que todavía dependen de claims legacy;
+- usuarios sin migración robusta completa en `SystemUserRole`;
+- necesidad de completar cobertura robust-only en más políticas antes de apagar fallback global.

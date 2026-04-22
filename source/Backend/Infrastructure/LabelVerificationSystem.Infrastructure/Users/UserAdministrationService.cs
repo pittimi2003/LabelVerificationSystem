@@ -4,8 +4,10 @@ using LabelVerificationSystem.Application.Contracts.Users;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.Users;
 using LabelVerificationSystem.Domain.Entities.Auth;
+using LabelVerificationSystem.Infrastructure.Authorization;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace LabelVerificationSystem.Infrastructure.Users;
 
@@ -14,11 +16,13 @@ public sealed class UserAdministrationService : IUserAdministrationService
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly AppDbContext _dbContext;
+    private readonly AuthorizationRuntimeOptions _authorizationOptions;
     private static readonly string[] UsersManageActions = ["Create", "Edit", "ActivateDeactivate"];
 
-    public UserAdministrationService(AppDbContext dbContext)
+    public UserAdministrationService(AppDbContext dbContext, IOptions<AuthorizationRuntimeOptions> authorizationOptions)
     {
         _dbContext = dbContext;
+        _authorizationOptions = authorizationOptions.Value;
     }
 
     public async Task<IReadOnlyList<UserRoleCatalogItemDto>> ListRolesAsync(CancellationToken cancellationToken)
@@ -43,6 +47,12 @@ public sealed class UserAdministrationService : IUserAdministrationService
         }
 
         var usersQuery = _dbContext.SystemUsers.AsNoTracking();
+        var cutoverEnabled = _authorizationOptions.RobustOnlyCutover.Enabled;
+        var cutoverUserIds = _authorizationOptions.RobustOnlyCutover.UserIds
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         var globalQuery = NormalizeFilter(query.Query);
         if (!string.IsNullOrWhiteSpace(globalQuery))
@@ -86,6 +96,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
                     && r.Role.IsActive
                     && r.Role.Code.ToLower().Contains(role))
                 || (!_dbContext.SystemUserRoles.Any(r => r.SystemUserId == x.Id)
+                    && (!cutoverEnabled || !cutoverUserIds.Contains(x.UserId))
                     && x.RolesJson.ToLower().Contains(role)));
         }
 
@@ -95,7 +106,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
             var robustUserIds = await ResolveRobustPermissionUserIdsAsync(permission, cancellationToken);
             usersQuery = usersQuery.Where(x =>
                 robustUserIds.Contains(x.Id)
-                || x.PermissionsJson.ToLower().Contains(permission));
+                || ((!cutoverEnabled || !cutoverUserIds.Contains(x.UserId))
+                    && x.PermissionsJson.ToLower().Contains(permission)));
         }
 
         if (query.IsActive.HasValue)
@@ -113,7 +125,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
             .ToListAsync(cancellationToken);
 
         var roleMap = await ResolveEffectiveRolesAsync(users, cancellationToken);
-        var items = users.Select(user => MapToListItem(user, roleMap)).ToList();
+        var permissionMap = await ResolveEffectivePermissionsAsync(users, roleMap, cancellationToken);
+        var items = users.Select(user => MapToListItem(user, roleMap, permissionMap)).ToList();
 
         return new UserListResponse(items, query.Page, query.PageSize, totalItems, totalPages);
     }
@@ -129,7 +142,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
         }
 
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
-        return MapToDetail(user, roleMap);
+        var permissionMap = await ResolveEffectivePermissionsAsync([user], roleMap, cancellationToken);
+        return MapToDetail(user, roleMap, permissionMap);
     }
 
     public async Task<UserDetailDto> CreateAsync(CreateUserRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
@@ -188,7 +202,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
-        return MapToDetail(user, roleMap);
+        var permissionMap = await ResolveEffectivePermissionsAsync([user], roleMap, cancellationToken);
+        return MapToDetail(user, roleMap, permissionMap);
     }
 
     public async Task<UserDetailDto> UpdateAsync(string userId, UpdateUserRequest request, string? ipAddress, string? userAgent, CancellationToken cancellationToken)
@@ -251,7 +266,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
-        return MapToDetail(user, roleMap);
+        var permissionMap = await ResolveEffectivePermissionsAsync([user], roleMap, cancellationToken);
+        return MapToDetail(user, roleMap, permissionMap);
     }
 
     public async Task<UserDetailDto> SetActivationAsync(string userId, bool isActive, CancellationToken cancellationToken)
@@ -268,7 +284,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
-        return MapToDetail(user, roleMap);
+        var permissionMap = await ResolveEffectivePermissionsAsync([user], roleMap, cancellationToken);
+        return MapToDetail(user, roleMap, permissionMap);
     }
 
     private async Task<IReadOnlyList<string>> SyncUserRoleAssignmentsAsync(SystemUser user, IReadOnlyList<string> requestedRoleCodes, DateTime nowUtc, CancellationToken cancellationToken)
@@ -366,7 +383,43 @@ public sealed class UserAdministrationService : IUserAdministrationService
                 continue;
             }
 
+            if (IsRobustOnlyCutoverUser(user.UserId))
+            {
+                result[user.Id] = [];
+                continue;
+            }
+
             result[user.Id] = DeserializeList(user.RolesJson);
+        }
+
+        return result;
+    }
+
+    private async Task<Dictionary<Guid, IReadOnlyList<string>>> ResolveEffectivePermissionsAsync(
+        IReadOnlyList<SystemUser> users,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap,
+        CancellationToken cancellationToken)
+    {
+        var result = users.ToDictionary(x => x.Id, _ => (IReadOnlyList<string>)[]);
+        foreach (var user in users)
+        {
+            if (roleMap.TryGetValue(user.Id, out var roleCodes) && roleCodes.Count > 0)
+            {
+                var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
+                if (IsRobustOnlyCutoverUser(user.UserId))
+                {
+                    result[user.Id] = robustPermissions;
+                    continue;
+                }
+            }
+
+            if (IsRobustOnlyCutoverUser(user.UserId))
+            {
+                result[user.Id] = [];
+                continue;
+            }
+
+            result[user.Id] = DeserializeList(user.PermissionsJson);
         }
 
         return result;
@@ -378,7 +431,10 @@ public sealed class UserAdministrationService : IUserAdministrationService
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-    private static UserListItemDto MapToListItem(SystemUser user, IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap)
+    private static UserListItemDto MapToListItem(
+        SystemUser user,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> permissionMap)
         => new(
             user.UserId,
             user.Username,
@@ -386,11 +442,14 @@ public sealed class UserAdministrationService : IUserAdministrationService
             user.Email,
             user.IsActive,
             roleMap.TryGetValue(user.Id, out var roles) ? roles : DeserializeList(user.RolesJson),
-            DeserializeList(user.PermissionsJson),
+            permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : DeserializeList(user.PermissionsJson),
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
 
-    private static UserDetailDto MapToDetail(SystemUser user, IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap)
+    private static UserDetailDto MapToDetail(
+        SystemUser user,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> roleMap,
+        IReadOnlyDictionary<Guid, IReadOnlyList<string>> permissionMap)
         => new(
             user.UserId,
             user.Username,
@@ -398,9 +457,20 @@ public sealed class UserAdministrationService : IUserAdministrationService
             user.Email,
             user.IsActive,
             roleMap.TryGetValue(user.Id, out var roles) ? roles : DeserializeList(user.RolesJson),
-            DeserializeList(user.PermissionsJson),
+            permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : DeserializeList(user.PermissionsJson),
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
+
+    private bool IsRobustOnlyCutoverUser(string userId)
+    {
+        var cutover = _authorizationOptions.RobustOnlyCutover;
+        if (!cutover.Enabled)
+        {
+            return false;
+        }
+
+        return cutover.UserIds.Any(x => string.Equals(x?.Trim(), userId, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static string ValidateRequiredTrimmed(string value, string field, int minLength = 1, int maxLength = 256)
     {
@@ -574,4 +644,65 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
     private static IReadOnlyList<string> GetKnownPermissionClaims()
         => ["users.read", "users.manage", "authorization.matrix.manage"];
+
+    private async Task<IReadOnlyList<string>> ResolveRobustPermissionsFromRolesAsync(IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
+    {
+        if (roleCodes.Count == 0)
+        {
+            return [];
+        }
+
+        var usersReadAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", "View", cancellationToken);
+        var usersManageAllowed = await HasAuthorizedActionAsync(roleCodes, "UsersAdministration", UsersManageActions, cancellationToken);
+        var authorizationMatrixManageAllowed = await HasAuthorizedActionAsync(roleCodes, "AuthorizationMatrixAdministration", "Manage", cancellationToken);
+
+        var permissions = new List<string>();
+        if (usersReadAllowed)
+        {
+            permissions.Add("users.read");
+        }
+
+        if (usersManageAllowed)
+        {
+            permissions.Add("users.manage");
+        }
+
+        if (authorizationMatrixManageAllowed)
+        {
+            permissions.Add("authorization.matrix.manage");
+        }
+
+        return permissions;
+    }
+
+    private async Task<bool> HasAuthorizedActionAsync(
+        IReadOnlyList<string> roleCodes,
+        string moduleCode,
+        string actionCode,
+        CancellationToken cancellationToken)
+        => await HasAuthorizedActionAsync(roleCodes, moduleCode, [actionCode], cancellationToken);
+
+    private async Task<bool> HasAuthorizedActionAsync(
+        IReadOnlyList<string> roleCodes,
+        string moduleCode,
+        IReadOnlyList<string> actionCodes,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.RoleModuleActionAuthorizations
+            .AsNoTracking()
+            .AnyAsync(x =>
+                x.Role.IsActive
+                && roleCodes.Contains(x.Role.Code)
+                && x.Authorized
+                && x.ModuleAction.IsActive
+                && actionCodes.Contains(x.ModuleAction.Code)
+                && x.ModuleAction.Module.IsActive
+                && x.ModuleAction.Module.Code == moduleCode
+                && _dbContext.RoleModuleAuthorizations.Any(moduleAuth =>
+                    moduleAuth.RoleId == x.RoleId
+                    && moduleAuth.ModuleId == x.ModuleAction.ModuleId
+                    && moduleAuth.Module.IsActive
+                    && moduleAuth.Authorized),
+                cancellationToken);
+    }
 }

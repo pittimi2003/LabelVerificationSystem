@@ -1031,3 +1031,31 @@ Con `scripts/validation/robust_only_e2e_bridge.sh` (Development, bridge ON, fall
 - fallback legacy por claims (`EnableLegacyFallback`) para usuarios/scopes fuera de cutover;
 - fallback transitorio por `RolesJson` y mezcla por `PermissionsJson` fuera de usuarios en cutover;
 - transición dual permanece activa para escenarios no robust-ready.
+
+## Avance reciente: Bloque B / Fase 4 abierta (retiro parcial adicional legacy en subconjunto robust-only validado)
+
+- Estado de fase: **Fase 4 sigue abierta**.
+- Alcance exclusivo de **Bloque B**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Retiro parcial aplicado en `/users`
+
+Dentro del subconjunto ya robust-only (`Authorization:RobustOnlyCutover`):
+
+- listados/detalle de `/api/users` dejan de usar `RolesJson` como fallback operativo para usuarios incluidos en cutover;
+- permisos devueltos para usuarios en cutover se derivan desde matriz robusta (no desde `PermissionsJson`);
+- filtros por `role` y `permission` evitan coincidencia por `RolesJson`/`PermissionsJson` para usuarios en cutover.
+
+Fuera del subconjunto, se mantiene compatibilidad transitoria previa.
+
+### Impacto operativo
+
+- `login`, `refresh` y `/me` mantienen el ajuste robust-only previo para usuarios en cutover y transición dual para el resto.
+- `/authorization-matrix` no cambia de contrato ni de políticas.
+- `/users` mantiene contrato y comportamiento funcional esperado; solo reduce lectura legacy en el perímetro robust-only.
+
+### Qué sigue transitorio / bloquea retiro más amplio
+
+- `RolesJson` y `PermissionsJson` siguen persistiéndose para compatibilidad fuera de cutover.
+- fallback legacy por claims (`EnableLegacyFallback`) sigue activo fuera de cutover.
+- permanece pendiente ampliar migración robusta de usuarios/perfiles antes de un retiro global.
