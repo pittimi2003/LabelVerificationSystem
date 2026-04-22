@@ -765,3 +765,22 @@ Se implementó la primera pantalla administrativa para gestión de permisos por 
 - El módulo `/users` quedó integrado para priorizar asignación de roles sobre `RoleCatalog` + `SystemUserRole`.
 - Se mantiene convivencia transitoria explícita con `RolesJson` / `PermissionsJson` para compatibilidad de transición.
 - No se incorporaron cambios de Fase 5 ni NLog en este avance.
+
+## Avance reciente: Bloque B / Fase 4 abierta (consolidación runtime por policies)
+
+- Estado de fase: **Fase 4 continúa abierta** (no cerrada en esta iteración).
+- Se separó la autorización de `/api/authorization-matrix` del módulo de usuarios:
+  - nueva policy `AuthorizationMatrixManage`,
+  - nueva resolución robusta `AuthorizationMatrixAdministration.Manage`,
+  - fallback legacy transitorio compatible con `Administrator` y permisos `authorization.matrix.manage` / `users.manage`.
+- Se migró granularmente `/api/users` a policies robustas por acción:
+  - `UsersRead` => `UsersAdministration.View`,
+  - `UsersCreate` => `UsersAdministration.Create`,
+  - `UsersEdit` => `UsersAdministration.Edit`,
+  - `UsersActivateDeactivate` => `UsersAdministration.ActivateDeactivate`.
+- Se agregó seed incremental para catálogo robusto de autorización de matriz:
+  - módulo `AuthorizationMatrixAdministration`,
+  - acción `Manage`,
+  - autorización inicial para `SuperAdmin`.
+- Se mantiene convivencia transitoria explícita con `RolesJson` / `PermissionsJson`; no hay retiro legacy en este corte.
+- No se incorporaron cambios de Fase 5 ni NLog en este avance.

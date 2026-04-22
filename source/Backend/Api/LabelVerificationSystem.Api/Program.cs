@@ -87,10 +87,28 @@ builder.Services.AddAuthorization(options =>
         policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.UsersAdministration, AuthModuleActions.View));
     });
 
-    options.AddPolicy(AuthAuthorizationPolicies.UsersManage, policy =>
+    options.AddPolicy(AuthAuthorizationPolicies.UsersCreate, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.UsersAdministration, AuthModuleActions.Create));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.UsersEdit, policy =>
     {
         policy.RequireAuthenticatedUser();
         policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.UsersAdministration, AuthModuleActions.Edit));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.UsersActivateDeactivate, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.UsersAdministration, AuthModuleActions.ActivateDeactivate));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.AuthorizationMatrixManage, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.AuthorizationMatrixAdministration, AuthModuleActions.Manage));
     });
 });
 

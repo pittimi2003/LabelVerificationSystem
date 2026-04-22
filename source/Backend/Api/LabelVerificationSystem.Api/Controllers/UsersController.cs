@@ -90,7 +90,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersCreate)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
@@ -116,7 +116,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPut("{userId}")]
-    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersEdit)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -148,7 +148,7 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpPatch("{userId}/activation")]
-    [Authorize(Policy = AuthAuthorizationPolicies.UsersManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersActivateDeactivate)]
     [ProducesResponseType(typeof(UserDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]

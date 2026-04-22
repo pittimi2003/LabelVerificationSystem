@@ -30,9 +30,9 @@
 | Guardado matriz por rol | `PUT /api/authorization-matrix/roles/{roleCode}` |
 | DTO lectura | `RoleAuthorizationMatrixDto` |
 | DTO guardado | `UpdateRoleAuthorizationMatrixRequestDto` |
-| Autorización | Policy backend actual: `UsersManage` |
+| Autorización | Policy backend actual: `AuthorizationMatrixManage` |
 
 ## Limitaciones abiertas
-- La política de acceso usada para esta primera vista es `UsersManage` (reutilizada del módulo de usuarios), mientras se define una policy dedicada de administración de permisos.
+- El acceso ya usa policy dedicada `AuthorizationMatrixManage`; la evolución pendiente es endurecer la gobernanza fina de quién puede delegar permisos por entorno.
 - No se retiran aún `RolesJson`/`PermissionsJson`.
 - No hay mezcla de este alcance con Fase 5 ni con NLog.

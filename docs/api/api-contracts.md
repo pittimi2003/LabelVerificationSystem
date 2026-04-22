@@ -551,7 +551,11 @@ Códigos esperados:
 #### Integración con autenticación existente
 - Políticas de autorización vigentes para módulo `/api/users`:
   - `UsersRead`: requiere `role=Administrator` o claim `permission=users.read|users.manage`.
-  - `UsersManage`: requiere `role=Administrator` o claim `permission=users.manage`.
+  - `UsersCreate`: requiere `role=Administrator` o claim `permission=users.manage`.
+  - `UsersEdit`: requiere `role=Administrator` o claim `permission=users.manage`.
+  - `UsersActivateDeactivate`: requiere `role=Administrator` o claim `permission=users.manage`.
+- Política de autorización para `/api/authorization-matrix`:
+  - `AuthorizationMatrixManage`: requiere `role=Administrator` o claim `permission=authorization.matrix.manage|users.manage`.
 - Login/refresh/me/reset usan resolución de usuario por DB (`SystemUsers`) y mantienen fallback compatible a `Authentication:Users` para no romper base existente.
 - Si existe `UserPasswordCredential`, la validación de contraseña usa credencial persistida.
 - Si no existe credencial persistida y el usuario viene de configuración estática, se conserva fallback al password configurado.
@@ -1139,6 +1143,7 @@ Notas de alcance:
 - Este contrato pertenece a Bloque B y mantiene explícitamente **Fase 4 abierta**.
 - No implica retiro de `RolesJson`/`PermissionsJson` en este corte.
 - No mezcla alcance con Fase 5 ni con NLog.
+- El acceso al módulo está protegido por policy dedicada `AuthorizationMatrixManage` (ya no reutiliza `UsersManage`).
 
 
 ---
