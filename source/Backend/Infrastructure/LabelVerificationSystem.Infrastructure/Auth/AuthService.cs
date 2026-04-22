@@ -536,6 +536,10 @@ public sealed class AuthService : IAuthService
     private async Task<ResolvedAuthUser?> ResolveUserByLoginAsync(string usernameOrEmail, CancellationToken cancellationToken)
     {
         var login = usernameOrEmail.Trim();
+        var configuredUserByLogin = _options.Users.FirstOrDefault(x =>
+            string.Equals(x.Username, login, StringComparison.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, login, StringComparison.OrdinalIgnoreCase)));
+
         var dbUser = await _dbContext.SystemUsers.AsNoTracking().FirstOrDefaultAsync(x =>
             x.Username == login
             || (x.Email != null && x.Email == login), cancellationToken);
@@ -544,6 +548,7 @@ public sealed class AuthService : IAuthService
         {
             var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
             var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, effectiveRoles, cancellationToken);
+            var fallbackPassword = configuredUserByLogin?.Password;
             return new ResolvedAuthUser(
                 dbUser.UserId,
                 dbUser.Username,
@@ -552,24 +557,45 @@ public sealed class AuthService : IAuthService
                 dbUser.IsActive,
                 effectiveRoles,
                 effectivePermissions,
-                null);
+                fallbackPassword);
         }
 
-        var configuredUser = _options.Users.FirstOrDefault(x =>
-            string.Equals(x.Username, login, StringComparison.OrdinalIgnoreCase)
-            || (!string.IsNullOrWhiteSpace(x.Email) && string.Equals(x.Email, login, StringComparison.OrdinalIgnoreCase)));
+        if (configuredUserByLogin is null)
+        {
+            return null;
+        }
 
-        return configuredUser is null
-            ? null
-            : new ResolvedAuthUser(
-                configuredUser.UserId,
-                configuredUser.Username,
-                configuredUser.DisplayName,
-                configuredUser.Email,
-                configuredUser.IsActive,
-                configuredUser.Roles,
-                configuredUser.Permissions,
-                configuredUser.Password);
+        if (ShouldBridgeConfiguredUsersToRobustModel())
+        {
+            await UpsertConfiguredUserBridgeAsync(configuredUserByLogin, cancellationToken);
+            var bridgedDbUser = await _dbContext.SystemUsers.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserId == configuredUserByLogin.UserId, cancellationToken);
+            if (bridgedDbUser is not null)
+            {
+                var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
+                var bridgedPermissions = await ResolveEffectivePermissionsAsync(bridgedDbUser, bridgedRoles, cancellationToken);
+
+                return new ResolvedAuthUser(
+                    bridgedDbUser.UserId,
+                    bridgedDbUser.Username,
+                    bridgedDbUser.DisplayName,
+                    bridgedDbUser.Email,
+                    bridgedDbUser.IsActive,
+                    bridgedRoles,
+                    bridgedPermissions,
+                    configuredUserByLogin.Password);
+            }
+        }
+
+        return new ResolvedAuthUser(
+            configuredUserByLogin.UserId,
+            configuredUserByLogin.Username,
+            configuredUserByLogin.DisplayName,
+            configuredUserByLogin.Email,
+            configuredUserByLogin.IsActive,
+            configuredUserByLogin.Roles,
+            configuredUserByLogin.Permissions,
+            configuredUserByLogin.Password);
     }
 
     private async Task<ResolvedAuthUser?> ResolveUserByIdAsync(string? userId, CancellationToken cancellationToken)
@@ -584,6 +610,7 @@ public sealed class AuthService : IAuthService
         {
             var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
             var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, effectiveRoles, cancellationToken);
+            var fallbackPassword = _options.Users.FirstOrDefault(x => x.UserId == dbUser.UserId)?.Password;
             return new ResolvedAuthUser(
                 dbUser.UserId,
                 dbUser.Username,
@@ -592,21 +619,172 @@ public sealed class AuthService : IAuthService
                 dbUser.IsActive,
                 effectiveRoles,
                 effectivePermissions,
-                null);
+                fallbackPassword);
         }
 
         var configuredUser = _options.Users.FirstOrDefault(x => x.UserId == userId);
-        return configuredUser is null
-            ? null
-            : new ResolvedAuthUser(
+        if (configuredUser is null)
+        {
+            return null;
+        }
+
+        if (ShouldBridgeConfiguredUsersToRobustModel())
+        {
+            await UpsertConfiguredUserBridgeAsync(configuredUser, cancellationToken);
+            var bridgedDbUser = await _dbContext.SystemUsers.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.UserId == configuredUser.UserId, cancellationToken);
+            if (bridgedDbUser is not null)
+            {
+                var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
+                var bridgedPermissions = await ResolveEffectivePermissionsAsync(bridgedDbUser, bridgedRoles, cancellationToken);
+
+                return new ResolvedAuthUser(
+                    bridgedDbUser.UserId,
+                    bridgedDbUser.Username,
+                    bridgedDbUser.DisplayName,
+                    bridgedDbUser.Email,
+                    bridgedDbUser.IsActive,
+                    bridgedRoles,
+                    bridgedPermissions,
+                    configuredUser.Password);
+            }
+        }
+
+        return new ResolvedAuthUser(
+            configuredUser.UserId,
+            configuredUser.Username,
+            configuredUser.DisplayName,
+            configuredUser.Email,
+            configuredUser.IsActive,
+            configuredUser.Roles,
+            configuredUser.Permissions,
+            configuredUser.Password);
+    }
+
+    private bool ShouldBridgeConfiguredUsersToRobustModel()
+    {
+        var bridgeOptions = _options.ConfiguredUsersRobustBridge;
+        if (!bridgeOptions.Enabled)
+        {
+            return false;
+        }
+
+        if (bridgeOptions.AllowedEnvironments.Count == 0)
+        {
+            return true;
+        }
+
+        return bridgeOptions.AllowedEnvironments.Any(_hostEnvironment.IsEnvironment);
+    }
+
+    private async Task UpsertConfiguredUserBridgeAsync(ConfiguredUser configuredUser, CancellationToken cancellationToken)
+    {
+        var nowUtc = DateTime.UtcNow;
+        var normalizedRoles = configuredUser.Roles
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var normalizedPermissions = configuredUser.Permissions
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var systemUser = await _dbContext.SystemUsers
+            .FirstOrDefaultAsync(x => x.UserId == configuredUser.UserId, cancellationToken);
+
+        if (systemUser is null)
+        {
+            systemUser = new SystemUser
+            {
+                Id = Guid.NewGuid(),
+                UserId = configuredUser.UserId,
+                CreatedAtUtc = nowUtc
+            };
+            _dbContext.SystemUsers.Add(systemUser);
+        }
+
+        systemUser.Username = configuredUser.Username;
+        systemUser.DisplayName = configuredUser.DisplayName;
+        systemUser.Email = configuredUser.Email;
+        systemUser.IsActive = configuredUser.IsActive;
+        systemUser.RolesJson = JsonSerializer.Serialize(normalizedRoles, JsonOptions);
+        systemUser.PermissionsJson = JsonSerializer.Serialize(normalizedPermissions, JsonOptions);
+        systemUser.UpdatedAtUtc = nowUtc;
+
+        var mappedCatalogRoles = await _dbContext.RoleCatalogs
+            .Where(x => x.IsActive)
+            .Select(x => new { x.Id, x.Code })
+            .ToListAsync(cancellationToken);
+        mappedCatalogRoles = mappedCatalogRoles
+            .Where(x => normalizedRoles.Any(roleCode => string.Equals(roleCode, x.Code, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        var missingRoleCodes = normalizedRoles
+            .Where(code => !mappedCatalogRoles.Any(mapped => string.Equals(mapped.Code, code, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+        if (missingRoleCodes.Count > 0)
+        {
+            _logger.LogWarning(
+                "auth.configured_user_bridge.roles_not_in_catalog userId={UserId} roles={Roles}",
                 configuredUser.UserId,
-                configuredUser.Username,
-                configuredUser.DisplayName,
-                configuredUser.Email,
-                configuredUser.IsActive,
-                configuredUser.Roles,
-                configuredUser.Permissions,
-                configuredUser.Password);
+                string.Join(",", missingRoleCodes));
+        }
+
+        var desiredRoleIds = mappedCatalogRoles.Select(x => x.Id).ToHashSet();
+        var currentMappings = await _dbContext.SystemUserRoles
+            .Where(x => x.SystemUserId == systemUser.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var mapping in currentMappings.Where(x => !desiredRoleIds.Contains(x.RoleId)))
+        {
+            _dbContext.SystemUserRoles.Remove(mapping);
+        }
+
+        foreach (var role in mappedCatalogRoles.Where(x => currentMappings.All(mapping => mapping.RoleId != x.Id)))
+        {
+            _dbContext.SystemUserRoles.Add(new SystemUserRole
+            {
+                Id = Guid.NewGuid(),
+                SystemUserId = systemUser.Id,
+                RoleId = role.Id,
+                IsPrimary = false,
+                AssignedAtUtc = nowUtc,
+                AssignedByUserId = null
+            });
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var desiredPrimaryRoleCode = normalizedRoles.FirstOrDefault(x =>
+            mappedCatalogRoles.Any(mapped => string.Equals(mapped.Code, x, StringComparison.OrdinalIgnoreCase)));
+        if (desiredPrimaryRoleCode is null)
+        {
+            return;
+        }
+
+        var desiredPrimaryRoleId = mappedCatalogRoles
+            .First(x => string.Equals(x.Code, desiredPrimaryRoleCode, StringComparison.OrdinalIgnoreCase))
+            .Id;
+
+        var persistedMappings = await _dbContext.SystemUserRoles
+            .Where(x => x.SystemUserId == systemUser.Id)
+            .ToListAsync(cancellationToken);
+
+        var primaryChanged = false;
+        foreach (var mapping in persistedMappings)
+        {
+            var shouldBePrimary = mapping.RoleId == desiredPrimaryRoleId;
+            if (mapping.IsPrimary != shouldBePrimary)
+            {
+                mapping.IsPrimary = shouldBePrimary;
+                primaryChanged = true;
+            }
+        }
+
+        if (primaryChanged)
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private static IReadOnlyList<string> DeserializeList(string json)

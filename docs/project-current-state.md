@@ -258,6 +258,15 @@ Se implementó una iteración incremental del backend de **Carga de Excel** cent
   - `CertificationEac` de texto a `bool?`
   - `FirstFourNumbers` de texto a `int`
 - ajuste de parseo por fila:
+
+---
+
+## Actualización 2026-04-22: Bloque B / consolidación robust-only para usuarios configurados (Fase 4 abierta)
+
+- Se confirma que **Fase 4 sigue abierta**.
+- Se implementó bridge controlado para `Authentication:Users` hacia identidad robusta persistida (`SystemUsers` + `SystemUserRole`) con feature flag de entorno.
+- Objetivo del bridge: evitar bloqueo de validaciones robust-only en perfiles admin locales/desarrollo sin retirar aún fallback legacy global.
+- Se mantiene transición dual segura; no se ejecuta retiro total del legacy en esta iteración.
   - `Caducidad`: `NA`/vacío => `null`; entero válido => `int`; otro valor => fila rechazada
   - `Certification EAC`: `YES` => `true`; `NO` => `false`; `NA`/vacío => `null`; otro valor => fila rechazada
   - `4 FIRST NUMERS`: obligatorio y entero; si falla parseo => fila rechazada

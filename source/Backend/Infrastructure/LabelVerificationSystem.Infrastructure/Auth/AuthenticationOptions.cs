@@ -8,6 +8,7 @@ public sealed class AuthenticationOptions
     public RefreshTokenOptions RefreshToken { get; set; } = new();
     public PasswordResetOptions PasswordReset { get; set; } = new();
     public BypassOptions Bypass { get; set; } = new();
+    public ConfiguredUsersRobustBridgeOptions ConfiguredUsersRobustBridge { get; set; } = new();
     public List<ConfiguredUser> Users { get; set; } = [];
 }
 
@@ -54,4 +55,10 @@ public sealed class ConfiguredUser
     public bool IsActive { get; set; } = true;
     public List<string> Roles { get; set; } = [];
     public List<string> Permissions { get; set; } = [];
+}
+
+public sealed class ConfiguredUsersRobustBridgeOptions
+{
+    public bool Enabled { get; set; }
+    public List<string> AllowedEnvironments { get; set; } = ["Development"];
 }
