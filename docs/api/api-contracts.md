@@ -1202,3 +1202,9 @@ Regla contractual de evaluación:
 - si el request cae en un `UserId + Scope` incluido en `RobustOnlyCutover`, el runtime exige resolución robusta estricta para ese request;
 - en ese caso no aplica fallback legacy por claims ni fallback de roles desde `RolesJson`;
 - fuera de ese subconjunto, se mantiene transición actual con `EnableLegacyFallback`.
+
+Actualización de esta iteración (misma ventana de cutover por subconjunto):
+
+- para usuarios incluidos en `RobustOnlyCutover.UserIds`, la resolución de identidad de sesión (`login`/`refresh`/`/me`) no mezcla permisos desde `PermissionsJson`;
+- para ese mismo subconjunto, si no existen roles robustos en `SystemUserRole`, no hay fallback a `RolesJson`;
+- fuera del subconjunto se mantiene comportamiento transicional previo para evitar corte global no validado.
