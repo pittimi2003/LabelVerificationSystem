@@ -1201,7 +1201,15 @@ Se atendió exclusivamente el fallo `TypeError: Failed to fetch` durante `GET /a
 - No se alteró la lógica de login/auth ni el modelo robusto.
 
 ### Nota operativa (sin cambio funcional)
-- Si persiste `Failed to fetch` contra `https://localhost:7131`, validar/trust del certificado de desarrollo (`dotnet dev-certs https --trust`) en la máquina del desarrollador.
+- Evidencia de entorno local reproducida:
+  - `dotnet dev-certs https --check --trust` devolvió: `none of them is trusted`.
+  - `dotnet dev-certs https --check --trust --verbose` detalló: `The certificate is not trusted by OpenSSL`.
+  - `curl -I https://localhost:7131/swagger/index.html` falló por SSL (`self-signed certificate`).
+  - `curl -k https://localhost:7131/swagger/index.html` respondió HTML correctamente.
+- Corrección operativa exacta para el desarrollador:
+  1. Ejecutar `dotnet dev-certs https --trust`.
+  2. Verificar nuevamente con `dotnet dev-certs https --check --trust`.
+  3. Reabrir el navegador del frontend y repetir bootstrap/login.
 
 ### Estado explícito de fase
 - **Fase 4 continúa abierta**.
