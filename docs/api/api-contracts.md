@@ -1191,6 +1191,9 @@ Se incorpora configuración de runtime para aplicar robust-only en perímetros a
     "UserIds": ["admin-001"],
     "Scopes": [
       "UsersAdministration:View",
+      "UsersAdministration:Create",
+      "UsersAdministration:Edit",
+      "UsersAdministration:ActivateDeactivate",
       "AuthorizationMatrixAdministration:Manage"
     ]
   }
@@ -1208,3 +1211,9 @@ Actualización de esta iteración (misma ventana de cutover por subconjunto):
 - para usuarios incluidos en `RobustOnlyCutover.UserIds`, la resolución de identidad de sesión (`login`/`refresh`/`/me`) no mezcla permisos desde `PermissionsJson`;
 - para ese mismo subconjunto, si no existen roles robustos en `SystemUserRole`, no hay fallback a `RolesJson`;
 - fuera del subconjunto se mantiene comportamiento transicional previo para evitar corte global no validado.
+
+Expansión controlada validada en Bloque B / Fase 4 abierta:
+
+- para `admin-001` se habilita cutover selectivo también en `UsersAdministration:Create`, `UsersAdministration:Edit` y `UsersAdministration:ActivateDeactivate`;
+- esto cubre de forma robust-only selectiva (sin fallback legacy para ese subconjunto/scope): `POST /api/users`, `PUT /api/users/{userId}` y `PATCH /api/users/{userId}/activation`;
+- se mantiene sin cambios que el resto de usuarios/scopes fuera de ese perímetro continúan en transición dual.
