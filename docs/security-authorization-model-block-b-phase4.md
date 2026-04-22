@@ -550,3 +550,40 @@ Puede validarse robust-only por subconjuntos **solo** cuando el usuario cumpla s
 ### Decisión operativa en este corte
 
 Se mantiene transición dual (robusto + fallback legacy) y se confirma que el siguiente avance debe ejecutarse por **subconjuntos de usuarios/perfiles migrados**, con evidencia de endpoints críticos antes de cualquier apagado global.
+
+## 17) Avance de consolidación robust-only para usuarios configurados (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Esta iteración pertenece a **Bloque B** y no incluye retiro total de legacy, Fase 5 ni NLog.
+
+### Causa exacta del 403 en robust-only (usuarios de `Authentication:Users`)
+
+Con `Authorization:UseRobustMatrix=true` y `Authorization:EnableLegacyFallback=false`, el runtime de autorización evalúa primero el modelo robusto (`SystemUsers` + `SystemUserRole` + matriz).  
+Para usuarios definidos solo en `Authentication:Users`, login y `/me` podían resolverse por configuración, pero esos usuarios no existían todavía como identidad robusta persistida en `SystemUsers`.  
+Resultado: `AuthorizationMatrixService` no resolvía snapshot robusto para ese `userId`, no aplicaba fallback legacy (desactivado), y las policies de `/users` y `/authorization-matrix` terminaban en **403**.
+
+### Estrategia implementada en esta iteración
+
+Se implementa un **bridge explícito de usuarios configurados hacia modelo robusto**, controlado por configuración:
+
+- `Authentication:ConfiguredUsersRobustBridge:Enabled`
+- `Authentication:ConfiguredUsersRobustBridge:AllowedEnvironments`
+
+Comportamiento:
+
+1. Si el bridge está habilitado y el entorno está permitido, al resolver un usuario de `Authentication:Users` se hace **upsert** en `SystemUsers`.
+2. Se sincronizan `RolesJson`/`PermissionsJson` como snapshot transitorio.
+3. Se sincronizan asignaciones robustas en `SystemUserRole` contra `RoleCatalog` activo (con warning si hay roles configurados no presentes en catálogo).
+4. Se conserva compatibilidad de password para estos usuarios configurados (`fallbackPassword`) sin romper login actual.
+
+### Alcance operativo de la estrategia
+
+- Diseñada para habilitar validación robust-only en perfiles locales/desarrollo de forma controlada.
+- En configuración base (`appsettings.json`) el bridge queda deshabilitado por defecto.
+- En `appsettings.Development.json` queda habilitado explícitamente para entorno `Development`.
+
+### Estado de transición tras este cambio
+
+- Se mantiene transición segura (no se retira fallback legacy global en esta iteración).
+- Se habilita camino concreto para que `admin` local configurado pueda operar en robust-only **si su rol configurado existe y está autorizado en catálogo/matriz robusta**.
+- Si un rol de configuración no existe en `RoleCatalog`, ese rol no se mapeará a `SystemUserRole` (se registra warning) y la autorización robust-only seguirá denegando según deny-by-default.
