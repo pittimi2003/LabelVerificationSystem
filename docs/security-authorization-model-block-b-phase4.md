@@ -487,3 +487,66 @@ Dependencias legacy que permanecen explícitamente activas:
 Camino verificable a modo robust-only en entorno controlado:
 - ya es factible validar `Authorization:EnableLegacyFallback=false` para usuarios totalmente migrados (con `SystemUserRole` y matriz robusta completa);
 - no es seguro aún para bypass ni para usuarios sin migración completa, por lo que se mantiene transición dual.
+
+## 16) Validación controlada robust-only (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**. Esta validación no implica cierre de fase ni retiro global de legacy.
+
+### Perímetro validado en esta iteración
+
+Validación ejecutada en entorno local controlado, con API levantada sobre SQLite temporal y comparación explícita entre:
+
+- modo transición: `Authorization:EnableLegacyFallback=true`;
+- modo robust-only controlado: `Authorization:EnableLegacyFallback=false`.
+
+Perímetro funcional verificado:
+
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/users`
+- `GET /api/authorization-matrix/roles`
+
+Se trabajó con el usuario `admin` configurado en `Authentication:Users` (caso real actualmente operativo en ambiente local), sin activar retiro global de legacy.
+
+### Resultado real por flujo
+
+1. Con `EnableLegacyFallback=true`:
+   - login: **OK**;
+   - `/me`: **OK**;
+   - `/users`: **OK**;
+   - `/authorization-matrix/roles`: **OK**.
+
+2. Con `EnableLegacyFallback=false` (misma base, caso `admin` de `Authentication:Users`):
+   - login: **OK**;
+   - `/me`: **OK**;
+   - `/users`: **403**;
+   - `/authorization-matrix/roles`: **403**.
+
+Conclusión validada: para este subconjunto (usuario configurado fuera de `SystemUsers`/`SystemUserRole`), el runtime robusto por sí solo todavía no cubre policies administrativas migradas, y el fallback legacy continúa siendo dependencia activa para operación de `/users` y `/authorization-matrix`.
+
+### Dependencias legacy bloqueantes detectadas explícitamente
+
+Dependencias que siguen bloqueando retiro total en este corte:
+
+- fallback legacy de claims (controlado por `EnableLegacyFallback`) para autorizar usuarios autenticados que no tienen identidad/roles robustos persistidos en `SystemUsers` + `SystemUserRole`;
+- `RolesJson` como camino de transición para usuarios no plenamente migrados;
+- `PermissionsJson` para compatibilidad de permisos efectivos de sesión en transición (`AuthService`).
+
+### Qué podría pasar a robust-only de forma segura (subconjunto)
+
+Puede validarse robust-only por subconjuntos **solo** cuando el usuario cumpla simultáneamente:
+
+- existencia en `SystemUsers`;
+- asignación activa en `SystemUserRole` hacia `RoleCatalog`;
+- matriz robusta vigente (`RoleModuleAuthorization` + `RoleModuleActionAuthorization`) para los módulos/acciones evaluados;
+- ausencia de dependencia operativa de claims legacy para ese flujo.
+
+### Qué no está listo todavía
+
+- desactivar globalmente `EnableLegacyFallback` en todos los perfiles;
+- retirar `RolesJson`/`PermissionsJson` del flujo completo;
+- asumir robust-only para usuarios que hoy solo existen en `Authentication:Users` (sin migración robusta cerrada).
+
+### Decisión operativa en este corte
+
+Se mantiene transición dual (robusto + fallback legacy) y se confirma que el siguiente avance debe ejecutarse por **subconjuntos de usuarios/perfiles migrados**, con evidencia de endpoints críticos antes de cualquier apagado global.
