@@ -663,3 +663,45 @@ Si no cumple el subconjunto, se conserva transición actual sin cambios.
 - Se reduce dependencia legacy solo en perímetro robust-ready validado.
 - Se mantiene compatibilidad transitoria para el resto (`RolesJson`, `PermissionsJson`, claims legacy).
 - Continúa pendiente el retiro más amplio/global hasta cerrar migración de perfiles no robust-ready.
+
+## 19) Expansión controlada del cutover (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.  
+> Este avance amplía subconjuntos robust-ready en Bloque B, sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Evidencia nueva confirmada en esta iteración
+
+Se amplió el script reproducible `scripts/validation/robust_only_e2e_bridge.sh` para ejecutar en Development con:
+
+- `Authorization:UseRobustMatrix=true`
+- `Authorization:EnableLegacyFallback=true` (transición dual activa)
+- `Authorization:RobustOnlyCutover` habilitado para `admin-001` con scopes de users + authorization-matrix del perímetro ampliado.
+
+Además de `login` y `/me`, ahora valida en el mismo recorrido:
+
+- `GET /api/users/roles`
+- `GET /api/users`
+- `GET /api/users/{userId}`
+- `POST /api/users`
+- `PUT /api/users/{userId}`
+- `PATCH /api/users/{userId}/activation`
+- `GET /api/authorization-matrix/roles`
+
+Con esta evidencia, el subconjunto `admin-001` queda robust-ready también para acciones de administración de usuarios que antes seguían fuera del cutover por scope.
+
+### Perímetro ampliado aplicado (Development)
+
+- `admin-001`
+- `UsersAdministration:View`
+- `UsersAdministration:Create`
+- `UsersAdministration:Edit`
+- `UsersAdministration:ActivateDeactivate`
+- `AuthorizationMatrixAdministration:Manage`
+
+### Qué se mantiene sin cambio (transición)
+
+- No hay apagado global legacy.
+- Fuera del subconjunto anterior siguen vigentes:
+  - fallback legacy por claims (si `EnableLegacyFallback=true`);
+  - compatibilidad transitoria con `RolesJson` y `PermissionsJson`.
+- No se incorpora en esta iteración ningún nuevo módulo/policy fuera de `/api/users` y `/api/authorization-matrix`.
