@@ -1,11 +1,22 @@
 using LabelVerificationSystem.Domain.Entities;
 using LabelVerificationSystem.Domain.Entities.Auth;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace LabelVerificationSystem.Infrastructure.Persistence;
 
 public sealed class AppDbContext : DbContext
 {
+    private static readonly ValueConverter<Guid, string> GuidToLowerStringConverter =
+        new(
+            value => value.ToString("D").ToLowerInvariant(),
+            value => Guid.Parse(value));
+
+    private static readonly ValueConverter<Guid?, string?> NullableGuidToLowerStringConverter =
+        new(
+            value => value.HasValue ? value.Value.ToString("D").ToLowerInvariant() : null,
+            value => string.IsNullOrWhiteSpace(value) ? null : Guid.Parse(value));
+
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
@@ -29,6 +40,7 @@ public sealed class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        ApplySqliteGuidConverters(modelBuilder);
 
         modelBuilder.Entity<Part>(entity =>
         {
@@ -264,5 +276,22 @@ public sealed class AppDbContext : DbContext
                 .HasForeignKey(x => x.AssignedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+    }
+
+    private static void ApplySqliteGuidConverters(ModelBuilder modelBuilder)
+    {
+        foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(x => x.GetProperties()))
+        {
+            if (property.ClrType == typeof(Guid))
+            {
+                property.SetValueConverter(GuidToLowerStringConverter);
+                continue;
+            }
+
+            if (property.ClrType == typeof(Guid?))
+            {
+                property.SetValueConverter(NullableGuidToLowerStringConverter);
+            }
+        }
     }
 }

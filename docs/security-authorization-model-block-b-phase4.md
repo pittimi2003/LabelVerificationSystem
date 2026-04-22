@@ -494,10 +494,12 @@ Camino verificable a modo robust-only en entorno controlado:
 
 ### Perímetro validado en esta iteración
 
-Validación ejecutada en entorno local controlado, con API levantada sobre SQLite temporal y comparación explícita entre:
+Validación ejecutada en entorno local controlado, con API levantada sobre SQLite local y modo **robust-only** explícito:
 
-- modo transición: `Authorization:EnableLegacyFallback=true`;
-- modo robust-only controlado: `Authorization:EnableLegacyFallback=false`.
+- `Authorization:UseRobustMatrix=true`
+- `Authorization:EnableLegacyFallback=false`
+- `Authentication:ConfiguredUsersRobustBridge:Enabled=true`
+- `ASPNETCORE_ENVIRONMENT=Development` (entorno permitido por `AllowedEnvironments`)
 
 Perímetro funcional verificado:
 
@@ -506,31 +508,25 @@ Perímetro funcional verificado:
 - `GET /api/users`
 - `GET /api/authorization-matrix/roles`
 
-Se trabajó con el usuario `admin` configurado en `Authentication:Users` (caso real actualmente operativo en ambiente local), sin activar retiro global de legacy.
+Se trabajó con el usuario `admin` configurado en `Authentication:Users` (caso local), **sin** retiro global de legacy para el resto de escenarios.
 
 ### Resultado real por flujo
 
-1. Con `EnableLegacyFallback=true`:
-   - login: **OK**;
-   - `/me`: **OK**;
-   - `/users`: **OK**;
-   - `/authorization-matrix/roles`: **OK**.
+En ejecución reproducible del **2026-04-22** (esta sesión), con script de validación dedicado:
 
-2. Con `EnableLegacyFallback=false` (misma base, caso `admin` de `Authentication:Users`):
-   - login: **OK**;
-   - `/me`: **OK**;
-   - `/users`: **403**;
-   - `/authorization-matrix/roles`: **403**.
+- `POST /api/auth/login` => **200**
+- `GET /api/auth/me` => **200**
+- `GET /api/users` => **200**
+- `GET /api/authorization-matrix/roles` => **200**
 
-Conclusión validada: para este subconjunto (usuario configurado fuera de `SystemUsers`/`SystemUserRole`), el runtime robusto por sí solo todavía no cubre policies administrativas migradas, y el fallback legacy continúa siendo dependencia activa para operación de `/users` y `/authorization-matrix`.
+Conclusión validada: para `admin` local/configurado, el camino **robust-only + bridge** ya opera end-to-end en los endpoints críticos del alcance (Bloque B / Fase 4 abierta).
 
 ### Dependencias legacy bloqueantes detectadas explícitamente
 
 Dependencias que siguen bloqueando retiro total en este corte:
 
-- fallback legacy de claims (controlado por `EnableLegacyFallback`) para autorizar usuarios autenticados que no tienen identidad/roles robustos persistidos en `SystemUsers` + `SystemUserRole`;
-- `RolesJson` como camino de transición para usuarios no plenamente migrados;
-- `PermissionsJson` para compatibilidad de permisos efectivos de sesión en transición (`AuthService`).
+- fallback legacy de claims (`EnableLegacyFallback`) para usuarios/perfiles aún no migrados por completo;
+- `RolesJson` y `PermissionsJson` como compatibilidad de transición fuera de este escenario robust-only validado.
 
 ### Qué podría pasar a robust-only de forma segura (subconjunto)
 
@@ -556,11 +552,23 @@ Se mantiene transición dual (robusto + fallback legacy) y se confirma que el si
 > **Fase 4 permanece abierta**.  
 > Esta iteración pertenece a **Bloque B** y no incluye retiro total de legacy, Fase 5 ni NLog.
 
-### Causa exacta del 403 en robust-only (usuarios de `Authentication:Users`)
+### Causa exacta del fallo reproducido en esta sesión y corrección aplicada
 
-Con `Authorization:UseRobustMatrix=true` y `Authorization:EnableLegacyFallback=false`, el runtime de autorización evalúa primero el modelo robusto (`SystemUsers` + `SystemUserRole` + matriz).  
-Para usuarios definidos solo en `Authentication:Users`, login y `/me` podían resolverse por configuración, pero esos usuarios no existían todavía como identidad robusta persistida en `SystemUsers`.  
-Resultado: `AuthorizationMatrixService` no resolvía snapshot robusto para ese `userId`, no aplicaba fallback legacy (desactivado), y las policies de `/users` y `/authorization-matrix` terminaban en **403**.
+Durante esta sesión, al ejecutar robust-only con bridge habilitado, el primer fallo reproducido fue:
+
+- `POST /api/auth/login` => **500** con `SQLite Error 19: 'FOREIGN KEY constraint failed'` en `UpsertConfiguredUserBridgeAsync`.
+
+Causa exacta confirmada:
+
+1. IDs robustos seed en SQLite se almacenaban en minúsculas (`lower(hex(...))`).
+2. EF Core persistía GUIDs de nuevas filas del bridge con otro casing.
+3. En SQLite, FKs de columnas `TEXT` son sensibles al valor literal (`upper/lower`), por lo que el insert de `SystemUserRole` fallaba por no coincidir exactamente el `RoleId`.
+
+Corrección aplicada (acotada a Bloque B / Fase 4):
+
+- normalización de serialización de `Guid`/`Guid?` a string minúscula en `AppDbContext` para almacenamiento consistente en SQLite;
+- ajuste de descubrimiento de migración `20260422090000_AddAuthorizationMatrixAdministrationModule` agregando atributos EF (`DbContext` + `Migration`), permitiendo su aplicación automática;
+- validación posterior: la migración se aplicó y `/api/authorization-matrix/roles` dejó de responder 403 para `admin` robust-only.
 
 ### Estrategia implementada en esta iteración
 
@@ -585,5 +593,17 @@ Comportamiento:
 ### Estado de transición tras este cambio
 
 - Se mantiene transición segura (no se retira fallback legacy global en esta iteración).
-- Se habilita camino concreto para que `admin` local configurado pueda operar en robust-only **si su rol configurado existe y está autorizado en catálogo/matriz robusta**.
+- Se confirma con evidencia reproducible que `admin` local configurado opera en robust-only E2E para:
+  - `POST /api/auth/login`,
+  - `GET /api/auth/me`,
+  - `GET /api/users`,
+  - `GET /api/authorization-matrix/roles`.
 - Si un rol de configuración no existe en `RoleCatalog`, ese rol no se mapeará a `SystemUserRole` (se registra warning) y la autorización robust-only seguirá denegando según deny-by-default.
+
+### Evidencia reproducible de esta sesión
+
+Se añadió script ejecutable de validación:
+
+- `scripts/validation/robust_only_e2e_bridge.sh`
+
+Este script levanta API en Development con robust-only + bridge y reporta códigos HTTP de los cuatro endpoints críticos del alcance.
