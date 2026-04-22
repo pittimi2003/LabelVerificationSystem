@@ -17,6 +17,23 @@ public sealed class UserAdministrationApiClient
         _authSessionService = authSessionService;
     }
 
+    public async Task<IReadOnlyList<UserRoleCatalogItemDto>> ListRolesAsync(CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/users/roles");
+        var response = await SendAsync(request, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await ReadRequiredJsonAsync<IReadOnlyList<UserRoleCatalogItemDto>>(
+                       response,
+                       "No se pudo interpretar el catálogo de roles de usuarios.",
+                       cancellationToken)
+                   ?? [];
+        }
+
+        throw new InvalidOperationException(await ReadErrorAsync(response, cancellationToken));
+    }
+
     public async Task<UserListResponseDto> ListAsync(UserListQueryDto query, CancellationToken cancellationToken)
     {
         var queryParameters = new List<string>

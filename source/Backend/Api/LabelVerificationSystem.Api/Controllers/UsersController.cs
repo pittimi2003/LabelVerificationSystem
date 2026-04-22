@@ -20,6 +20,15 @@ public sealed class UsersController : ControllerBase
         _userAdministrationService = userAdministrationService;
     }
 
+    [HttpGet("roles")]
+    [Authorize(Policy = AuthAuthorizationPolicies.UsersRead)]
+    [ProducesResponseType(typeof(IReadOnlyList<UserRoleCatalogItemDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<UserRoleCatalogItemDto>>> ListRoles(CancellationToken cancellationToken)
+    {
+        var roles = await _userAdministrationService.ListRolesAsync(cancellationToken);
+        return Ok(roles);
+    }
+
     [HttpGet]
     [Authorize(Policy = AuthAuthorizationPolicies.UsersRead)]
     [ProducesResponseType(typeof(UserListResponse), StatusCodes.Status200OK)]

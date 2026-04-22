@@ -106,11 +106,10 @@ Estas decisiones son de usuarios y **no deben promoverse automáticamente como e
 
 En el estado actual, siguen abiertas (no cerrar como estándar definitivo):
 
-1. **Catálogo global de roles/permisos (limitación importante y visible para reutilización)**
-   - actualmente se detecta desde datos disponibles en respuestas cargadas,
-   - no existe un catálogo independiente, centralizado y completo garantizado para todo el universo de datos,
-   - impacto directo: no se puede asumir reutilización literal de filtros/edición de roles-permisos en otros módulos sin revalidación backend previa,
-   - impacto directo: cualquier nueva vista que requiera roles/permisos debe declarar explícitamente esta dependencia como limitación abierta si no hay endpoint catálogo dedicado.
+1. **Catálogo de roles en users (estado actual)**
+   - `/users` ya consume catálogo explícito de roles desde backend (`/api/users/roles`) con base en `RoleCatalog`,
+   - la edición de usuario ya no depende principalmente de listas inferidas desde el grid para roles,
+   - para transición segura, si un usuario trae roles legacy fuera del catálogo activo, la vista los conserva temporalmente durante edición para no perder contexto de migración.
 
 2. **Modelo final roles/permisos**
    - sigue abierto a cierre de fase (normalización final vs representación actual).

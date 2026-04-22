@@ -425,3 +425,21 @@ No implementado en esta iteración runtime:
 - migración de todos los endpoints/policies al modelo robusto (solo `/api/users` en este corte);
 - invalidación distribuida/caché avanzada de matriz;
 - retiro de `RolesJson`/`PermissionsJson`.
+
+
+## 10) Avance implementado en esta iteración (Bloque B / integración users)
+
+> Estado reiterado: **Fase 4 permanece abierta**.
+
+Se implementó integración del módulo de usuarios con el modelo robusto de roles:
+
+- `/api/users` ahora resuelve roles efectivos priorizando `SystemUserRole` + `RoleCatalog` (fallback a `RolesJson` solo si aún no hay asignación robusta).
+- alta/edición de usuario sincroniza asignaciones robustas en `SystemUserRole`.
+- se añadió endpoint de catálogo real para users: `GET /api/users/roles`.
+- UI `/users` consume ese catálogo para asignación de roles (sin depender principalmente de inferencias del grid).
+- `RolesJson`/`PermissionsJson` se mantienen de forma transitoria explícita para compatibilidad durante la ventana de migración.
+
+Fuera de alcance de esta iteración:
+- cierre de Fase 4,
+- cambios de Fase 5,
+- incorporación de NLog.

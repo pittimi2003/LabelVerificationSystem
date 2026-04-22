@@ -757,3 +757,11 @@ Se implementó la primera pantalla administrativa para gestión de permisos por 
 ### Estado de fase
 - **Fase 4 sigue abierta**.
 - Este avance no se mezcla con Fase 5 ni con NLog.
+
+
+## Avance reciente: Bloque B / Fase 4 abierta (integración users con catálogo robusto de roles)
+
+- Estado de fase: **Fase 4 continúa abierta** (no cerrada en esta iteración).
+- El módulo `/users` quedó integrado para priorizar asignación de roles sobre `RoleCatalog` + `SystemUserRole`.
+- Se mantiene convivencia transitoria explícita con `RolesJson` / `PermissionsJson` para compatibilidad de transición.
+- No se incorporaron cambios de Fase 5 ni NLog en este avance.
