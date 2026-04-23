@@ -1450,3 +1450,66 @@ Escrituras:
 ### Estado
 
 - **Fase 4 continúa abierta**.
+
+## 28) Bloque B / Fase 4 abierta: preparación de cierre técnico (plan verificable, 2026-04-23)
+
+- Estado de fase: **Fase 4 sigue abierta** (esta iteración no cierra fase).
+- Alcance: preparación técnica de cierre futuro de Fase 4 en Bloque B.
+- Exclusiones: sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Resumen ejecutivo del estado real
+
+- Se mantiene como estado validado: modelo robusto persistido + runtime robusto (`AuthorizationMatrixService`) + integración robust-ready en `/users`, `/authorization-matrix`, `/excel-uploads`.
+- Se mantiene validación E2E reproducible para `admin-001`, `manager-001`, `operator-001`.
+- Decisión vigente confirmada: **fallback eliminado en subconjunto** (`Authorization:RobustOnlyCutover` actual).
+- Fuera de ese perímetro continúa transición legacy controlada.
+
+### Partes estabilizadas (Fase 4, perímetro actual)
+
+1. Modelo robusto de catálogo/matriz y asignación por usuario.
+2. Políticas runtime por módulo/acción con deny-by-default.
+3. Endpoints críticos en alcance actual sin regresión contractual:
+   - login, refresh, `/me`
+   - `/users`
+   - `/authorization-matrix`
+   - `/excel-uploads`
+
+### Partes pendientes antes de cierre futuro
+
+1. Extender robust-only validado a módulos/perfiles/scopes aún fuera del subconjunto actual.
+2. Reducir/remover dependencias legacy remanentes fuera de cutover (`RolesJson`, `PermissionsJson`, fallback claims).
+3. Consolidar evidencia E2E equivalente por cada expansión adicional antes de decidir cierre.
+4. Consolidar matriz final de cobertura (qué quedó robust-only vs qué sigue transitorio).
+
+### Dependencias legacy que siguen vivas
+
+- Lectura de `RolesJson` fuera de cutover en flujos transitorios.
+- Lectura/mezcla de `PermissionsJson` fuera de cutover.
+- Fallback legacy por claims (sujeto a `EnableLegacyFallback`) fuera de cutover.
+- Compatibilidad legacy en filtros/listados específicos de `/users` para escenarios no migrados.
+
+### Criterios concretos para considerar Fase 4 cerrable (futuro)
+
+- Cobertura robusta completa para el alcance objetivo de Bloque B en Fase 4.
+- Evidencia E2E reproducible por perfil/scope (incluyendo denegaciones esperadas).
+- Dependencia legacy no operativa en el alcance objetivo de cierre.
+- No regresión contractual en endpoints críticos.
+- Decisión formal documentada de go/no-go de cierre en iteración explícita.
+
+### Orden recomendado de iteraciones restantes
+
+1. Inventario final de pendientes por módulo/acción/perfil.
+2. Expansión incremental de cutover por lotes pequeños y verificables.
+3. Validación E2E + no regresión obligatoria por lote.
+4. Retiro progresivo de dependencias legacy fuera de cutover en rutas ya validadas.
+5. Consolidación documental final y decisión formal de cerrabilidad.
+
+### Cambio aplicado en esta iteración (seguro y pequeño)
+
+- Se agregó checklist ejecutable de preparación de cierre técnico:
+  - `docs/checklists/phase4-closure-preparation-checklist.md`.
+- Cambio exclusivamente documental; sin impacto en runtime ni contratos API.
+
+### Estado explícito
+
+- **Fase 4 continúa abierta**.
