@@ -30,6 +30,18 @@ La estructura arquitectónica del backend se mantiene y no será modificada como
 
 La funcionalidad real de negocio comienza a construirse a partir de esta base.
 
+### Actualización de estado (Bloque B / Fase 4 cerrada formalmente, 2026-04-23)
+
+- Fase 4 (Bloque B) queda cerrada formalmente con evidencia técnica validada.
+- Modelo robusto persistido y runtime robusto con `AuthorizationMatrixService` operativos en el alcance de fase.
+- Cutover robust-only validado por perfiles críticos (`admin-001`, `manager-001`, `operator-001`).
+- `/users`, `/authorization-matrix`, guardado de permisos por rol y `/excel-uploads` validados en cierre.
+- `RolesJson` y `PermissionsJson` quedan fuera del modelo operativo de autorización del alcance cerrado.
+- `Authentication:Users` se mantiene como bootstrap inicial de identidad, no como fuente paralela de autorización.
+- No se incorporan actividades de Fase 5 ni NLog en este cierre.
+
+---
+
 ### Actualización de estado (Bloque B / Fase 4 abierta, 2026-04-22)
 
 - El modelo robusto persistido de autorización (`RoleCatalog`, `ModuleCatalog`, `ModuleActionCatalog`, `RoleModuleAuthorization`, `RoleModuleActionAuthorization`, `SystemUserRole`) ya está en operación incremental.

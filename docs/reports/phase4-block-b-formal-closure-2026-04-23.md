@@ -1,84 +1,82 @@
 # Cierre formal — Fase 4 (Bloque B)
 
-**Fecha de consolidación:** 2026-04-23 (UTC)  
-**Estado de cierre:** **CERRABLE**
+**Fecha de cierre formal:** 2026-04-23 (UTC)  
+**Estado final:** **CERRADA FORMALMENTE**
 
-## 1) Alcance cubierto
-Se consolida el cierre técnico de Fase 4 (Bloque B) para el subconjunto en cutover robust-only validado en entorno de evaluación, con foco en autenticación, autorización por matriz robusta y rutas críticas operativas.
+## 1) Resumen ejecutivo de cierre
+Se declara el **cierre formal de Fase 4 (Bloque B)** sobre el estado validado vigente, sin incorporar trabajo de Fase 5 ni iniciativas de NLog.
 
-Incluye validación funcional y de seguridad en:
-- sesión (`login`, `refresh`, `me`),
-- administración de usuarios,
-- administración de matriz de autorización,
-- consulta/carga de Excel bajo permisos efectivos robustos.
+El cierre se sustenta en que el modelo robusto quedó operativo de extremo a extremo en runtime para el alcance acordado: sesión/autenticación, matriz de autorización, administración de usuarios y módulo de cargas Excel. La decisión final del modelo confirma retiro operativo de `RolesJson` y `PermissionsJson` como fuente de autorización en el perímetro de Fase 4, manteniendo `Authentication:Users` únicamente como bootstrap inicial de identidad.
 
-## 2) Endpoints validados
-Endpoints críticos cubiertos por la evidencia técnica:
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `GET /api/auth/me`
-- `GET|POST|PUT|PATCH /api/users`
-- `GET /api/authorization-matrix/roles`
-- `GET|POST /api/excel-uploads`
+## 2) Criterios de cierre cumplidos
+Se consideran cumplidos los siguientes criterios de cierre para Fase 4 (Bloque B):
 
-Resultado consolidado:
-- Accesos permitidos responden en 200.
-- Accesos no autorizados responden en 403 (deny-by-default efectivo).
-- En cargas con payload inválido se observan 400 esperados, sin indicar falla de autorización.
+- Modelo robusto persistido operativo.
+- Runtime robusto activo con `AuthorizationMatrixService`.
+- Cutover robust-only validado por perfiles críticos.
+- Retiro final de `RolesJson` y `PermissionsJson` del **modelo operativo de autorización** del alcance.
+- `Authentication:Users` confirmado como bootstrap inicial, no como fuente paralela de autorización.
+- Endpoints críticos validados:
+  - `/users` OK.
+  - `/authorization-matrix` OK.
+  - Guardar permisos por rol OK.
+  - `/excel-uploads` OK.
+- Validación manual final en runtime confirmada.
+- Validaciones E2E y documentales existentes consideradas suficientes para cierre.
 
-## 3) Evidencia E2E validada
-### Evidencia principal de cierre
-Comando ejecutado:
+## 3) Alcance técnico cubierto (cerrado)
+El alcance técnico de Fase 4 (Bloque B) queda cerrado en los siguientes frentes:
 
-```bash
-bash scripts/validation/robust_only_e2e_phase4_block_b_closure_eval.sh
-```
+1. **Autenticación/sesión en modelo robusto** (`login`, `refresh`, `me`) con claims efectivos alineados al modelo robusto.
+2. **Autorización en runtime** centralizada por `AuthorizationMatrixService` para decisiones por módulo/acción.
+3. **Administración de usuarios** bajo decisiones robust-only (sin dependencia operativa legacy en el perímetro validado).
+4. **Administración de matriz de autorización** y persistencia de permisos por rol bajo modelo robusto.
+5. **Flujo de cargas Excel** (`/excel-uploads`) validado contra permisos efectivos robustos.
 
-Hallazgos clave:
-- Login/me correctos para `admin-001`, `manager-001`, `operator-001`.
-- `/api/users` denegado para operador (403) y permitido para perfiles autorizados.
-- `/api/authorization-matrix/roles` restringido a administración (403 para manager/operator).
-- `/api/excel-uploads` acorde a permisos robustos.
-- Prueba de tampering sobre `RolesJson`/`PermissionsJson` en `operator-001` sin escalación de privilegios.
+## 4) Evidencia técnica utilizada para sustentar el cierre
+La decisión de cierre formal se apoya en evidencia ya existente y validada:
 
-### Evidencia complementaria de sesión/refresh
-Comando ejecutado:
+- Evaluación final de cierre y resultados consolidados de E2E en:
+  - `docs/reports/phase4-final-closure-evaluation-2026-04-23.md`
+- Evidencia E2E reproducible en scripts:
+  - `scripts/validation/robust_only_e2e_phase4_block_b_closure_eval.sh`
+  - `scripts/validation/robust_only_e2e_operator.sh`
+- Confirmación manual final en runtime sobre perfiles y rutas críticas del alcance.
 
-```bash
-bash scripts/validation/robust_only_e2e_operator.sh
-```
+Resultado consolidado usado para la decisión formal:
+- Autorizaciones válidas: comportamiento esperado.
+- Denegaciones por perfil/permiso: `403` esperado (deny-by-default).
+- Casos funcionales de carga inválida en endpoints autorizados: `400` esperado sin indicar falla de autorización.
 
-Hallazgos clave:
-- `POST /api/auth/refresh` válido (200) con sesión robusta.
-- Persistencia de denegaciones correctas en `/api/users` y `/api/authorization-matrix/roles` para operador.
+## 5) Decisiones finales del modelo (resultado de Fase 4)
+Quedan formalmente establecidas las siguientes decisiones:
 
-## 4) Veredicto técnico
-**Veredicto: CERRABLE.**
+1. El **modelo robusto** es la base operativa de autorización del alcance cerrado.
+2. `RolesJson` y `PermissionsJson` quedan retirados del modelo operativo para decidir autorizaciones en el perímetro de Fase 4.
+3. `Authentication:Users` permanece únicamente como mecanismo de bootstrap inicial de usuario/sesión.
+4. Las decisiones de acceso deben continuar regidas por matriz robusta y políticas de deny-by-default.
 
-Fundamento:
-1. Los endpoints críticos del alcance operan correctamente en el subconjunto robust-only validado.
-2. El runtime evaluado corta fallback legacy por scope en usuarios de cutover.
-3. No se detecta dependencia operativa efectiva de `RolesJson`/`PermissionsJson` en los flujos críticos evaluados.
-4. La evidencia de tampering confirma que no hay elevación de permisos por campos legacy.
+## 6) Qué quedó fuera por no formar parte de Fase 4
+Queda explícitamente fuera de este cierre formal:
 
-## 5) Riesgos residuales
-Riesgos residuales identificados (no bloqueantes para el cierre de esta fase):
-- Persistencia de artefactos legacy para compatibilidad fuera del subconjunto cutover.
-- Riesgo de regresión futura si se reintroduce fallback legacy sin controles equivalentes en nuevas rutas.
+- Trabajo de **Fase 5** (incluyendo ampliaciones no acordadas para esta fase).
+- Trabajo relacionado con **NLog**.
+- Cambios de alcance no validados en la evidencia técnica vigente.
 
-Mitigación recomendada para fases posteriores:
-- mantener pruebas E2E de deny-by-default y tampering en pipeline,
-- monitorear endpoints nuevos con la misma matriz de autorización robusta,
-- retirar gradualmente fallback/JSON legacy por plan controlado.
+## 7) Pendientes no bloqueantes
+Pendientes no bloqueantes identificados para continuidad ordenada:
 
-## 6) Fuera de alcance de este cierre
-Queda explícitamente fuera del alcance de este cierre formal:
-- migración total de todos los usuarios/tenants fuera del subconjunto validado,
-- cleanup integral de estructuras legacy (`RolesJson`/`PermissionsJson`) en todo el sistema,
-- retiro definitivo de compatibilidad legacy en rutas no incluidas en este bloque,
-- actividades de fases futuras (hardening ampliado, decomisión global, optimizaciones no críticas).
+- Consolidación administrativa/documental de continuidad para próxima fase.
+- Seguimiento rutinario de no regresión (E2E/documental) sobre el baseline cerrado.
 
-## 7) Referencias de evidencia fuente
-- `docs/reports/phase4-final-closure-evaluation-2026-04-23.md`
-- `scripts/validation/robust_only_e2e_phase4_block_b_closure_eval.sh`
-- `scripts/validation/robust_only_e2e_operator.sh`
+Estos pendientes no condicionan el cierre formal de Fase 4 (Bloque B).
+
+## 8) Preparación limpia para apertura de la siguiente fase
+La transición queda preparada bajo los siguientes principios:
+
+- Baseline de Fase 4 fijado y documentado.
+- Sin mezcla de backlog de Fase 5 dentro de este cierre.
+- Próxima fase se abre sobre estado robusto ya validado y con evidencia trazable.
+
+## 9) Confirmación explícita de cierre
+**Se confirma de forma explícita que Fase 4 (Bloque B) queda CERRADA FORMALMENTE al 2026-04-23 (UTC).**
