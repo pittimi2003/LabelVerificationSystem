@@ -1396,3 +1396,57 @@ Escrituras:
 - Sin cambio de contrato en `login`, `refresh`, `/me`.
 - Sin cambio de contrato en `/users`, `/authorization-matrix` y `/excel-uploads`.
 - El modelo robusto queda reforzado como fuente principal para usuarios en cutover también en capa de persistencia.
+
+## 27) Bloque B / Fase 4 abierta: reducción adicional de lectura `PermissionsJson` en `/users` (2026-04-23)
+
+> **Fase 4 sigue abierta**.  
+> Iteración acotada a Bloque B (retirada progresiva del consumo legacy).  
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Resumen de reducción aplicada
+
+- `UserAdministrationService.ResolveEffectivePermissionsAsync` deja de operar sobre un esquema puramente legacy cuando el usuario ya tiene roles robustos (`SystemUserRole`).
+- Para usuarios con roles robustos:
+  - en cutover (`Authorization:RobustOnlyCutover:UserIds`): mantiene resolución solo robusta (sin mezcla legacy);
+  - fuera de cutover: ahora usa matriz robusta como fuente efectiva y mantiene mezcla con `PermissionsJson` únicamente como compatibilidad transitoria.
+- Para usuarios sin roles robustos fuera de cutover: se mantiene fallback a `PermissionsJson`.
+- Se eliminó fallback defensivo de mapeo (`MapToListItem`/`MapToDetail`) que releía `RolesJson`/`PermissionsJson` cuando ya existía mapa resuelto en memoria.
+
+### Mapa actual de lecturas vivas de `PermissionsJson`
+
+1. `AuthService.ResolveEffectivePermissionsAsync`
+   - lectura y mezcla fuera de cutover (compatibilidad transitoria en sesión/runtime auth).
+2. `UserAdministrationService.ResolveEffectivePermissionsAsync`
+   - fuera de cutover:
+     - mezcla con robusto para usuarios con roles robustos;
+     - fallback directo legacy para usuarios sin roles robustos.
+3. `UserAdministrationService.ListAsync` (filtro `permission`)
+   - fallback por `PermissionsJson` fuera de cutover para mantener compatibilidad de transición.
+
+### Lecturas que dejan de ser operativas en el subconjunto actual
+
+- En `/users` (detalle/listado), para usuarios con roles robustos ya no aplica resolución efectiva puramente basada en `PermissionsJson`.
+- En usuarios cutover se mantiene sin mezcla legacy (`PermissionsJson` no operativo en permisos efectivos).
+- En mapeo final de DTO (`MapToListItem`/`MapToDetail`) deja de existir fallback de relectura desde snapshots JSON.
+
+### Qué sigue bloqueando retiro más amplio
+
+- Dependencias transitorias fuera de cutover en runtime auth/sesión (`AuthService`) y en filtros legacy de `/users`.
+- Usuarios/permisos no completamente mapeados al catálogo robusto.
+- Ausencia de evidencia funcional equivalente para desactivar fallback global sin riesgo.
+
+### Impacto funcional
+
+- `login`, `refresh`, `/me`: sin cambio de contrato.
+- `/users`: refuerza fuente robusta para usuarios con roles robustos, manteniendo compatibilidad fuera de cutover.
+- `/authorization-matrix` y `/excel-uploads`: sin cambio de contrato ni de ruta de autorización.
+- No se ejecuta apagado global de `PermissionsJson`.
+
+### Validación
+
+- Script de no regresión ejecutado: `bash scripts/validation/robust_only_e2e_bridge.sh`.
+- Se mantuvo comportamiento esperado para `/me`, `/users`, `/authorization-matrix`, `/excel-uploads`, login y refresh.
+
+### Estado
+
+- **Fase 4 continúa abierta**.
