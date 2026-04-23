@@ -933,3 +933,59 @@ Clasificación de inconsistencias detectadas:
 
 - `operator-001` queda **preparado por alineación nominal** (rol catálogo correcto).
 - Sigue pendiente validación E2E robust-only del perfil antes de incorporarlo en `Authorization:RobustOnlyCutover`.
+
+## 25) Revalidación E2E reproducible de `operator-001` robust-ready (Bloque B / Fase 4 abierta, 2026-04-22)
+
+> **Fase 4 permanece abierta**.
+> Alcance exclusivo: **Bloque B / validación E2E de `operator-001`**.
+> Sin apagado global legacy, sin Fase 5 y sin NLog.
+
+### Matriz robusta real verificada para `Operators`
+
+Se revalidó `GET /api/authorization-matrix/roles/Operators` autenticando como `admin` y se confirmó el perímetro robusto vigente:
+
+- `UsersAdministration`: desautorizado para `Operators`.
+- `AuthorizationMatrixAdministration:Manage`: desautorizado para `Operators`.
+- `ExcelUploads:View` y `ExcelUploads:Upload`: autorizados para `Operators`.
+
+### Perímetro exacto validado para `operator-001`
+
+Con `Authorization:RobustOnlyCutover` habilitado y `operator-001` dentro de `UserIds`, se validó end-to-end:
+
+- continuidad de sesión: `login`, `refresh`, `/me`;
+- paths esperados autorizados (2xx/funcional);
+- paths esperados denegados (`403`);
+- continuidad de módulos críticos sin regresión: `/users`, `/authorization-matrix`, `/excel-uploads`.
+
+### Evidencia ejecutada (script reproducible)
+
+Comando ejecutado:
+
+- `bash scripts/validation/robust_only_e2e_operator.sh`
+
+Resultados relevantes observados:
+
+- `POST /api/auth/login` (`operator`) => `200`.
+- `GET /api/auth/me` (`operator`) => `200`.
+- `POST /api/auth/refresh` (`operator`) => `200`.
+- `GET /api/excel-uploads` (`operator`) => `200`.
+- `POST /api/excel-uploads` (`operator`) => `400` esperado (request inválido por archivo vacío; autorización efectiva confirmada).
+- `GET /api/users` (`operator`) => `403` esperado.
+- `GET /api/users/roles` (`operator`) => `403` esperado.
+- `GET /api/users/admin-001` (`operator`) => `403` esperado.
+- `GET /api/authorization-matrix/roles` (`operator`) => `403` esperado.
+
+### Verificación de no regresión en perfiles robust-ready previos
+
+Comando ejecutado:
+
+- `bash scripts/validation/robust_only_e2e_bridge.sh`
+
+Resultado: `admin-001` y `manager-001` mantienen comportamiento esperado en sesión, `/users`, `/authorization-matrix` y `/excel-uploads`, incluyendo denegaciones `403` esperadas para acciones fuera de alcance de `manager-001`.
+
+### Decisión para cutover selectivo
+
+- `operator-001` mantiene evidencia robust-only suficiente para el perímetro validado en esta revalidación.
+- No se aplica apagado global de legacy.
+- Se mantiene el enfoque por subconjuntos robust-ready (`Authorization:RobustOnlyCutover`).
+- **Fase 4 sigue abierta**.

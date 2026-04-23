@@ -1272,3 +1272,49 @@ Resultados consolidados (sin cambios funcionales en contratos):
 - Definir el siguiente candidato de corte entre perfiles de autenticación de usuario estándar (no bypass), con evidencia E2E robust-only equivalente.
 - Mantener transición legacy fuera del perímetro endurecido actual hasta contar con evidencia suficiente por perfil/scope.
 - **Fase 4 continúa abierta**.
+
+## Avance reciente: Bloque B / Fase 4 abierta (revalidación controlada E2E de `operator-001`, 2026-04-22)
+
+- Estado de fase: **Fase 4 sigue abierta** (no se cierra fase en esta iteración).
+- Alcance exclusivo: **Bloque B / validación E2E robust-only de `operator-001`**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Perímetro exacto revalidado
+
+- Revisión de matriz robusta real de `Operators` mediante `GET /api/authorization-matrix/roles/Operators`.
+- Sesión de `operator-001`: `login`, `refresh`, `/me`.
+- Validación positiva esperada sobre `ExcelUploads`.
+- Validación negativa esperada (`403`) sobre `/users` y `/authorization-matrix`.
+- Verificación de no regresión para `admin-001` y `manager-001` en perímetro ya robust-ready.
+
+### Resultado por endpoint/acción (evidencia reproducible)
+
+Script ejecutado: `bash scripts/validation/robust_only_e2e_operator.sh`.
+
+- `POST /api/auth/login` (`operator`) => `200`.
+- `GET /api/auth/me` (`operator`) => `200`.
+- `POST /api/auth/refresh` (`operator`) => `200`.
+- `GET /api/excel-uploads` (`operator`) => `200`.
+- `POST /api/excel-uploads` (`operator`) => `400` esperado por request inválido (autorización efectiva confirmada).
+- `GET /api/users` (`operator`) => `403` esperado.
+- `GET /api/users/roles` (`operator`) => `403` esperado.
+- `GET /api/users/admin-001` (`operator`) => `403` esperado.
+- `GET /api/authorization-matrix/roles` (`operator`) => `403` esperado.
+
+Script de no regresión ejecutado: `bash scripts/validation/robust_only_e2e_bridge.sh`.
+
+- `admin-001` y `manager-001` se mantienen operativos para sesión + `/users` + `/authorization-matrix` + `/excel-uploads` dentro del perímetro ya validado.
+- `manager-001` mantiene denegaciones `403` esperadas en acciones fuera de alcance (`POST /api/users`, `POST /api/excel-uploads`).
+
+### Decisión de estado
+
+- `operator-001` queda **confirmado como robust-ready** para el perímetro revalidado en esta iteración.
+- No se fuerza ningún cambio adicional de cutover en esta iteración; se mantiene la configuración selectiva vigente.
+- Se mantiene transición dual fuera del subconjunto/scope robust-ready.
+- **Fase 4 continúa abierta**.
+
+### Decisiones abiertas (siguen pendientes)
+
+- Mantener validación por perfil/scope antes de cualquier expansión adicional de `RobustOnlyCutover`.
+- Completar evidencia robust-only de módulos aún fuera del perímetro endurecido.
+- Mantener fallback legacy fuera de cutover mientras no exista evidencia equivalente por endpoint crítico.
