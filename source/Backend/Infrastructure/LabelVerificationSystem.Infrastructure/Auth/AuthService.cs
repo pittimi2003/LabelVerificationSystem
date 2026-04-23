@@ -711,8 +711,17 @@ public sealed class AuthService : IAuthService
         systemUser.DisplayName = configuredUser.DisplayName;
         systemUser.Email = configuredUser.Email;
         systemUser.IsActive = configuredUser.IsActive;
-        systemUser.RolesJson = JsonSerializer.Serialize(normalizedRoles, JsonOptions);
-        systemUser.PermissionsJson = JsonSerializer.Serialize(normalizedPermissions, JsonOptions);
+        if (IsRobustOnlyCutoverUser(configuredUser.UserId))
+        {
+            systemUser.RolesJson = JsonSerializer.Serialize(Array.Empty<string>(), JsonOptions);
+            systemUser.PermissionsJson = JsonSerializer.Serialize(Array.Empty<string>(), JsonOptions);
+        }
+        else
+        {
+            systemUser.RolesJson = JsonSerializer.Serialize(normalizedRoles, JsonOptions);
+            systemUser.PermissionsJson = JsonSerializer.Serialize(normalizedPermissions, JsonOptions);
+        }
+
         systemUser.UpdatedAtUtc = nowUtc;
 
         var mappedCatalogRoles = await _dbContext.RoleCatalogs

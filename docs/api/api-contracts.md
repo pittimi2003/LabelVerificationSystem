@@ -1204,6 +1204,7 @@ Devuelve el catálogo de roles persistido en `RoleCatalog` para uso del formular
 - El alta/edición de usuarios prioriza asignación robusta en `SystemUserRole` usando este catálogo.
 - `RolesJson` y `PermissionsJson` continúan temporalmente para compatibilidad mientras cierre la transición de Fase 4.
 - En create/update de usuarios, `RolesJson` queda como snapshot transitorio de los roles efectivamente sincronizados en catálogo (no como fuente para introducir roles nuevos fuera de `RoleCatalog`).
+- En create/update para usuarios incluidos en `Authorization:RobustOnlyCutover:UserIds`, los snapshots legacy (`RolesJson`/`PermissionsJson`) se persisten vacíos (`[]`) para evitar escritura legacy operativa donde el modelo robusto ya es la fuente principal.
 - La resolución efectiva de roles para listados y detalle de `/api/users` prioriza `SystemUserRole` y hace fallback a `RolesJson` solo si el usuario aún no tiene asignaciones robustas.
 - Para usuarios dentro de `Authorization:RobustOnlyCutover:UserIds`, `/api/users` evita fallback operativo a `RolesJson` y `PermissionsJson` en lectura/filtro de ese usuario; fuera de ese subconjunto se mantiene compatibilidad transitoria.
 

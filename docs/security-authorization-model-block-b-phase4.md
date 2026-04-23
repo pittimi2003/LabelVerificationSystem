@@ -989,3 +989,53 @@ Resultado: `admin-001` y `manager-001` mantienen comportamiento esperado en sesi
 - No se aplica apagado global de legacy.
 - Se mantiene el enfoque por subconjuntos robust-ready (`Authorization:RobustOnlyCutover`).
 - **Fase 4 sigue abierta**.
+
+## 26) Bloque B: retiro progresivo de escritura legacy (sin apagado global, 2026-04-23)
+
+> **Fase 4 permanece abierta**.  
+> Iteración acotada a **Bloque B** (retirada progresiva de escritura legacy).  
+> Sin Fase 5 y sin NLog.
+
+### Cambios aplicados en escritura legacy
+
+- `/api/users` (`UserAdministrationService`):
+  - para usuarios en `Authorization:RobustOnlyCutover:UserIds`, la escritura de snapshot legacy se reduce a `[]` en `RolesJson` y `PermissionsJson`;
+  - para usuarios fuera de cutover, se mantiene la escritura transitoria actual (compatibilidad).
+- bridge de usuarios configurados/locales (`AuthService.UpsertConfiguredUserBridgeAsync`):
+  - para usuarios en cutover, `RolesJson`/`PermissionsJson` se limpian a `[]` como snapshot no operativo;
+  - para usuarios fuera de cutover, continúa la persistencia legacy transitoria.
+
+### Mapa de escrituras legacy que siguen vivas
+
+Se mantiene persistencia legacy en estas trayectorias:
+
+1. altas/ediciones de `/api/users` para usuarios fuera de cutover;
+2. sincronización de bridge de usuarios configurados/locales fuera de cutover.
+
+### Escrituras legacy retiradas en este corte
+
+- deja de persistirse contenido legacy operativo para usuarios en cutover en:
+  - `/api/users` (create/update sobre esos `userId`);
+  - bridge de perfiles configurados/locales en cutover.
+
+### Bloqueadores para retiro más amplio
+
+- fuera de cutover aún existe compatibilidad transitoria con perfiles no migrados;
+- `PermissionsJson` sigue siendo respaldo para compatibilidad de transición fuera del perímetro robust-only;
+- no hay apagado global legacy en esta iteración.
+
+### Impacto funcional
+
+- runtime auth/sesión:
+  - sin cambios de contrato en `login`, `refresh`, `/me`;
+  - usuarios en cutover continúan resolviendo operación efectiva desde modelo robusto.
+- `/users`:
+  - conserva compatibilidad fuera de cutover;
+  - reduce persistencia legacy no necesaria en cutover.
+- `/authorization-matrix` y `/excel-uploads`:
+  - sin cambios de contrato ni de estrategia de autorización en este corte.
+
+### Estado
+
+- **Fase 4 sigue abierta**.
+- No se realizó apagado global de `RolesJson`/`PermissionsJson`.

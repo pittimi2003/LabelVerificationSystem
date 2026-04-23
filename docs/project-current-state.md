@@ -1343,3 +1343,41 @@ Script de no regresión ejecutado: `bash scripts/validation/robust_only_e2e_brid
 - Mantener validación por perfil/scope antes de cualquier expansión adicional de `RobustOnlyCutover`.
 - Completar evidencia robust-only de módulos aún fuera del perímetro endurecido.
 - Mantener fallback legacy fuera de cutover mientras no exista evidencia equivalente por endpoint crítico.
+
+## Avance reciente: Bloque B / Fase 4 abierta (retirada progresiva de escritura legacy, 2026-04-23)
+
+- Estado de fase: **Fase 4 sigue abierta**.
+- Alcance exclusivo: **Bloque B / reducción de escritura transitoria `RolesJson`/`PermissionsJson`**.
+- Sin apagado global legacy, sin Fase 5, sin NLog.
+
+### Resumen del retiro progresivo aplicado
+
+- En `/api/users`, cuando el usuario pertenece a `Authorization:RobustOnlyCutover:UserIds`, la persistencia legacy se reduce a snapshot vacío (`[]`) en `RolesJson` y `PermissionsJson`.
+- En bridge de usuarios configurados/locales, para usuarios en cutover también se persiste snapshot legacy vacío (`[]`).
+- Fuera de cutover se mantiene escritura legacy transitoria para compatibilidad.
+
+### Mapa actual de escrituras legacy vivas
+
+1. `UserAdministrationService` en create/update de usuarios fuera de cutover:
+   - `RolesJson` snapshot de roles sincronizados en catálogo.
+   - `PermissionsJson` snapshot de permisos legacy solicitados.
+2. `AuthService.UpsertConfiguredUserBridgeAsync` para perfiles configurados/locales fuera de cutover:
+   - `RolesJson` y `PermissionsJson` serializados desde configuración.
+
+### Qué dejó de escribirse como contenido legacy operativo
+
+- Ya no se guarda contenido legacy operativo para usuarios en cutover en:
+  - create/update de `/api/users`;
+  - bridge de usuarios configurados/locales.
+
+### Qué sigue bloqueando un retiro más amplio
+
+- coexistencia transitoria obligatoria fuera de cutover para no romper perfiles/módulos aún no cerrados en robust-only;
+- dependencia transitoria de compatibilidad con `PermissionsJson` para escenarios no migrados completamente;
+- no se ejecuta apagado global en esta iteración.
+
+### Impacto validado
+
+- Sin cambio de contrato en `login`, `refresh`, `/me`.
+- Sin cambio de contrato en `/users`, `/authorization-matrix` y `/excel-uploads`.
+- El modelo robusto queda reforzado como fuente principal para usuarios en cutover también en capa de persistencia.
