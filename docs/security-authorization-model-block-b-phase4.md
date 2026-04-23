@@ -1135,3 +1135,72 @@ Lecturas que dejan de ser operativas en el subconjunto endurecido:
 
 - No se realiza apagado global de `RolesJson`/`PermissionsJson`.
 - **Fase 4 sigue abierta**.
+
+## 30) Bloque B: validación de eliminación controlada del fallback legacy en subconjunto robust-only actual (2026-04-23)
+
+> **Fase 4 permanece abierta** (sin cierre).  
+> Iteración de **Bloque B** enfocada en validar retiro de fallback legacy dentro del perímetro `Authorization:RobustOnlyCutover` ya activo para `admin-001`, `manager-001`, `operator-001`.  
+> Sin apagado global de legacy, sin Fase 5 y sin NLog.
+
+### Evaluación (alcance estricto)
+
+Se revisaron puntos de fallback legacy en runtime/sesión y se contrastaron con validación E2E real.
+
+Puntos revisados:
+
+1. `AuthService.ResolveEffectiveRolesAsync`
+   - si el usuario está en cutover y no tiene roles robustos, retorna `[]` (no cae a `RolesJson`).
+2. `AuthService.ResolveEffectivePermissionsAsync`
+   - si el usuario está en cutover, retorna únicamente permisos robustos (sin mezcla con `PermissionsJson`).
+3. `AuthorizationMatrixService.AuthorizeAsync` + `TryAuthorizeWithRobustModelAsync`
+   - cuando `userId + module:action` cae en `RobustOnlyCutover`, desactiva fallback por claims y desactiva fallback a `RolesJson`.
+4. `UserAdministrationService`
+   - `ResolveEffectiveRolesAsync`/`ResolveEffectivePermissionsAsync`: para usuarios en cutover no usan fallback de lectura por `RolesJson`/`PermissionsJson`.
+   - filtros `role`/`permission` en `ListAsync`: mantienen compatibilidad legacy fuera de cutover.
+
+Conclusión técnica de evaluación:
+
+- En el subconjunto robust-only configurado (usuarios + scopes de cutover), el fallback legacy ya no es operativo para autorización runtime ni para permisos efectivos de sesión.
+- Persisten fallback legacy fuera de ese subconjunto por compatibilidad transitoria.
+
+### Evidencia E2E ejecutada (obligatoria)
+
+Comandos ejecutados:
+
+- `bash scripts/validation/robust_only_e2e_bridge.sh`
+- `bash scripts/validation/robust_only_e2e_operator.sh`
+
+Resultados observados:
+
+- `admin-001`: login `/api/auth/login` `200`, `/api/auth/me` `200`, `/api/users` `200`, `/api/authorization-matrix/roles` `200`, `/api/excel-uploads` `200`, `POST /api/excel-uploads` `400` esperado por archivo vacío (autorización efectiva).
+- `manager-001`: login `200`, `/api/auth/me` `200`, `/api/users` `200`, `POST /api/users` `403` esperado, `POST /api/excel-uploads` `403` esperado, `/api/excel-uploads` `200`.
+- `operator-001`: login `200`, `/api/auth/me` `200`, `/api/auth/refresh` `200`, `/api/excel-uploads` `200`, `POST /api/excel-uploads` `400` esperado por archivo vacío, `/api/users` `403`, `/api/users/roles` `403`, `/api/authorization-matrix/roles` `403`.
+
+Muestras de sesión observadas en E2E:
+
+- `admin-001` => `roles=["SuperAdmin"]`, permisos robustos (`users.read`, `users.manage`, `authorization.matrix.manage`, `excel.uploads.read`, `excel.upload.create`).
+- `manager-001` => `roles=["Managers"]`, permisos robustos (`users.read`, `excel.uploads.read`).
+- `operator-001` => `roles=["Operators"]`, permisos robustos (`excel.uploads.read`, `excel.upload.create`).
+
+### Estado real de fallback (activo vs ejecutado en perímetro)
+
+Fallback legacy que sigue activo en código:
+
+1. `RolesJson` fuera de cutover (`AuthService`, `UserAdministrationService`, `AuthorizationMatrixService`).
+2. `PermissionsJson` fuera de cutover (`AuthService`, `UserAdministrationService`).
+3. claims legacy (`AuthorizationMatrixService`, sujeto a `EnableLegacyFallback`) fuera de cutover.
+
+Ejecución en el subconjunto robust-only validado:
+
+- **No operativo** para scopes en `RobustOnlyCutover` de `admin-001`, `manager-001`, `operator-001`.
+- **Permanece operativo** fuera del perímetro (usuarios y/o scopes no incluidos).
+
+### Impacto y decisión
+
+- Runtime auth/sesión en subconjunto robust-only: operación robusta efectiva sin fallback legacy.
+- Módulos validados en subconjunto: `/users`, `/authorization-matrix`, `/excel-uploads` + `login`/`refresh`/`/me`.
+- Contratos existentes: sin cambio de contrato HTTP.
+
+**Decisión final de esta iteración:** **fallback eliminado en subconjunto** (perímetro `RobustOnlyCutover` actual), con fallback aún necesario fuera del perímetro por transición.
+
+> **Fase 4 sigue abierta**.
