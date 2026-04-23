@@ -1214,6 +1214,31 @@ Se atendió exclusivamente el fallo `TypeError: Failed to fetch` durante `GET /a
 ### Estado explícito de fase
 - **Fase 4 continúa abierta**.
 
+## Avance implementado: Bloque B / Fase 4 (abierta) — Corrección integral de arranque/login frontend sin ruido en caso anónimo (2026-04-23)
+
+Alcance aplicado exclusivamente al frente de arranque/login del frontend. No se mezcló con Fase 5, NLog ni cambios del modelo robusto.
+
+### Causas corregidas
+- El bootstrap de sesión intentaba hidratar bypass con `GET /api/auth/me` incluso cuando no existía sesión de usuario almacenada ni condición explícita de bypass frontend.
+- `App.razor` bloqueaba el render inicial esperando `InitializeAsync`, degradando la entrada a login ante fallos de conectividad.
+- El login no diferenciaba con suficiente claridad error de transporte/red versus credenciales inválidas.
+- `custom.js` emitía warning evitable cuando `#header-search` no existía en la vista actual.
+
+### Cambios efectivos
+- Se introdujo bandera frontend `Auth:EnableBypassBootstrap` (default `false`) para que el bootstrap de bypass solo ocurra cuando se habilita explícitamente.
+- `AuthSessionService.InitializeCoreAsync` ahora:
+  - restaura sesión real desde storage cuando existe;
+  - evita invocar `TryHydrateBypassAsync` en el caso anónimo normal;
+  - mantiene bypass cuando la bandera está activa, sin elevar warning de restauración ante fallo de red en ese intento opcional.
+- `App.razor` deja de bloquear el render con spinner global por inicialización de sesión: inicia la app y ejecuta restauración en segundo plano, preservando acceso rápido al login.
+- `Signin.razor` distingue:
+  - `401/403` => credenciales inválidas;
+  - `HttpRequestException` sin `StatusCode` => problema de conectividad con backend auth.
+- Se eliminó el warning de consola por ausencia de `#header-search` en `custom.js`.
+
+### Estado de fase
+- **Fase 4 se mantiene abierta**.
+
 ## Avance reciente: Bloque B / Fase 4 abierta (validación del siguiente candidato post-`operator-001`, 2026-04-22)
 
 - Estado de fase: **Fase 4 sigue abierta** (esta iteración no cierra fase).

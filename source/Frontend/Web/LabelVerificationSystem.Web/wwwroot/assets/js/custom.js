@@ -41,8 +41,7 @@ customSwitch.forEach((e) =>
 setTimeout(() => {
     const inputElem = document.querySelector("#header-search");
     if (!inputElem) {
-        console.warn("#header-search input not found, skipping autocomplete initialization.");
-        return; // Exit early if element is missing
+        return;
     }
 
     const autoCompleteJS = new autoComplete({
@@ -108,4 +107,3 @@ setInterval(() => {
   });
 }, 10);
 /* count-up */
-
