@@ -1354,9 +1354,23 @@ Script de no regresión ejecutado: `bash scripts/validation/robust_only_e2e_brid
 
 - En `/api/users`, cuando el usuario pertenece a `Authorization:RobustOnlyCutover:UserIds`, la persistencia legacy se reduce a snapshot vacío (`[]`) en `RolesJson` y `PermissionsJson`.
 - En bridge de usuarios configurados/locales, para usuarios en cutover también se persiste snapshot legacy vacío (`[]`).
+- En runtime de autorización robusta (`AuthorizationMatrixService`), para usuarios/scopes en cutover ya no se lee `RolesJson` durante la resolución normal: solo se consulta si el request permite fallback legacy y efectivamente faltan roles robustos.
 - Fuera de cutover se mantiene escritura legacy transitoria para compatibilidad.
 
-### Mapa actual de escrituras legacy vivas
+### Mapa actual de consumos legacy vivos (`RolesJson`/`PermissionsJson`)
+
+Lecturas:
+
+1. `AuthService.ResolveEffectiveRolesAsync`:
+   - fallback a `RolesJson` solo para usuarios fuera de cutover sin `SystemUserRole`.
+2. `AuthService.ResolveEffectivePermissionsAsync`:
+   - mezcla `PermissionsJson` solo fuera de cutover.
+3. `UserAdministrationService`:
+   - filtros (`role`/`permission`) y fallback de detalle/listado usan `RolesJson`/`PermissionsJson` solo fuera de cutover.
+4. `AuthorizationMatrixService.TryAuthorizeWithRobustModelAsync`:
+   - lectura de `RolesJson` queda diferida y condicionada a fallback legacy habilitado + ausencia real de roles robustos.
+
+Escrituras:
 
 1. `UserAdministrationService` en create/update de usuarios fuera de cutover:
    - `RolesJson` snapshot de roles sincronizados en catálogo.
@@ -1369,6 +1383,7 @@ Script de no regresión ejecutado: `bash scripts/validation/robust_only_e2e_brid
 - Ya no se guarda contenido legacy operativo para usuarios en cutover en:
   - create/update de `/api/users`;
   - bridge de usuarios configurados/locales.
+- En autorización runtime para cutover también deja de haber lectura operativa temprana de `RolesJson` (queda solo como fallback diferido fuera del subconjunto robust-only).
 
 ### Qué sigue bloqueando un retiro más amplio
 

@@ -81,17 +81,13 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
         var normalizedModuleCode = moduleCode.Trim();
         var normalizedActionCode = actionCode?.Trim();
 
-        var userSnapshot = await _dbContext.SystemUsers
+        var systemUserId = await _dbContext.SystemUsers
             .AsNoTracking()
             .Where(x => x.UserId == userId)
-            .Select(x => new
-            {
-                x.Id,
-                x.RolesJson
-            })
+            .Select(x => x.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (userSnapshot is null)
+        if (systemUserId == Guid.Empty)
         {
             _logger.LogDebug("authorization.robust.user_not_found userId={UserId}", userId);
             return null;
@@ -99,14 +95,20 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
 
         var roleCodes = await _dbContext.SystemUserRoles
             .AsNoTracking()
-            .Where(x => x.SystemUserId == userSnapshot.Id && x.Role.IsActive)
+            .Where(x => x.SystemUserId == systemUserId && x.Role.IsActive)
             .Select(x => x.Role.Code)
             .Distinct()
             .ToListAsync(cancellationToken);
 
         if (roleCodes.Count == 0 && allowLegacyRoleFallback && _options.EnableLegacyFallback)
         {
-            roleCodes = DeserializeList(userSnapshot.RolesJson)
+            var legacyRolesJson = await _dbContext.SystemUsers
+                .AsNoTracking()
+                .Where(x => x.Id == systemUserId)
+                .Select(x => x.RolesJson)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            roleCodes = DeserializeList(legacyRolesJson ?? "[]")
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
