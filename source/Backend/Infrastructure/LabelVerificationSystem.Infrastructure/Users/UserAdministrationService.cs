@@ -1,28 +1,21 @@
 using System.Security.Cryptography;
-using System.Text.Json;
 using LabelVerificationSystem.Application.Contracts.Users;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.Users;
 using LabelVerificationSystem.Domain.Entities.Auth;
-using LabelVerificationSystem.Infrastructure.Authorization;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace LabelVerificationSystem.Infrastructure.Users;
 
 public sealed class UserAdministrationService : IUserAdministrationService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
     private readonly AppDbContext _dbContext;
-    private readonly AuthorizationRuntimeOptions _authorizationOptions;
     private static readonly string[] UsersManageActions = ["Create", "Edit", "ActivateDeactivate"];
 
-    public UserAdministrationService(AppDbContext dbContext, IOptions<AuthorizationRuntimeOptions> authorizationOptions)
+    public UserAdministrationService(AppDbContext dbContext)
     {
         _dbContext = dbContext;
-        _authorizationOptions = authorizationOptions.Value;
     }
 
     public async Task<IReadOnlyList<UserRoleCatalogItemDto>> ListRolesAsync(CancellationToken cancellationToken)
@@ -47,13 +40,6 @@ public sealed class UserAdministrationService : IUserAdministrationService
         }
 
         var usersQuery = _dbContext.SystemUsers.AsNoTracking();
-        var cutoverEnabled = _authorizationOptions.RobustOnlyCutover.Enabled;
-        var cutoverUserIds = _authorizationOptions.RobustOnlyCutover.UserIds
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
         var globalQuery = NormalizeFilter(query.Query);
         if (!string.IsNullOrWhiteSpace(globalQuery))
         {
@@ -94,20 +80,14 @@ public sealed class UserAdministrationService : IUserAdministrationService
                 _dbContext.SystemUserRoles.Any(r =>
                     r.SystemUserId == x.Id
                     && r.Role.IsActive
-                    && r.Role.Code.ToLower().Contains(role))
-                || (!_dbContext.SystemUserRoles.Any(r => r.SystemUserId == x.Id)
-                    && (!cutoverEnabled || !cutoverUserIds.Contains(x.UserId))
-                    && x.RolesJson.ToLower().Contains(role)));
+                    && r.Role.Code.ToLower().Contains(role)));
         }
 
         var permission = NormalizeFilter(query.Permission);
         if (!string.IsNullOrWhiteSpace(permission))
         {
             var robustUserIds = await ResolveRobustPermissionUserIdsAsync(permission, cancellationToken);
-            usersQuery = usersQuery.Where(x =>
-                robustUserIds.Contains(x.Id)
-                || ((!cutoverEnabled || !cutoverUserIds.Contains(x.UserId))
-                    && x.PermissionsJson.ToLower().Contains(permission)));
+            usersQuery = usersQuery.Where(x => robustUserIds.Contains(x.Id));
         }
 
         if (query.IsActive.HasValue)
@@ -178,8 +158,6 @@ public sealed class UserAdministrationService : IUserAdministrationService
             DisplayName = displayName,
             Email = email,
             IsActive = request.IsActive,
-            RolesJson = SerializeList([]),
-            PermissionsJson = SerializeList(NormalizeValues(request.Permissions)),
             CreatedAtUtc = nowUtc,
             UpdatedAtUtc = nowUtc
         };
@@ -197,8 +175,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
         });
 
         var normalizedRoles = NormalizeValues(request.Roles);
-        var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
-        UpdateLegacySnapshotsForTransition(user, syncedRoles, request.Permissions);
+        await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
@@ -260,8 +237,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
             }
         }
 
-        var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
-        UpdateLegacySnapshotsForTransition(user, syncedRoles, request.Permissions);
+        await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
@@ -376,19 +352,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         foreach (var user in users)
         {
-            if (grouped.TryGetValue(user.Id, out var robustRoles) && robustRoles.Count > 0)
-            {
-                result[user.Id] = robustRoles;
-                continue;
-            }
-
-            if (IsRobustOnlyCutoverUser(user.UserId))
-            {
-                result[user.Id] = [];
-                continue;
-            }
-
-            result[user.Id] = DeserializeList(user.RolesJson);
+            result[user.Id] = grouped.TryGetValue(user.Id, out var robustRoles) ? robustRoles : [];
         }
 
         return result;
@@ -402,57 +366,17 @@ public sealed class UserAdministrationService : IUserAdministrationService
         var result = users.ToDictionary(x => x.Id, _ => (IReadOnlyList<string>)[]);
         foreach (var user in users)
         {
-            var isCutoverUser = IsRobustOnlyCutoverUser(user.UserId);
             if (roleMap.TryGetValue(user.Id, out var roleCodes) && roleCodes.Count > 0)
             {
                 var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
-                if (isCutoverUser)
-                {
-                    result[user.Id] = robustPermissions;
-                    continue;
-                }
-
-                var legacyPermissions = DeserializeList(user.PermissionsJson);
-                result[user.Id] = robustPermissions
-                    .Concat(legacyPermissions)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
+                result[user.Id] = robustPermissions;
                 continue;
             }
 
-            if (isCutoverUser)
-            {
-                result[user.Id] = [];
-                continue;
-            }
-
-            result[user.Id] = DeserializeList(user.PermissionsJson);
+            result[user.Id] = [];
         }
 
         return result;
-    }
-
-    private static IReadOnlyList<string> BuildLegacyRolesSnapshot(IReadOnlyList<string> synchronizedRoles)
-        => synchronizedRoles
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-    private void UpdateLegacySnapshotsForTransition(
-        SystemUser user,
-        IReadOnlyList<string> synchronizedRoles,
-        IReadOnlyList<string>? requestedPermissions)
-    {
-        if (IsRobustOnlyCutoverUser(user.UserId))
-        {
-            user.RolesJson = SerializeList([]);
-            user.PermissionsJson = SerializeList([]);
-            return;
-        }
-
-        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(synchronizedRoles));
-        user.PermissionsJson = SerializeList(NormalizeValues(requestedPermissions));
     }
 
     private static UserListItemDto MapToListItem(
@@ -484,17 +408,6 @@ public sealed class UserAdministrationService : IUserAdministrationService
             permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : [],
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
-
-    private bool IsRobustOnlyCutoverUser(string userId)
-    {
-        var cutover = _authorizationOptions.RobustOnlyCutover;
-        if (!cutover.Enabled)
-        {
-            return false;
-        }
-
-        return cutover.UserIds.Any(x => string.Equals(x?.Trim(), userId, StringComparison.OrdinalIgnoreCase));
-    }
 
     private static string ValidateRequiredTrimmed(string value, string field, int minLength = 1, int maxLength = 256)
     {
@@ -536,20 +449,6 @@ public sealed class UserAdministrationService : IUserAdministrationService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
-
-    private static string SerializeList(IReadOnlyList<string> values) => JsonSerializer.Serialize(values, JsonOptions);
-
-    private static IReadOnlyList<string> DeserializeList(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
 
     private static void ValidatePassword(string value, string field)
     {

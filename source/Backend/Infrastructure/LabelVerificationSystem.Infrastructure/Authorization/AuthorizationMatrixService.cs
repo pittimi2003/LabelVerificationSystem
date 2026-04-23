@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.Json;
 using LabelVerificationSystem.Application.Interfaces.Authorization;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +9,6 @@ namespace LabelVerificationSystem.Infrastructure.Authorization;
 
 public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
     private readonly AppDbContext _dbContext;
     private readonly AuthorizationRuntimeOptions _options;
     private readonly ILogger<AuthorizationMatrixService> _logger;
@@ -49,7 +46,6 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
                     normalizedUserId,
                     moduleCode,
                     actionCode,
-                    allowLegacyRoleFallback: !robustOnlyCutoverSubset,
                     cancellationToken);
                 if (robustResult is not null)
                 {
@@ -75,7 +71,6 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
         string userId,
         string moduleCode,
         string? actionCode,
-        bool allowLegacyRoleFallback,
         CancellationToken cancellationToken)
     {
         var normalizedModuleCode = moduleCode.Trim();
@@ -99,19 +94,6 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
             .Select(x => x.Role.Code)
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        if (roleCodes.Count == 0 && allowLegacyRoleFallback && _options.EnableLegacyFallback)
-        {
-            var legacyRolesJson = await _dbContext.SystemUsers
-                .AsNoTracking()
-                .Where(x => x.Id == systemUserId)
-                .Select(x => x.RolesJson)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            roleCodes = DeserializeList(legacyRolesJson ?? "[]")
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
 
         if (roleCodes.Count == 0)
         {
@@ -230,15 +212,4 @@ public sealed class AuthorizationMatrixService : IAuthorizationMatrixService
         };
     }
 
-    private static List<string> DeserializeList(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
 }

@@ -157,8 +157,6 @@ public sealed class AppDbContext : DbContext
             entity.Property(x => x.UserId).IsRequired();
             entity.Property(x => x.Username).IsRequired();
             entity.Property(x => x.DisplayName).IsRequired();
-            entity.Property(x => x.RolesJson).IsRequired();
-            entity.Property(x => x.PermissionsJson).IsRequired();
             entity.Property(x => x.CreatedAtUtc).IsRequired();
             entity.Property(x => x.UpdatedAtUtc).IsRequired();
             entity.HasIndex(x => x.UserId).IsUnique();

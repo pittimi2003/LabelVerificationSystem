@@ -1361,3 +1361,22 @@ Decisión de esta iteración:
 
 - `operator-001` queda robust-ready para el perímetro validado y se incorpora al subconjunto `Authorization:RobustOnlyCutover:UserIds` en Development.
 - Se mantiene transición dual fuera del subconjunto/scope (no hay retiro global legacy).
+
+## Actualización Bloque B / retiro final de `RolesJson` y `PermissionsJson` (2026-04-23)
+
+Estado en este corte:
+- `RolesJson` y `PermissionsJson` dejan de ser parte del modelo operativo y persistido.
+- autorización efectiva se resuelve solo desde:
+  - `SystemUsers`,
+  - `SystemUserRole`,
+  - `RoleCatalog`,
+  - `RoleModuleAuthorization`,
+  - `RoleModuleActionAuthorization`.
+
+Impacto contractual (sin ruptura):
+- `login`, `refresh`, `/me`: mantienen contrato; permisos de sesión quedan únicamente robustos.
+- `/users`: roles/permisos efectivos y filtros sin fallback a JSON legacy.
+- `/authorization-matrix` y `/excel-uploads`: mantienen contrato, sin lectura de `RolesJson`.
+
+Bootstrap:
+- `Authentication:Users` permanece únicamente como bootstrap/sincronización inicial al modelo robusto para instalaciones nuevas o entornos que lo requieran.

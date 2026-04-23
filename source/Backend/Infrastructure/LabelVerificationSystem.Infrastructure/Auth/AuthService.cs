@@ -2,7 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using LabelVerificationSystem.Application.Contracts.Auth;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Domain.Entities.Auth;
@@ -27,7 +26,6 @@ public sealed class AuthService : IAuthService
     private readonly AuthorizationRuntimeOptions _authorizationOptions;
     private readonly IHostEnvironment _hostEnvironment;
     private readonly ILogger<AuthService> _logger;
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] UsersManageActions = ["Create", "Edit", "ActivateDeactivate"];
 
     public AuthService(
@@ -551,7 +549,7 @@ public sealed class AuthService : IAuthService
         if (dbUser is not null)
         {
             var resolvedRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
-            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, resolvedRoles.Codes, resolvedRoles.HasRobustAssignments, cancellationToken);
+            var effectivePermissions = await ResolveEffectivePermissionsAsync(resolvedRoles.Codes, cancellationToken);
             var fallbackPassword = configuredUserByLogin?.Password;
             return new ResolvedAuthUser(
                 dbUser.UserId,
@@ -569,41 +567,28 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
-        if (ShouldBridgeConfiguredUsersToRobustModel())
+        await UpsertConfiguredUserBridgeAsync(configuredUserByLogin, cancellationToken);
+        var bridgedDbUser = await _dbContext.SystemUsers.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UserId == configuredUserByLogin.UserId, cancellationToken);
+        if (bridgedDbUser is not null)
         {
-            await UpsertConfiguredUserBridgeAsync(configuredUserByLogin, cancellationToken);
-            var bridgedDbUser = await _dbContext.SystemUsers.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.UserId == configuredUserByLogin.UserId, cancellationToken);
-            if (bridgedDbUser is not null)
-            {
-                var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
-                var bridgedPermissions = await ResolveEffectivePermissionsAsync(
-                    bridgedDbUser,
-                    bridgedRoles.Codes,
-                    bridgedRoles.HasRobustAssignments,
-                    cancellationToken);
+            var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
+            var bridgedPermissions = await ResolveEffectivePermissionsAsync(
+                bridgedRoles.Codes,
+                cancellationToken);
 
-                return new ResolvedAuthUser(
-                    bridgedDbUser.UserId,
-                    bridgedDbUser.Username,
-                    bridgedDbUser.DisplayName,
-                    bridgedDbUser.Email,
-                    bridgedDbUser.IsActive,
-                    bridgedRoles.Codes,
-                    bridgedPermissions,
-                    configuredUserByLogin.Password);
-            }
+            return new ResolvedAuthUser(
+                bridgedDbUser.UserId,
+                bridgedDbUser.Username,
+                bridgedDbUser.DisplayName,
+                bridgedDbUser.Email,
+                bridgedDbUser.IsActive,
+                bridgedRoles.Codes,
+                bridgedPermissions,
+                configuredUserByLogin.Password);
         }
 
-        return new ResolvedAuthUser(
-            configuredUserByLogin.UserId,
-            configuredUserByLogin.Username,
-            configuredUserByLogin.DisplayName,
-            configuredUserByLogin.Email,
-            configuredUserByLogin.IsActive,
-            configuredUserByLogin.Roles,
-            configuredUserByLogin.Permissions,
-            configuredUserByLogin.Password);
+        return null;
     }
 
     private async Task<ResolvedAuthUser?> ResolveUserByIdAsync(string? userId, CancellationToken cancellationToken)
@@ -617,7 +602,7 @@ public sealed class AuthService : IAuthService
         if (dbUser is not null)
         {
             var resolvedRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
-            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, resolvedRoles.Codes, resolvedRoles.HasRobustAssignments, cancellationToken);
+            var effectivePermissions = await ResolveEffectivePermissionsAsync(resolvedRoles.Codes, cancellationToken);
             var fallbackPassword = _options.Users.FirstOrDefault(x => x.UserId == dbUser.UserId)?.Password;
             return new ResolvedAuthUser(
                 dbUser.UserId,
@@ -636,67 +621,34 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
-        if (ShouldBridgeConfiguredUsersToRobustModel())
+        await UpsertConfiguredUserBridgeAsync(configuredUser, cancellationToken);
+        var bridgedDbUser = await _dbContext.SystemUsers.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UserId == configuredUser.UserId, cancellationToken);
+        if (bridgedDbUser is not null)
         {
-            await UpsertConfiguredUserBridgeAsync(configuredUser, cancellationToken);
-            var bridgedDbUser = await _dbContext.SystemUsers.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.UserId == configuredUser.UserId, cancellationToken);
-            if (bridgedDbUser is not null)
-            {
-                var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
-                var bridgedPermissions = await ResolveEffectivePermissionsAsync(
-                    bridgedDbUser,
-                    bridgedRoles.Codes,
-                    bridgedRoles.HasRobustAssignments,
-                    cancellationToken);
+            var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
+            var bridgedPermissions = await ResolveEffectivePermissionsAsync(
+                bridgedRoles.Codes,
+                cancellationToken);
 
-                return new ResolvedAuthUser(
-                    bridgedDbUser.UserId,
-                    bridgedDbUser.Username,
-                    bridgedDbUser.DisplayName,
-                    bridgedDbUser.Email,
-                    bridgedDbUser.IsActive,
-                    bridgedRoles.Codes,
-                    bridgedPermissions,
-                    configuredUser.Password);
-            }
+            return new ResolvedAuthUser(
+                bridgedDbUser.UserId,
+                bridgedDbUser.Username,
+                bridgedDbUser.DisplayName,
+                bridgedDbUser.Email,
+                bridgedDbUser.IsActive,
+                bridgedRoles.Codes,
+                bridgedPermissions,
+                configuredUser.Password);
         }
 
-        return new ResolvedAuthUser(
-            configuredUser.UserId,
-            configuredUser.Username,
-            configuredUser.DisplayName,
-            configuredUser.Email,
-            configuredUser.IsActive,
-            configuredUser.Roles,
-            configuredUser.Permissions,
-            configuredUser.Password);
-    }
-
-    private bool ShouldBridgeConfiguredUsersToRobustModel()
-    {
-        var bridgeOptions = _options.ConfiguredUsersRobustBridge;
-        if (!bridgeOptions.Enabled)
-        {
-            return false;
-        }
-
-        if (bridgeOptions.AllowedEnvironments.Count == 0)
-        {
-            return true;
-        }
-
-        return bridgeOptions.AllowedEnvironments.Any(_hostEnvironment.IsEnvironment);
+        return null;
     }
 
     private async Task UpsertConfiguredUserBridgeAsync(ConfiguredUser configuredUser, CancellationToken cancellationToken)
     {
         var nowUtc = DateTime.UtcNow;
         var normalizedRoles = configuredUser.Roles
-            .Where(x => !string.IsNullOrWhiteSpace(x))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        var normalizedPermissions = configuredUser.Permissions
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -719,17 +671,6 @@ public sealed class AuthService : IAuthService
         systemUser.DisplayName = configuredUser.DisplayName;
         systemUser.Email = configuredUser.Email;
         systemUser.IsActive = configuredUser.IsActive;
-        if (IsRobustOnlyCutoverUser(configuredUser.UserId))
-        {
-            systemUser.RolesJson = JsonSerializer.Serialize(Array.Empty<string>(), JsonOptions);
-            systemUser.PermissionsJson = JsonSerializer.Serialize(Array.Empty<string>(), JsonOptions);
-        }
-        else
-        {
-            systemUser.RolesJson = JsonSerializer.Serialize(normalizedRoles, JsonOptions);
-            systemUser.PermissionsJson = JsonSerializer.Serialize(normalizedPermissions, JsonOptions);
-        }
-
         systemUser.UpdatedAtUtc = nowUtc;
 
         var mappedCatalogRoles = await _dbContext.RoleCatalogs
@@ -808,18 +749,6 @@ public sealed class AuthService : IAuthService
         }
     }
 
-    private static IReadOnlyList<string> DeserializeList(string json)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<List<string>>(json, JsonOptions) ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
     private static string HashPassword(string password)
     {
         var salt = RandomNumberGenerator.GetBytes(16);
@@ -858,7 +787,7 @@ public sealed class AuthService : IAuthService
         IReadOnlyList<string> Permissions,
         string? FallbackPassword);
 
-    private sealed record ResolvedRoles(IReadOnlyList<string> Codes, bool HasRobustAssignments);
+    private sealed record ResolvedRoles(IReadOnlyList<string> Codes);
 
     private async Task<ResolvedRoles> ResolveEffectiveRolesAsync(SystemUser dbUser, CancellationToken cancellationToken)
     {
@@ -871,52 +800,17 @@ public sealed class AuthService : IAuthService
 
         if (catalogRoles.Count > 0)
         {
-            return new ResolvedRoles(catalogRoles, true);
+            return new ResolvedRoles(catalogRoles);
         }
-
-        if (IsRobustOnlyCutoverUser(dbUser.UserId))
-        {
-            return new ResolvedRoles([], false);
-        }
-
-        return new ResolvedRoles(DeserializeList(dbUser.RolesJson), false);
+        return new ResolvedRoles([]);
     }
 
     private async Task<IReadOnlyList<string>> ResolveEffectivePermissionsAsync(
-        SystemUser dbUser,
         IReadOnlyList<string> roleCodes,
-        bool hasRobustRoleAssignments,
         CancellationToken cancellationToken)
     {
         var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
-        if (IsRobustOnlyCutoverUser(dbUser.UserId))
-        {
-            return robustPermissions;
-        }
-
-        if (hasRobustRoleAssignments && robustPermissions.Count > 0)
-        {
-            return robustPermissions;
-        }
-
-        var legacyPermissions = DeserializeList(dbUser.PermissionsJson);
-
-        return robustPermissions
-            .Concat(legacyPermissions)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
-
-    private bool IsRobustOnlyCutoverUser(string userId)
-    {
-        var cutover = _authorizationOptions.RobustOnlyCutover;
-        if (!cutover.Enabled)
-        {
-            return false;
-        }
-
-        return cutover.UserIds.Any(x => string.Equals(x?.Trim(), userId, StringComparison.OrdinalIgnoreCase));
+        return robustPermissions;
     }
 
     private async Task<IReadOnlyList<string>> ResolveRobustPermissionsFromRolesAsync(IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
