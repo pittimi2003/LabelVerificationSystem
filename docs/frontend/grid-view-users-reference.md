@@ -44,11 +44,13 @@ Estado explícito:
    - recarga en cambios de página/tamaño/filtros.
 
 6. **Acciones por fila**
+   - ver detalle,
    - editar,
-   - reset de contraseña,
-   - activar/desactivar.
+   - activar/desactivar,
+   - reset de contraseña (complementaria, no sustitutiva).
 
 7. **Drawers de operación**
+   - drawer detail (read-only),
    - drawer create/edit,
    - drawer reset password,
    - validaciones mínimas antes de guardar.
@@ -75,7 +77,7 @@ El funcionamiento real actual de UsersAdmin depende de:
 1. **Contrato backend de listado de usuarios**
    - disponibilidad de filtros soportados y paginación real.
 2. **Contrato de acciones por fila**
-   - endpoints reales para editar, activar/desactivar y reset de contraseña.
+   - endpoints reales para detalle, editar, activar/desactivar y reset de contraseña.
 3. **Modelo de estado operativo de usuario**
    - existencia de estado activo/inactivo para `StatusFilter` y acciones de toggle.
 4. **Disponibilidad de roles/permisos en datos de usuario**
@@ -96,6 +98,7 @@ Estas decisiones son de usuarios y **no deben promoverse automáticamente como e
 - campos concretos de búsqueda: `userId`, `username`, `displayName`, `email`, `role`, `permission`;
 - columnas específicas de identidad de usuario y timestamps;
 - acción de reset password como operación por fila;
+- acción de detalle read-only por fila;
 - semántica de activación/desactivación para estado de usuario;
 - payloads específicos `CreateUserRequestDto` / `UpdateUserRequestDto`;
 - mapeo de `StatusFilter` hacia `isActive` nullable.

@@ -98,14 +98,17 @@
                         <MudTd>@context.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
                         <MudTd>
                             <MudStack Row="true" Spacing="0">
+                                <MudTooltip Text="Ver detalle">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small" OnClick="() => OpenDetailDrawerAsync(context.UserId)" />
+                                </MudTooltip>
                                 <MudTooltip Text="Editar usuario">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="() => OpenEditDrawerAsync(context.UserId)" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Size="Size.Small" OnClick="() => OpenEditDrawerAsync(context.UserId)" />
+                                </MudTooltip>
+                                <MudTooltip Text="@(context.IsActive ? "Desactivar usuario" : "Activar usuario")">
+                                    <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.ToggleOff : Icons.Material.Filled.ToggleOn)" Color="@(context.IsActive ? Color.Error : Color.Success)" Size="Size.Small" OnClick="() => ToggleActivationAsync(context)" />
                                 </MudTooltip>
                                 <MudTooltip Text="Reset password">
                                     <MudIconButton Icon="@Icons.Material.Filled.Password" Color="Color.Warning" Size="Size.Small" OnClick="() => OpenResetPasswordDrawerAsync(context.UserId)" />
-                                </MudTooltip>
-                                <MudTooltip Text="@(context.IsActive ? "Desactivar usuario" : "Activar usuario")">
-                                    <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.PersonOff : Icons.Material.Filled.CheckCircle)" Color="@(context.IsActive ? Color.Error : Color.Success)" Size="Size.Small" OnClick="() => ToggleActivationAsync(context)" />
                                 </MudTooltip>
                             </MudStack>
                         </MudTd>
@@ -195,6 +198,63 @@
     </div>
 </MudDrawer>
 
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="540px" Elevation="6" Class="users-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Detalle de usuario</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseDetailDrawer" />
+    </MudDrawerHeader>
+
+    <div class="pa-4">
+        @if (SelectedUser is null)
+        {
+            <MudText Typo="Typo.body2">No hay usuario seleccionado.</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="2">
+                <MudTextField T="string" Value="@SelectedUser.UserId" Label="UserId" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedUser.Username" Label="Username" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedUser.DisplayName" Label="Display Name" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@(string.IsNullOrWhiteSpace(SelectedUser.Email) ? "—" : SelectedUser.Email)" Label="Email" Variant="Variant.Outlined" ReadOnly="true" />
+
+                <MudText Typo="Typo.caption" Class="text-muted">Roles</MudText>
+                <div class="d-flex flex-wrap gap-1">
+                    @if (SelectedUser.Roles.Count == 0)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">—</MudChip>
+                    }
+                    else
+                    {
+                        @foreach (var role in SelectedUser.Roles)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Info">@role</MudChip>
+                        }
+                    }
+                </div>
+
+                <MudText Typo="Typo.caption" Class="text-muted">Permisos</MudText>
+                <div class="d-flex flex-wrap gap-1">
+                    @if (SelectedUser.Permissions.Count == 0)
+                    {
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">—</MudChip>
+                    }
+                    else
+                    {
+                        @foreach (var permission in SelectedUser.Permissions)
+                        {
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Secondary">@permission</MudChip>
+                        }
+                    }
+                </div>
+
+                <MudSwitch T="bool" Value="@SelectedUser.IsActive" Label="Usuario activo" Color="Color.Success" Disabled="true" />
+                <MudTextField T="string" Value="@SelectedUser.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")" Label="CreatedAtUtc" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedUser.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")" Label="UpdatedAtUtc" Variant="Variant.Outlined" ReadOnly="true" />
+            </MudStack>
+        }
+    </div>
+</MudDrawer>
+
 <MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsResetDrawerOpen" Width="520px" Elevation="6" Class="users-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Reset password de usuario</MudText>
@@ -225,6 +285,7 @@
     private bool IsLoading { get; set; }
     private bool IsSavingEditor { get; set; }
     private bool IsSavingReset { get; set; }
+    private bool IsDetailDrawerOpen { get; set; }
 
     private int CurrentPage { get; set; } = 1;
     private int PageSize { get; set; } = 20;
@@ -250,6 +311,7 @@
     private bool EditorIsActive { get; set; } = true;
 
     private bool IsResetDrawerOpen { get; set; }
+    private UserDetailDto? SelectedUser { get; set; }
     private string ResetDrawerUserId { get; set; } = string.Empty;
     private string ResetDrawerUsername { get; set; } = string.Empty;
     private string ResetPassword { get; set; } = string.Empty;
@@ -442,6 +504,25 @@
         {
             Snackbar.Add($"No se pudo cargar el usuario para edición: {ex.Message}", Severity.Error);
         }
+    }
+
+    private async Task OpenDetailDrawerAsync(string userId)
+    {
+        try
+        {
+            SelectedUser = await UserAdministrationApiClient.GetByUserIdAsync(userId, CancellationToken.None);
+            IsDetailDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el detalle del usuario: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseDetailDrawer()
+    {
+        IsDetailDrawerOpen = false;
+        SelectedUser = null;
     }
 
     private void CloseEditorDrawer()

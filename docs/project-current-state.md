@@ -1566,3 +1566,24 @@ Estado explícito:
   - luego se inserta el estado final solicitado para los mismos módulos/acciones.
 - Resultado: el guardado de matriz por rol deja de depender del formato histórico del PK y persiste correctamente el estado final de autorización.
 - No se incorporaron cambios de Fase 5 ni NLog en este avance.
+
+## 30) Bloque B / Fase 4 abierta — Alineación UX de acciones por fila en `/users` con patrón final de `/roles` (2026-04-23)
+
+Objetivo del ajuste:
+- completar consistencia visual/operativa de acciones por fila en `/users` sin cambiar contratos backend ni arquitectura.
+
+Cambios aplicados en frontend:
+- se agregó acción explícita **Ver detalle** por fila en el grid de usuarios;
+- se incorporó **drawer de detalle read-only** para usuario, alineado al patrón de `/roles`;
+- se mantuvieron las acciones existentes de **Editar**, **Activar/Desactivar** y **Reset password** (esta última como complementaria);
+- se conservó refresh del grid tras edición y activación/desactivación.
+
+Contratos backend utilizados (sin cambios):
+- `GET /api/users/{userId}` para detalle y carga de edición/reset;
+- `PUT /api/users/{userId}` para edición;
+- `PATCH /api/users/{userId}/activation` para activar/desactivar.
+
+Estado explícito:
+- sin cambios de contrato API;
+- sin mezcla con Fase 5 ni NLog;
+- **Fase 4 continúa abierta**.
