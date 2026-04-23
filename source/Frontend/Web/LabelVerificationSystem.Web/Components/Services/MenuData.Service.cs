@@ -37,6 +37,15 @@ public class MenuDataService
                     dirChange: false
                 ),
                 new MainMenuItems (
+                    path: "/parts",
+                    type: "link",
+                    icon: "",
+                    title: "Parts (Admin)",
+                    selected: false,
+                    active: false,
+                    dirChange: false
+                ),
+                new MainMenuItems (
                     path: "/users",
                     type: "link",
                     icon: "",

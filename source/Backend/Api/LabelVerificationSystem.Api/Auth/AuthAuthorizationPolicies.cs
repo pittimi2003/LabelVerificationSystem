@@ -9,6 +9,9 @@ public static class AuthAuthorizationPolicies
     public const string AuthorizationMatrixManage = "AuthorizationMatrixManage";
     public const string ExcelUploadsRead = "ExcelUploadsRead";
     public const string ExcelUploadsUpload = "ExcelUploadsUpload";
+    public const string PartsRead = "PartsRead";
+    public const string PartsCreate = "PartsCreate";
+    public const string PartsEdit = "PartsEdit";
 }
 
 public static class AuthModules
@@ -16,6 +19,7 @@ public static class AuthModules
     public const string UsersAdministration = "UsersAdministration";
     public const string AuthorizationMatrixAdministration = "AuthorizationMatrixAdministration";
     public const string ExcelUploads = "ExcelUploads";
+    public const string PartsCatalog = "PartsCatalog";
 }
 
 public static class AuthModuleActions

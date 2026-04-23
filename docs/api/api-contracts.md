@@ -1467,3 +1467,76 @@ Actualiza estado activo/inactivo.
 ### Notas de alcance
 - Se agregan endpoints de create/update para completar CRUD operativo (sin eliminación física).
 - No se mezclan cambios de Fase 5 ni NLog.
+
+---
+
+## Contrato implementado: Parts Administration (`/api/parts`)
+
+Estado: **implementado**.
+
+### `GET /api/parts`
+Lista paginada backend-driven de parts.
+
+Query params soportados:
+- `partNumber`
+- `model`
+- `minghuaDescription`
+- `cco`
+- `page` (>=1)
+- `pageSize` (1..100)
+
+Response 200:
+```json
+{
+  "items": [
+    {
+      "id": "guid",
+      "partNumber": "string",
+      "model": "string",
+      "minghuaDescription": "string",
+      "caducidad": 12,
+      "cco": "string",
+      "certificationEac": true,
+      "firstFourNumbers": 1234,
+      "createdByExcelUploadId": "guid|null",
+      "createdAtUtc": "2026-04-23T12:00:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalItems": 1,
+  "totalPages": 1
+}
+```
+
+### `GET /api/parts/{partId}`
+Detalle read-only de una part.
+
+### `POST /api/parts`
+Alta de part.
+
+Request:
+```json
+{
+  "partNumber": "string",
+  "model": "string",
+  "minghuaDescription": "string",
+  "caducidad": 12,
+  "cco": "string",
+  "certificationEac": true,
+  "firstFourNumbers": 1234
+}
+```
+
+### `PUT /api/parts/{partId}`
+Edición de part.
+
+Request: misma estructura que `POST /api/parts`.
+
+### Autorización robusta aplicada
+- `GET /api/parts`, `GET /api/parts/{partId}`: `PartsCatalog:View`
+- `POST /api/parts`: `PartsCatalog:Create`
+- `PUT /api/parts/{partId}`: `PartsCatalog:Edit`
+
+### Limitación abierta explícita
+- No existe estado operativo de `Part` en el modelo actual, por lo tanto **no existe** endpoint de activar/desactivar en este contrato.
