@@ -1243,6 +1243,7 @@ Actualización de esta iteración (misma ventana de cutover por subconjunto):
 
 - para usuarios incluidos en `RobustOnlyCutover.UserIds`, la resolución de identidad de sesión (`login`/`refresh`/`/me`) no mezcla permisos desde `PermissionsJson`;
 - para ese mismo subconjunto, si no existen roles robustos en `SystemUserRole`, no hay fallback a `RolesJson`;
+- en autorización runtime de ese subconjunto, la lectura de `RolesJson` deja de ser consulta base y pasa a fallback diferido (solo si faltan roles robustos y el request admite fallback legacy);
 - fuera del subconjunto se mantiene comportamiento transicional previo para evitar corte global no validado.
 
 Expansión controlada validada en Bloque B / Fase 4 abierta:

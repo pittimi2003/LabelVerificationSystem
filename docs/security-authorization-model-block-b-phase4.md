@@ -1004,8 +1004,20 @@ Resultado: `admin-001` y `manager-001` mantienen comportamiento esperado en sesi
 - bridge de usuarios configurados/locales (`AuthService.UpsertConfiguredUserBridgeAsync`):
   - para usuarios en cutover, `RolesJson`/`PermissionsJson` se limpian a `[]` como snapshot no operativo;
   - para usuarios fuera de cutover, continúa la persistencia legacy transitoria.
+- runtime de autorización (`AuthorizationMatrixService`):
+  - para requests en subconjunto robust-only, no se consulta `RolesJson` en la lectura base de usuario;
+  - `RolesJson` se consulta únicamente si faltan roles robustos y además el request admite fallback legacy.
 
-### Mapa de escrituras legacy que siguen vivas
+### Mapa de consumos legacy que siguen vivos
+
+Lecturas activas:
+
+1. `AuthService.ResolveEffectiveRolesAsync`: fallback a `RolesJson` fuera de cutover.
+2. `AuthService.ResolveEffectivePermissionsAsync`: mezcla con `PermissionsJson` fuera de cutover.
+3. `UserAdministrationService` (`ListAsync` + mapping detalle/listado): fallback/compatibilidad por `RolesJson`/`PermissionsJson` fuera de cutover.
+4. `AuthorizationMatrixService.TryAuthorizeWithRobustModelAsync`: lectura diferida de `RolesJson` solo bajo condición de fallback legacy.
+
+Escrituras activas:
 
 Se mantiene persistencia legacy en estas trayectorias:
 
@@ -1017,6 +1029,7 @@ Se mantiene persistencia legacy en estas trayectorias:
 - deja de persistirse contenido legacy operativo para usuarios en cutover en:
   - `/api/users` (create/update sobre esos `userId`);
   - bridge de perfiles configurados/locales en cutover.
+- en autorización runtime para ese subconjunto también deja de ser operativa la lectura temprana de `RolesJson`.
 
 ### Bloqueadores para retiro más amplio
 
