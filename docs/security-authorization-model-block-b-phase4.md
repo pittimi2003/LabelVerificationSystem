@@ -1274,3 +1274,24 @@ Orden técnico recomendado para llegar al cierre futuro de Fase 4:
 
 - **Fase 4 sigue abierta**.
 - No se ejecuta apagado global legacy en esta iteración.
+
+## 29) Grid administrativo de `RoleCatalog` (Bloque B / Fase 4 abierta, 2026-04-23)
+
+Se habilitó contrato mínimo para administración operativa del catálogo de roles con policy robusta existente.
+
+Endpoints incorporados:
+
+- `GET /api/roles` (listado paginado + filtros `query|code|name|isActive`).
+- `GET /api/roles/{roleCode}` (detalle).
+- `PATCH /api/roles/{roleCode}/activation` (activar/desactivar).
+
+Protección:
+
+- Los tres endpoints usan `AuthorizationMatrixManage`.
+- Se mantiene coherencia con `/authorization-matrix` y deny-by-default del modelo robusto.
+
+Limitaciones explícitas en este corte:
+
+- sin alta de rol,
+- sin edición de `Code/Name`,
+- sin eliminación.

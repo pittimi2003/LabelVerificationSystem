@@ -1,0 +1,15 @@
+.roles-admin-page {
+    width: 100%;
+}
+
+.roles-admin-card {
+    background: var(--mud-palette-surface);
+}
+
+.roles-page-size {
+    min-width: 140px;
+}
+
+.roles-admin-drawer {
+    z-index: 1400;
+}

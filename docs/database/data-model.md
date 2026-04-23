@@ -661,3 +661,21 @@ Este documento debe actualizarse cuando ocurra cualquiera de estas situaciones:
 - Se añade AuditLog como necesidad lógica de trazabilidad.
 - Se documentan relaciones principales sin fijar aún el diseño físico final.
 - Se identifican decisiones pendientes que deberán cerrarse durante la implementación.
+
+## Actualización operacional (`RoleCatalog` admin grid, 2026-04-23)
+
+Sin cambios de esquema, se habilita contrato API de administración sobre entidad existente `RoleCatalog`:
+
+- `GET /api/roles`
+- `GET /api/roles/{roleCode}`
+- `PATCH /api/roles/{roleCode}/activation`
+
+Campos operados por el grid:
+
+- `Code`, `Name`, `IsActive`, `CreatedAtUtc`, `UpdatedAtUtc`.
+
+Notas:
+
+- no se alteró modelo relacional,
+- no se añadieron nuevas tablas/columnas,
+- la operación queda acotada a consulta + toggle de `IsActive`.
