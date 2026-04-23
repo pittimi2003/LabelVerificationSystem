@@ -1542,3 +1542,15 @@ Validación técnica (instalación nueva):
 
 Estado explícito:
 - `RolesJson` y `PermissionsJson` **ya no forman parte del modelo operativo final**.
+
+## Avance reciente: Bloque B / Fase 4 abierta (estabilización guardado de permisos por rol)
+
+- Estado de fase: **Fase 4 continúa abierta** (no cerrada en esta iteración).
+- Se corrigió una `DbUpdateConcurrencyException` al guardar `/api/authorization-matrix/roles/{roleCode}`.
+- Causa detectada: existían filas históricas en `RoleModuleAuthorization`/`RoleModuleActionAuthorization` con `Id` persistido como GUID de 32 hex sin guiones; EF Core materializa `Guid` normalizado con guiones y, al hacer `UPDATE`/`DELETE` por PK, la comparación textual en SQLite no encontraba la fila (0 rows affected).
+- Corrección aplicada en `AuthorizationAdministrationService.UpdateRoleMatrixAsync`:
+  - se reemplazó estrategia de actualización fila-a-fila por persistencia estable de tipo *replace controlado* para módulos/acciones solicitados;
+  - primero se elimina por claves funcionales (`RoleId + ModuleId`, `RoleId + ModuleActionId`) vía `ExecuteDeleteAsync` (sin depender del `Id` previo),
+  - luego se inserta el estado final solicitado para los mismos módulos/acciones.
+- Resultado: el guardado de matriz por rol deja de depender del formato histórico del PK y persiste correctamente el estado final de autorización.
+- No se incorporaron cambios de Fase 5 ni NLog en este avance.
