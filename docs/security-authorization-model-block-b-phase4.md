@@ -1052,3 +1052,40 @@ Se mantiene persistencia legacy en estas trayectorias:
 
 - **Fase 4 sigue abierta**.
 - No se realizó apagado global de `RolesJson`/`PermissionsJson`.
+
+## 28) Iteración adicional Bloque B: reducción de lectura legacy `PermissionsJson` en `/users` (2026-04-23)
+
+> **Fase 4 permanece abierta**.  
+> Sin apagado global de legacy.  
+> Sin mezclar este corte con Fase 5 ni NLog.
+
+### Cambio aplicado
+
+- `UserAdministrationService.ResolveEffectivePermissionsAsync`:
+  - para usuarios con roles robustos (`SystemUserRole`) en cutover, conserva resolución solo robusta;
+  - para usuarios con roles robustos fuera de cutover, usa permisos robustos como base efectiva y agrega `PermissionsJson` solo como compatibilidad transitoria;
+  - para usuarios sin roles robustos fuera de cutover, mantiene fallback legacy.
+- `MapToListItem` y `MapToDetail` eliminan fallback de relectura directa a `RolesJson`/`PermissionsJson` cuando ya hay mapas efectivos resueltos.
+
+### Estado de lecturas `PermissionsJson` tras este corte
+
+Lecturas que siguen vivas:
+1. `AuthService.ResolveEffectivePermissionsAsync` (fuera de cutover).
+2. `UserAdministrationService.ResolveEffectivePermissionsAsync` (compatibilidad fuera de cutover).
+3. `UserAdministrationService.ListAsync` filtro por `permission` (compatibilidad fuera de cutover).
+
+Lecturas que dejan de ser operativas en el subconjunto endurecido:
+- en `/users`, usuarios con roles robustos ya no dependen exclusivamente de `PermissionsJson` para permisos efectivos;
+- en cutover se mantiene prohibición de mezcla operativa con `PermissionsJson`.
+
+### Riesgos/bloqueadores abiertos
+
+- Compatibilidad requerida para perfiles no migrados fuera de cutover.
+- Permisos legacy aún no totalmente normalizados en catálogo robusto.
+- Necesidad de más evidencia para un retiro global seguro.
+
+### Resultado
+
+- Se reduce consumo residual legacy en `/users` sin apagado global.
+- Contratos de `login`, `refresh`, `/me`, `/users`, `/authorization-matrix`, `/excel-uploads` permanecen sin cambios.
+- **Fase 4 sigue abierta**.

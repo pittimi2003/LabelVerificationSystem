@@ -402,17 +402,26 @@ public sealed class UserAdministrationService : IUserAdministrationService
         var result = users.ToDictionary(x => x.Id, _ => (IReadOnlyList<string>)[]);
         foreach (var user in users)
         {
+            var isCutoverUser = IsRobustOnlyCutoverUser(user.UserId);
             if (roleMap.TryGetValue(user.Id, out var roleCodes) && roleCodes.Count > 0)
             {
                 var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
-                if (IsRobustOnlyCutoverUser(user.UserId))
+                if (isCutoverUser)
                 {
                     result[user.Id] = robustPermissions;
                     continue;
                 }
+
+                var legacyPermissions = DeserializeList(user.PermissionsJson);
+                result[user.Id] = robustPermissions
+                    .Concat(legacyPermissions)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                continue;
             }
 
-            if (IsRobustOnlyCutoverUser(user.UserId))
+            if (isCutoverUser)
             {
                 result[user.Id] = [];
                 continue;
@@ -456,8 +465,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
             user.DisplayName,
             user.Email,
             user.IsActive,
-            roleMap.TryGetValue(user.Id, out var roles) ? roles : DeserializeList(user.RolesJson),
-            permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : DeserializeList(user.PermissionsJson),
+            roleMap.TryGetValue(user.Id, out var roles) ? roles : [],
+            permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : [],
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
 
@@ -471,8 +480,8 @@ public sealed class UserAdministrationService : IUserAdministrationService
             user.DisplayName,
             user.Email,
             user.IsActive,
-            roleMap.TryGetValue(user.Id, out var roles) ? roles : DeserializeList(user.RolesJson),
-            permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : DeserializeList(user.PermissionsJson),
+            roleMap.TryGetValue(user.Id, out var roles) ? roles : [],
+            permissionMap.TryGetValue(user.Id, out var permissions) ? permissions : [],
             user.CreatedAtUtc,
             user.UpdatedAtUtc);
 
