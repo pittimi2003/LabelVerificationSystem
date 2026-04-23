@@ -1204,3 +1204,73 @@ Ejecución en el subconjunto robust-only validado:
 **Decisión final de esta iteración:** **fallback eliminado en subconjunto** (perímetro `RobustOnlyCutover` actual), con fallback aún necesario fuera del perímetro por transición.
 
 > **Fase 4 sigue abierta**.
+
+## 31) Plan técnico de preparación para cierre futuro de Fase 4 (Bloque B, 2026-04-23)
+
+> **Fase 4 permanece abierta**.  
+> Esta sección define preparación de cierre técnico; **no** ejecuta cierre de fase, no activa apagado global legacy, no incluye Fase 5 y no incluye NLog.
+
+### 31.1 Estado estabilizado dentro del perímetro validado
+
+Se consideran estabilizados (con evidencia reproducible ya documentada):
+
+- Modelo robusto persistido: `RoleCatalog`, `ModuleCatalog`, `ModuleActionCatalog`, `RoleModuleAuthorization`, `RoleModuleActionAuthorization`, `SystemUserRole`.
+- Runtime robusto con `AuthorizationMatrixService` y deny-by-default.
+- Integración operativa robust-ready en:
+  - `/users`
+  - `/authorization-matrix`
+  - `/excel-uploads`
+- Bridge de usuarios configurados/locales para materializar asignación robusta de roles en `SystemUserRole`.
+- Cutover selectivo operativo por `Authorization:RobustOnlyCutover`.
+- Validación E2E reproducible sobre perfiles `admin-001`, `manager-001`, `operator-001`.
+- Decisión vigente confirmada: **fallback eliminado en subconjunto** (cutover actual).
+
+### 31.2 Dependencias legacy que siguen vivas fuera del subconjunto robust-only
+
+Dependencias que continúan activas fuera del perímetro `RobustOnlyCutover` actual:
+
+1. Lectura de `RolesJson` (compatibilidad transitoria) en runtime/sesión o administración para usuarios/scopes no cubiertos.
+2. Lectura/mezcla de `PermissionsJson` en resolución efectiva fuera de cutover.
+3. Fallback legacy por claims en `AuthorizationMatrixService` cuando aplica `EnableLegacyFallback` y el request no cae en cutover robust-only.
+4. Filtros/listados de `/users` que todavía contemplan compatibilidad legacy fuera del subconjunto robusto.
+
+### 31.3 Pendientes reales antes de considerar Fase 4 cerrable
+
+Pendientes técnicos delimitados (sin inferir alcance no validado):
+
+- Extender cobertura robust-only a más módulos/acciones actualmente fuera del cutover, siempre por evidencia E2E por perfil/scope.
+- Completar mapeo robusto de perfiles/roles/permisos aún dependientes de snapshots legacy fuera del subconjunto actual.
+- Reducir gradualmente filtros y rutas de lectura legacy remanentes en `/users` fuera de cutover.
+- Confirmar que login/refresh`/`/me` mantienen comportamiento estable sin regresión mientras disminuye compatibilidad legacy fuera de cutover.
+
+### 31.4 Criterios objetivos de cierre futuro de Fase 4
+
+Fase 4 podría considerarse **cerrable** solo cuando se cumplan todos los criterios siguientes:
+
+1. **Cobertura robusta completa en alcance de Fase 4**: módulos/perfiles objetivo de Bloque B operan con matriz robusta como fuente primaria, sin huecos funcionales.
+2. **Evidencia E2E reproducible por perfil/scope**: resultados esperados (2xx/403/400 funcional) para endpoints críticos en cada perfil objetivo.
+3. **Dependencia legacy acotada a cero dentro del alcance objetivo de Fase 4**: sin lectura operativa necesaria de `RolesJson`/`PermissionsJson` ni claims legacy para ese alcance.
+4. **No regresión contractual**: sin romper login, refresh, `/me`, `/users`, `/authorization-matrix`, `/excel-uploads`.
+5. **Plan de apagado global legacy validado aparte**: si aplica, debe ocurrir en iteración explícita posterior con evidencia; no implícito en este cierre preparatorio.
+
+### 31.5 Orden recomendado de iteraciones restantes
+
+Orden técnico recomendado para llegar al cierre futuro de Fase 4:
+
+1. **Inventario cerrado de perímetro pendiente** (módulo + acción + perfil), distinguiendo ya-validado vs pendiente.
+2. **Expansión incremental de cutover** por lotes pequeños y verificables (un módulo o subconjunto de acciones por iteración).
+3. **Ejecución E2E obligatoria por lote** y no-regresión sobre `admin-001`, `manager-001`, `operator-001`.
+4. **Retiro progresivo de lecturas legacy fuera de cutover** en rutas ya validadas robust-only.
+5. **Pre-cierre documental**: matriz final de cobertura + evidencia consolidada + riesgos residuales.
+6. **Iteración formal de decisión de cierre** (sin mezclar con Fase 5), validando explícitamente si se cumplen criterios 31.4.
+
+### 31.6 Acción segura aplicada en esta iteración
+
+- Se agrega checklist operativo de preparación de cierre técnico para Fase 4:
+  - `docs/checklists/phase4-closure-preparation-checklist.md`
+- La checklist no cambia runtime ni contratos; solo estandariza verificación y evidencia necesaria para cierre futuro.
+
+### 31.7 Estado explícito
+
+- **Fase 4 sigue abierta**.
+- No se ejecuta apagado global legacy en esta iteración.
