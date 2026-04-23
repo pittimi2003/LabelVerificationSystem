@@ -3,6 +3,7 @@ using BlazorColorPicker;
 using LabelVerificationSystem.Web.Components;
 using LabelVerificationSystem.Web.Components.Auth;
 using LabelVerificationSystem.Web.Components.Authorization;
+using LabelVerificationSystem.Web.Components.Parts;
 using LabelVerificationSystem.Web.Components.Roles;
 using LabelVerificationSystem.Web.Components.Services;
 using LabelVerificationSystem.Web.Components.Users;
@@ -78,6 +79,13 @@ namespace LabelVerificationSystem.Web
                 var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
                 var authSessionService = sp.GetRequiredService<AuthSessionService>();
                 return new RoleCatalogAdministrationApiClient(backendApiClient, authSessionService);
+            });
+            builder.Services.AddScoped(sp =>
+            {
+                var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+                var backendApiClient = httpClientFactory.CreateClient(BackendApiHttpClientOptions.RawClientName);
+                var authSessionService = sp.GetRequiredService<AuthSessionService>();
+                return new PartAdministrationApiClient(backendApiClient, authSessionService);
             });
 
             await builder.Build().RunAsync();

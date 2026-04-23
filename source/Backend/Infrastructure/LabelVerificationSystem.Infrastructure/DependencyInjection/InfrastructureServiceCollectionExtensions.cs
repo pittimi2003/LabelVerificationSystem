@@ -1,11 +1,13 @@
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.Authorization;
 using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
+using LabelVerificationSystem.Application.Interfaces.Parts;
 using LabelVerificationSystem.Application.Interfaces.Roles;
 using LabelVerificationSystem.Application.Interfaces.Users;
 using LabelVerificationSystem.Infrastructure.Auth;
 using LabelVerificationSystem.Infrastructure.Authorization;
 using LabelVerificationSystem.Infrastructure.ExcelUploads;
+using LabelVerificationSystem.Infrastructure.Parts;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using LabelVerificationSystem.Infrastructure.Roles;
 using LabelVerificationSystem.Infrastructure.Users;
@@ -32,6 +34,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IAuthorizationAdministrationService, AuthorizationAdministrationService>();
         services.AddScoped<IRoleCatalogAdministrationService, RoleCatalogAdministrationService>();
         services.AddScoped<IUserAdministrationService, UserAdministrationService>();
+        services.AddScoped<IPartAdministrationService, PartAdministrationService>();
 
         return services;
     }

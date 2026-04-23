@@ -122,6 +122,25 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.ExcelUploads, AuthModuleActions.Upload));
     });
+
+
+    options.AddPolicy(AuthAuthorizationPolicies.PartsRead, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.PartsCatalog, AuthModuleActions.View));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.PartsCreate, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.PartsCatalog, AuthModuleActions.Create));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.PartsEdit, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.PartsCatalog, AuthModuleActions.Edit));
+    });
 });
 
 builder.Services.AddScoped<IAuthorizationHandler, ModuleActionAuthorizationHandler>();

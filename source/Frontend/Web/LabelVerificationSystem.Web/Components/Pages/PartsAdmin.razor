@@ -1,0 +1,456 @@
+@page "/parts"
+@using LabelVerificationSystem.Web.Components.Parts
+@inject PartAdministrationApiClient PartAdministrationApiClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Administración de parts</PageTitle>
+
+<div class="roles-admin-page d-flex flex-column gap-4">
+    <MudPaper Class="roles-admin-card pa-4" Outlined="true">
+        <MudStack Spacing="3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="roles-admin-toolbar flex-wrap gap-2">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h5">Administración de Parts</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/parts</code>.</MudText>
+                </MudStack>
+                <MudStack Row="true" Spacing="1">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsLoading" OnClick="OpenCreateDrawer" StartIcon="@Icons.Material.Filled.Add">Crear part</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadPartsAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                </MudStack>
+            </MudStack>
+
+            <MudPaper Class="pa-3 roles-admin-filters" Outlined="true">
+                <MudGrid>
+                    <MudItem xs="12" md="4" lg="3">
+                        <MudSelect T="string" Value="@SearchField" ValueChanged="OnSearchFieldChanged" Label="SearchField" Variant="Variant.Outlined">
+                            <MudSelectItem T="string" Value="@(SearchFieldPartNumber)">PartNumber</MudSelectItem>
+                            <MudSelectItem T="string" Value="@(SearchFieldModel)">Model</MudSelectItem>
+                            <MudSelectItem T="string" Value="@(SearchFieldMinghuaDescription)">MinghuaDescription</MudSelectItem>
+                            <MudSelectItem T="string" Value="@(SearchFieldCco)">Cco</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="8" lg="5">
+                        <MudTextField T="string" Value="@SearchText" ValueChanged="OnSearchTextChanged" Label="SearchText" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="2">
+                        <MudSelect T="string" Value="@StatusFilter" Label="StatusFilter" Variant="Variant.Outlined" Disabled="true">
+                            <MudSelectItem T="string" Value="@StatusFilter">No aplica</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="2" Class="d-flex align-center justify-end">
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (HasLoadError)
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">@LoadErrorMessage</MudAlert>
+            }
+
+            @if (IsLoading)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Cargando parts...</MudText>
+                </div>
+            }
+            else
+            {
+                <MudTable Hover="true" Elevation="0" Items="@_parts" Breakpoint="Breakpoint.Md" Bordered="true">
+                    <HeaderContent>
+                        <MudTh>PartNumber</MudTh>
+                        <MudTh>Model</MudTh>
+                        <MudTh>MinghuaDescription</MudTh>
+                        <MudTh>Caducidad</MudTh>
+                        <MudTh>Cco</MudTh>
+                        <MudTh>CertificationEac</MudTh>
+                        <MudTh>FirstFourNumbers</MudTh>
+                        <MudTh>CreatedByExcelUploadId</MudTh>
+                        <MudTh>CreatedAtUtc</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.PartNumber</MudTd>
+                        <MudTd>@context.Model</MudTd>
+                        <MudTd>@context.MinghuaDescription</MudTd>
+                        <MudTd>@(context.Caducidad?.ToString() ?? "—")</MudTd>
+                        <MudTd>@context.Cco</MudTd>
+                        <MudTd>@(context.CertificationEac.HasValue ? (context.CertificationEac.Value ? "YES" : "NO") : "NA")</MudTd>
+                        <MudTd>@context.FirstFourNumbers</MudTd>
+                        <MudTd>@(context.CreatedByExcelUploadId?.ToString("D") ?? "—")</MudTd>
+                        <MudTd>@context.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>
+                            <MudStack Row="true" Spacing="0">
+                                <MudTooltip Text="Ver detalle">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small" OnClick="() => OpenDetailDrawerAsync(context.Id)" />
+                                </MudTooltip>
+                                <MudTooltip Text="Editar part">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Size="Size.Small" OnClick="() => OpenEditDrawerAsync(context.Id)" />
+                                </MudTooltip>
+                            </MudStack>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2">No hay parts que coincidan con los filtros actuales en backend.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-3 flex-wrap gap-2">
+                    <MudText Typo="Typo.caption">Página @CurrentPage de @TotalPages | Total backend: @TotalItems</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudSelect T="int" Value="@PageSize" ValueChanged="OnPageSizeChanged" Variant="Variant.Outlined" Label="Filas por página" Class="roles-page-size">
+                            <MudSelectItem Value="10">10</MudSelectItem>
+                            <MudSelectItem Value="20">20</MudSelectItem>
+                            <MudSelectItem Value="50">50</MudSelectItem>
+                        </MudSelect>
+                        <MudPagination Selected="@CurrentPage" Count="@TotalPages" SelectedChanged="OnPageChanged" Disabled="@IsLoading" />
+                    </MudStack>
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
+</div>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsCreateDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Crear part</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCreateDrawer" />
+    </MudDrawerHeader>
+    <div class="pa-4">
+        <MudForm @ref="_createForm">
+            <MudStack Spacing="2">
+                <MudTextField T="string" @bind-Value="CreateModel.PartNumber" Label="PartNumber" Variant="Variant.Outlined" Required="true" RequiredError="PartNumber es requerido" MaxLength="120" Counter="120" />
+                <MudTextField T="string" @bind-Value="CreateModel.Model" Label="Model" Variant="Variant.Outlined" Required="true" RequiredError="Model es requerido" MaxLength="120" Counter="120" />
+                <MudTextField T="string" @bind-Value="CreateModel.MinghuaDescription" Label="MinghuaDescription" Variant="Variant.Outlined" Required="true" RequiredError="MinghuaDescription es requerido" MaxLength="400" Counter="400" />
+                <MudNumericField T="int?" @bind-Value="CreateModel.Caducidad" Label="Caducidad" Variant="Variant.Outlined" Min="0" />
+                <MudTextField T="string" @bind-Value="CreateModel.Cco" Label="Cco" Variant="Variant.Outlined" Required="true" RequiredError="Cco es requerido" MaxLength="120" Counter="120" />
+                <MudSelect T="bool?" @bind-Value="CreateModel.CertificationEac" Label="CertificationEac" Variant="Variant.Outlined">
+                    <MudSelectItem T="bool?" Value="@(null)">NA</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="@(true)">YES</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="@(false)">NO</MudSelectItem>
+                </MudSelect>
+                <MudNumericField T="int" @bind-Value="CreateModel.FirstFourNumbers" Label="FirstFourNumbers" Variant="Variant.Outlined" Required="true" Min="0" />
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-2">
+                    <MudButton Variant="Variant.Text" OnClick="CloseCreateDrawer">Cancelar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsSavingCreate" OnClick="SaveCreateAsync">Guardar</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudForm>
+    </div>
+</MudDrawer>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Editar part</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseEditDrawer" />
+    </MudDrawerHeader>
+    <div class="pa-4">
+        <MudForm @ref="_editForm">
+            <MudStack Spacing="2">
+                <MudTextField T="string" @bind-Value="EditModel.PartNumber" Label="PartNumber" Variant="Variant.Outlined" Required="true" RequiredError="PartNumber es requerido" MaxLength="120" Counter="120" />
+                <MudTextField T="string" @bind-Value="EditModel.Model" Label="Model" Variant="Variant.Outlined" Required="true" RequiredError="Model es requerido" MaxLength="120" Counter="120" />
+                <MudTextField T="string" @bind-Value="EditModel.MinghuaDescription" Label="MinghuaDescription" Variant="Variant.Outlined" Required="true" RequiredError="MinghuaDescription es requerido" MaxLength="400" Counter="400" />
+                <MudNumericField T="int?" @bind-Value="EditModel.Caducidad" Label="Caducidad" Variant="Variant.Outlined" Min="0" />
+                <MudTextField T="string" @bind-Value="EditModel.Cco" Label="Cco" Variant="Variant.Outlined" Required="true" RequiredError="Cco es requerido" MaxLength="120" Counter="120" />
+                <MudSelect T="bool?" @bind-Value="EditModel.CertificationEac" Label="CertificationEac" Variant="Variant.Outlined">
+                    <MudSelectItem T="bool?" Value="@(null)">NA</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="@(true)">YES</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="@(false)">NO</MudSelectItem>
+                </MudSelect>
+                <MudNumericField T="int" @bind-Value="EditModel.FirstFourNumbers" Label="FirstFourNumbers" Variant="Variant.Outlined" Required="true" Min="0" />
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-2">
+                    <MudButton Variant="Variant.Text" OnClick="CloseEditDrawer">Cancelar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsSavingEdit" OnClick="SaveEditAsync">Guardar</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudForm>
+    </div>
+</MudDrawer>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Detalle de part</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseDetailDrawer" />
+    </MudDrawerHeader>
+    <div class="pa-4">
+        @if (SelectedPart is null)
+        {
+            <MudText Typo="Typo.body2">No hay part seleccionada.</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="2">
+                <MudTextField T="string" Value="@SelectedPart.Id.ToString("D")" Label="Id" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.PartNumber" Label="PartNumber" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.Model" Label="Model" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.MinghuaDescription" Label="MinghuaDescription" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@(SelectedPart.Caducidad?.ToString() ?? "NA")" Label="Caducidad" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.Cco" Label="Cco" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@(SelectedPart.CertificationEac.HasValue ? (SelectedPart.CertificationEac.Value ? "YES" : "NO") : "NA")" Label="CertificationEac" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.FirstFourNumbers.ToString()" Label="FirstFourNumbers" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@(SelectedPart.CreatedByExcelUploadId?.ToString("D") ?? "—")" Label="CreatedByExcelUploadId" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")" Label="CreatedAtUtc" Variant="Variant.Outlined" ReadOnly="true" />
+            </MudStack>
+        }
+    </div>
+</MudDrawer>
+
+@code {
+    private const string SearchFieldPartNumber = "partNumber";
+    private const string SearchFieldModel = "model";
+    private const string SearchFieldMinghuaDescription = "minghuaDescription";
+    private const string SearchFieldCco = "cco";
+
+    private readonly List<PartListItemDto> _parts = [];
+
+    private bool IsLoading { get; set; }
+    private bool HasLoadError { get; set; }
+    private string LoadErrorMessage { get; set; } = string.Empty;
+
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 20;
+    private int TotalPages { get; set; } = 1;
+    private int TotalItems { get; set; }
+
+    private string SearchField { get; set; } = SearchFieldPartNumber;
+    private string SearchText { get; set; } = string.Empty;
+    private string StatusFilter { get; set; } = "n/a";
+
+    private bool IsCreateDrawerOpen { get; set; }
+    private bool IsEditDrawerOpen { get; set; }
+    private bool IsDetailDrawerOpen { get; set; }
+    private bool IsSavingCreate { get; set; }
+    private bool IsSavingEdit { get; set; }
+
+    private MudForm? _createForm;
+    private MudForm? _editForm;
+
+    private PartFormModel CreateModel { get; set; } = new();
+    private PartFormModel EditModel { get; set; } = new();
+    private Guid EditingPartId { get; set; }
+
+    private PartDetailDto? SelectedPart { get; set; }
+
+    protected override async Task OnInitializedAsync() => await LoadPartsAsync();
+
+    private async Task LoadPartsAsync()
+    {
+        IsLoading = true;
+        HasLoadError = false;
+        LoadErrorMessage = string.Empty;
+
+        try
+        {
+            var response = await PartAdministrationApiClient.ListAsync(BuildListQuery(), CancellationToken.None);
+            _parts.Clear();
+            _parts.AddRange(response.Items);
+            CurrentPage = response.Page;
+            PageSize = response.PageSize;
+            TotalItems = response.TotalItems;
+            TotalPages = Math.Max(response.TotalPages, 1);
+        }
+        catch (Exception ex)
+        {
+            _parts.Clear();
+            HasLoadError = true;
+            LoadErrorMessage = $"No se pudo cargar el grid de parts: {ex.Message}";
+            Snackbar.Add(LoadErrorMessage, Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task OnSearchFieldChanged(string? value)
+    {
+        SearchField = value is SearchFieldPartNumber or SearchFieldModel or SearchFieldMinghuaDescription or SearchFieldCco
+            ? value
+            : SearchFieldPartNumber;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnSearchTextChanged(string? value)
+    {
+        SearchText = value ?? string.Empty;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        SearchField = SearchFieldPartNumber;
+        SearchText = string.Empty;
+        CurrentPage = 1;
+        await LoadPartsAsync();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        CurrentPage = 1;
+        await LoadPartsAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        CurrentPage = Math.Max(page, 1);
+        await LoadPartsAsync();
+    }
+
+    private async Task OnPageSizeChanged(int pageSize)
+    {
+        PageSize = pageSize;
+        CurrentPage = 1;
+        await LoadPartsAsync();
+    }
+
+    private PartListQueryDto BuildListQuery()
+    {
+        var normalizedText = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim();
+        return new PartListQueryDto(
+            PartNumber: SearchField == SearchFieldPartNumber ? normalizedText : null,
+            Model: SearchField == SearchFieldModel ? normalizedText : null,
+            MinghuaDescription: SearchField == SearchFieldMinghuaDescription ? normalizedText : null,
+            Cco: SearchField == SearchFieldCco ? normalizedText : null,
+            Page: CurrentPage,
+            PageSize: PageSize);
+    }
+
+    private void OpenCreateDrawer()
+    {
+        CreateModel = new PartFormModel();
+        IsCreateDrawerOpen = true;
+    }
+
+    private void CloseCreateDrawer() => IsCreateDrawerOpen = false;
+
+    private async Task SaveCreateAsync()
+    {
+        if (_createForm is not null)
+        {
+            await _createForm.Validate();
+            if (!_createForm.IsValid)
+            {
+                Snackbar.Add("Revisa los campos obligatorios del formulario de alta.", Severity.Warning);
+                return;
+            }
+        }
+
+        IsSavingCreate = true;
+        try
+        {
+            await PartAdministrationApiClient.CreateAsync(new CreatePartRequestDto(
+                CreateModel.PartNumber.Trim(),
+                CreateModel.Model.Trim(),
+                CreateModel.MinghuaDescription.Trim(),
+                CreateModel.Caducidad,
+                CreateModel.Cco.Trim(),
+                CreateModel.CertificationEac,
+                CreateModel.FirstFourNumbers), CancellationToken.None);
+            Snackbar.Add("Part creada correctamente.", Severity.Success);
+            IsCreateDrawerOpen = false;
+            await LoadPartsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo crear la part: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSavingCreate = false;
+        }
+    }
+
+    private async Task OpenEditDrawerAsync(Guid partId)
+    {
+        try
+        {
+            var detail = await PartAdministrationApiClient.GetByIdAsync(partId, CancellationToken.None);
+            EditingPartId = detail.Id;
+            EditModel = new PartFormModel
+            {
+                PartNumber = detail.PartNumber,
+                Model = detail.Model,
+                MinghuaDescription = detail.MinghuaDescription,
+                Caducidad = detail.Caducidad,
+                Cco = detail.Cco,
+                CertificationEac = detail.CertificationEac,
+                FirstFourNumbers = detail.FirstFourNumbers
+            };
+            IsEditDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar la part para edición: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseEditDrawer() => IsEditDrawerOpen = false;
+
+    private async Task SaveEditAsync()
+    {
+        if (_editForm is not null)
+        {
+            await _editForm.Validate();
+            if (!_editForm.IsValid)
+            {
+                Snackbar.Add("Revisa los campos obligatorios del formulario de edición.", Severity.Warning);
+                return;
+            }
+        }
+
+        IsSavingEdit = true;
+        try
+        {
+            await PartAdministrationApiClient.UpdateAsync(EditingPartId, new UpdatePartRequestDto(
+                EditModel.PartNumber.Trim(),
+                EditModel.Model.Trim(),
+                EditModel.MinghuaDescription.Trim(),
+                EditModel.Caducidad,
+                EditModel.Cco.Trim(),
+                EditModel.CertificationEac,
+                EditModel.FirstFourNumbers), CancellationToken.None);
+            Snackbar.Add("Part actualizada correctamente.", Severity.Success);
+            IsEditDrawerOpen = false;
+            await LoadPartsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo actualizar la part: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSavingEdit = false;
+        }
+    }
+
+    private async Task OpenDetailDrawerAsync(Guid partId)
+    {
+        try
+        {
+            SelectedPart = await PartAdministrationApiClient.GetByIdAsync(partId, CancellationToken.None);
+            IsDetailDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el detalle de la part: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseDetailDrawer()
+    {
+        IsDetailDrawerOpen = false;
+        SelectedPart = null;
+    }
+
+    private sealed class PartFormModel
+    {
+        public string PartNumber { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string MinghuaDescription { get; set; } = string.Empty;
+        public int? Caducidad { get; set; }
+        public string Cco { get; set; } = string.Empty;
+        public bool? CertificationEac { get; set; }
+        public int FirstFourNumbers { get; set; }
+    }
+}
