@@ -1089,3 +1089,49 @@ Lecturas que dejan de ser operativas en el subconjunto endurecido:
 - Se reduce consumo residual legacy en `/users` sin apagado global.
 - Contratos de `login`, `refresh`, `/me`, `/users`, `/authorization-matrix`, `/excel-uploads` permanecen sin cambios.
 - **Fase 4 sigue abierta**.
+
+## 29) Iteración adicional Bloque B: reducción de consumo residual `PermissionsJson` en sesión/runtime (2026-04-23)
+
+> **Fase 4 permanece abierta**.  
+> Sin apagado global de legacy.  
+> Sin mezclar este corte con Fase 5 ni NLog.
+
+### Cambio aplicado
+
+- `AuthService.ResolveEffectiveRolesAsync` ahora retorna origen de roles efectivos (robusto vs fallback legacy).
+- `AuthService.ResolveEffectivePermissionsAsync` pasa a estrategia **robust-first** para sesión (`login`, `refresh`, `/me`):
+  - para usuarios en cutover, mantiene resolución solo robusta;
+  - para usuarios fuera de cutover con asignación robusta real (`SystemUserRole`) y permisos robustos no vacíos, deja de mezclar operativamente `PermissionsJson`;
+  - mantiene fallback legacy (`PermissionsJson`) cuando todavía no hay base robusta suficiente (sin asignación robusta o sin permisos robustos resultantes).
+
+### Mapa actual de lecturas `PermissionsJson` vivas en runtime/sesión
+
+1. `AuthService.ResolveEffectivePermissionsAsync`:
+   - **vive** fuera de cutover como fallback transitorio;
+   - se activa cuando el usuario no tiene base robusta suficiente para permisos de sesión.
+2. `UserAdministrationService.ResolveEffectivePermissionsAsync`:
+   - **vive** fuera de cutover como compatibilidad transitoria.
+3. `UserAdministrationService.ListAsync` (filtro `permission`):
+   - **vive** fuera de cutover como compatibilidad transitoria.
+
+### Lecturas que dejan de ser operativas en el perímetro actual
+
+- En sesión (`login`, `refresh`, `/me`), para usuarios fuera de cutover **con** asignación robusta y permisos robustos efectivos, `PermissionsJson` deja de participar en el cálculo operativo de permisos emitidos.
+- Se mantiene intacta la regla robust-only de cutover (sin mezcla con `PermissionsJson`).
+
+### Qué bloquea un retiro más amplio
+
+- Persisten usuarios/permisos fuera de cutover sin cobertura robusta completa.
+- Aún existe transición dual en `/users` y filtros legacy.
+- Falta evidencia E2E adicional para retirar fallback legacy en todo runtime/sesión sin riesgo funcional.
+
+### Impacto funcional
+
+- **Auth runtime/sesión:** reduce consumo residual de `PermissionsJson` donde hay base robusta suficiente; sin cambios de contrato en `login`, `refresh`, `/me`.
+- **`/users`:** sin cambios funcionales adicionales en este corte (mantiene compatibilidad transitoria vigente).
+- **`/authorization-matrix` y `/excel-uploads`:** sin cambios de contrato ni estrategia en esta iteración.
+
+### Estado
+
+- No se realiza apagado global de `RolesJson`/`PermissionsJson`.
+- **Fase 4 sigue abierta**.
