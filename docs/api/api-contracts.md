@@ -1380,3 +1380,58 @@ Impacto contractual (sin ruptura):
 
 Bootstrap:
 - `Authentication:Users` permanece únicamente como bootstrap/sincronización inicial al modelo robusto para instalaciones nuevas o entornos que lo requieran.
+
+## Actualización Bloque B / Fase 4 abierta: administración de catálogo de roles (`RoleCatalog`)
+
+Se incorpora contrato mínimo para vista Grid administrativa de roles sin alterar arquitectura backend.
+
+### `GET /api/roles`
+Listado paginado y filtrado de `RoleCatalog`.
+
+#### Query params
+- `query` (opcional): búsqueda global parcial sobre `Code` y `Name`.
+- `code` (opcional): búsqueda parcial por `Code`.
+- `name` (opcional): búsqueda parcial por `Name`.
+- `isActive` (opcional): `true|false`.
+- `page` (obligatorio, default `1`).
+- `pageSize` (obligatorio, default `20`, rango `1..100`).
+
+#### Response DTO (200)
+```json
+{
+  "items": [
+    {
+      "roleId": "guid",
+      "roleCode": "SuperAdmin",
+      "roleName": "Super Admin",
+      "isActive": true,
+      "createdAtUtc": "2026-04-21T19:41:10Z",
+      "updatedAtUtc": "2026-04-22T10:00:00Z"
+    }
+  ],
+  "page": 1,
+  "pageSize": 20,
+  "totalItems": 3,
+  "totalPages": 1
+}
+```
+
+### `GET /api/roles/{roleCode}`
+Detalle de rol por código.
+
+### `PATCH /api/roles/{roleCode}/activation`
+Actualiza estado activo/inactivo.
+
+#### Request DTO
+```json
+{
+  "isActive": false
+}
+```
+
+### Autorización
+- Endpoints protegidos con policy robusta `AuthorizationMatrixManage`.
+
+### Notas de alcance
+- No se agregan endpoints de alta/edición/eliminación de roles en este corte.
+- No se mezclan cambios de Fase 5 ni NLog.

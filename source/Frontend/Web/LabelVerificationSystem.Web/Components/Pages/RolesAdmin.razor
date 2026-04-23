@@ -1,0 +1,284 @@
+@page "/roles"
+@using LabelVerificationSystem.Web.Components.Roles
+@inject RoleCatalogAdministrationApiClient RoleCatalogAdministrationApiClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Administración de roles</PageTitle>
+
+<div class="roles-admin-page d-flex flex-column gap-4">
+    <MudPaper Class="roles-admin-card pa-4" Outlined="true">
+        <MudStack Spacing="3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="roles-admin-toolbar flex-wrap gap-2">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h5">Administración de roles</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/roles</code>.</MudText>
+                </MudStack>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadRolesAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+            </MudStack>
+
+            <MudPaper Class="pa-3 roles-admin-filters" Outlined="true">
+                <MudGrid>
+                    <MudItem xs="12" md="4" lg="3">
+                        <MudSelect T="string" Value="@SearchField" ValueChanged="OnSearchFieldChanged" Label="SearchField" Variant="Variant.Outlined">
+                            <MudSelectItem T="string" Value="@("query")">Query</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("code")">RoleCode</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("name")">RoleName</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="8" lg="5">
+                        <MudTextField T="string" Value="@SearchText" ValueChanged="OnSearchTextChanged" Label="SearchText" Variant="Variant.Outlined" Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="2">
+                        <MudSelect T="string" Value="@ActiveFilter" ValueChanged="OnActiveFilterChanged" Label="StatusFilter" Variant="Variant.Outlined">
+                            <MudSelectItem T="string" Value="@AnyFilterValue">Todos</MudSelectItem>
+                            <MudSelectItem T="string" Value="@TrueFilterValue">Activos</MudSelectItem>
+                            <MudSelectItem T="string" Value="@FalseFilterValue">Inactivos</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="6" lg="2" Class="d-flex align-center justify-end">
+                        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (IsLoading)
+            {
+                <div class="d-flex align-center gap-2">
+                    <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                    <MudText Typo="Typo.body2">Cargando roles...</MudText>
+                </div>
+            }
+            else
+            {
+                <MudTable Hover="true" Elevation="0" Items="@_roles" Breakpoint="Breakpoint.Md" Bordered="true">
+                    <HeaderContent>
+                        <MudTh>RoleCode</MudTh>
+                        <MudTh>RoleName</MudTh>
+                        <MudTh>Estado</MudTh>
+                        <MudTh>Creado UTC</MudTh>
+                        <MudTh>Actualizado UTC</MudTh>
+                        <MudTh>Acciones</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.RoleCode</MudTd>
+                        <MudTd>@context.RoleName</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="@(context.IsActive ? Color.Success : Color.Error)">@(context.IsActive ? "Activo" : "Inactivo")</MudChip>
+                        </MudTd>
+                        <MudTd>@context.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>@context.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>
+                            <MudStack Row="true" Spacing="0">
+                                <MudTooltip Text="Ver detalle">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small" OnClick="() => OpenDetailDrawerAsync(context.RoleCode)" />
+                                </MudTooltip>
+                                <MudTooltip Text="@(context.IsActive ? "Desactivar rol" : "Activar rol")">
+                                    <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.ToggleOff : Icons.Material.Filled.ToggleOn)" Color="@(context.IsActive ? Color.Error : Color.Success)" Size="Size.Small" OnClick="() => ToggleActivationAsync(context)" />
+                                </MudTooltip>
+                            </MudStack>
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2">No hay roles que coincidan con los filtros actuales en backend.</MudText>
+                    </NoRecordsContent>
+                </MudTable>
+
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-3 flex-wrap gap-2">
+                    <MudText Typo="Typo.caption">Página @CurrentPage de @TotalPages | Total backend: @TotalItems</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudSelect T="int" Value="@PageSize" ValueChanged="OnPageSizeChanged" Variant="Variant.Outlined" Label="Filas por página" Class="roles-page-size">
+                            <MudSelectItem Value="10">10</MudSelectItem>
+                            <MudSelectItem Value="20">20</MudSelectItem>
+                            <MudSelectItem Value="50">50</MudSelectItem>
+                        </MudSelect>
+                        <MudPagination Selected="@CurrentPage" Count="@TotalPages" SelectedChanged="OnPageChanged" Disabled="@IsLoading" />
+                    </MudStack>
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
+</div>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="480px" Elevation="6" Class="roles-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Detalle de rol</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseDetailDrawer" />
+    </MudDrawerHeader>
+    <div class="pa-4">
+        @if (SelectedRole is null)
+        {
+            <MudText Typo="Typo.body2">No hay rol seleccionado.</MudText>
+        }
+        else
+        {
+            <MudStack Spacing="2">
+                <MudTextField T="string" Value="@SelectedRole.RoleCode" Label="RoleCode" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedRole.RoleName" Label="RoleName" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudSwitch T="bool" Value="@SelectedRole.IsActive" Label="Rol activo" Color="Color.Success" Disabled="true" />
+                <MudTextField T="string" Value="@SelectedRole.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")" Label="CreatedAtUtc" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedRole.UpdatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")" Label="UpdatedAtUtc" Variant="Variant.Outlined" ReadOnly="true" />
+            </MudStack>
+        }
+    </div>
+</MudDrawer>
+
+@code {
+    private const string AnyFilterValue = "*";
+    private const string TrueFilterValue = "true";
+    private const string FalseFilterValue = "false";
+
+    private readonly List<RoleCatalogListItemDto> _roles = [];
+
+    private bool IsLoading { get; set; }
+    private bool IsDetailDrawerOpen { get; set; }
+
+    private string SearchField { get; set; } = "query";
+    private string SearchText { get; set; } = string.Empty;
+    private string ActiveFilter { get; set; } = AnyFilterValue;
+
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 20;
+    private int TotalItems { get; set; }
+    private int TotalPages { get; set; }
+
+    private RoleCatalogDetailDto? SelectedRole { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRolesAsync();
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            var query = BuildQuery();
+            var response = await RoleCatalogAdministrationApiClient.ListAsync(query, CancellationToken.None);
+            _roles.Clear();
+            _roles.AddRange(response.Items);
+            CurrentPage = response.Page;
+            PageSize = response.PageSize;
+            TotalItems = response.TotalItems;
+            TotalPages = response.TotalPages;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el catálogo de roles: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private RoleCatalogListQueryDto BuildQuery()
+    {
+        string? query = null;
+        string? code = null;
+        string? name = null;
+        var normalizedText = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim();
+
+        switch (SearchField)
+        {
+            case "code":
+                code = normalizedText;
+                break;
+            case "name":
+                name = normalizedText;
+                break;
+            default:
+                query = normalizedText;
+                break;
+        }
+
+        bool? isActive = ActiveFilter switch
+        {
+            TrueFilterValue => true,
+            FalseFilterValue => false,
+            _ => null
+        };
+
+        return new RoleCatalogListQueryDto(query, code, name, isActive, CurrentPage, PageSize);
+    }
+
+    private async Task OnSearchFieldChanged(string value)
+    {
+        SearchField = value;
+        CurrentPage = 1;
+        await LoadRolesAsync();
+    }
+
+    private async Task OnSearchTextChanged(string? value)
+    {
+        SearchText = value ?? string.Empty;
+        CurrentPage = 1;
+        await LoadRolesAsync();
+    }
+
+    private async Task OnActiveFilterChanged(string value)
+    {
+        ActiveFilter = value;
+        CurrentPage = 1;
+        await LoadRolesAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        SearchField = "query";
+        SearchText = string.Empty;
+        ActiveFilter = AnyFilterValue;
+        CurrentPage = 1;
+        await LoadRolesAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        CurrentPage = Math.Max(1, page);
+        await LoadRolesAsync();
+    }
+
+    private async Task OnPageSizeChanged(int pageSize)
+    {
+        PageSize = pageSize;
+        CurrentPage = 1;
+        await LoadRolesAsync();
+    }
+
+    private async Task OpenDetailDrawerAsync(string roleCode)
+    {
+        try
+        {
+            SelectedRole = await RoleCatalogAdministrationApiClient.GetByCodeAsync(roleCode, CancellationToken.None);
+            IsDetailDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el detalle del rol: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseDetailDrawer()
+    {
+        IsDetailDrawerOpen = false;
+        SelectedRole = null;
+    }
+
+    private async Task ToggleActivationAsync(RoleCatalogListItemDto role)
+    {
+        try
+        {
+            await RoleCatalogAdministrationApiClient.SetActivationAsync(role.RoleCode, !role.IsActive, CancellationToken.None);
+            Snackbar.Add($"Rol {(role.IsActive ? "desactivado" : "activado")} correctamente.", Severity.Success);
+            await LoadRolesAsync();
+            if (IsDetailDrawerOpen && SelectedRole?.RoleCode == role.RoleCode)
+            {
+                SelectedRole = await RoleCatalogAdministrationApiClient.GetByCodeAsync(role.RoleCode, CancellationToken.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo actualizar el estado del rol: {ex.Message}", Severity.Error);
+        }
+    }
+}

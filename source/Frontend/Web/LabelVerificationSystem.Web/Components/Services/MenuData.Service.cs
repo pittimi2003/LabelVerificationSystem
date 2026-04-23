@@ -54,6 +54,15 @@ public class MenuDataService
                     active: false,
                     dirChange: false
                 ),
+                new MainMenuItems (
+                    path: "/roles",
+                    type: "link",
+                    icon: "",
+                    title: "Roles (Catálogo)",
+                    selected: false,
+                    active: false,
+                    dirChange: false
+                ),
             }
         ),
 

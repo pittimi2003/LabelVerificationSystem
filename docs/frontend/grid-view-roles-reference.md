@@ -1,0 +1,130 @@
+# Referencia concreta: RolesAdmin.razor (`RoleCatalog` / `Role`)
+
+## Estado y alcance
+
+- Vista administrativa tipo Grid para `RoleCatalog` sobre contrato HTTP real.
+- Alcance limitado a Bloque B / Fase 4 abierta.
+- Sin cambios de arquitectura backend, sin Fase 5, sin NLog.
+
+---
+
+## 1) Estándar reusable aplicado
+
+Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin variación estructural:
+
+- toolbar con título, subtítulo y acción de recarga,
+- bloque de filtros separado,
+- grid con estado de carga y estado vacío,
+- paginación backend-driven (`page`, `pageSize`, `totalItems`, `totalPages`),
+- drawer lateral para detalle,
+- feedback de errores/éxitos por snackbar,
+- patrón UX obligatorio: `SearchField`, `SearchText`, `StatusFilter`, `Limpiar filtros`.
+
+---
+
+## 2) Decisiones específicas del modelo `RoleCatalog`
+
+### 2.1 Columnas propuestas (y usadas)
+
+1. `RoleCode`
+2. `RoleName`
+3. `Estado` (`IsActive`)
+4. `CreatedAtUtc`
+5. `UpdatedAtUtc`
+6. `Acciones`
+
+### 2.2 Filtros propuestos (y usados)
+
+- `SearchField`:
+  - `Query` (global en backend)
+  - `RoleCode`
+  - `RoleName`
+- `SearchText`
+- `StatusFilter` (`Todos`, `Activos`, `Inactivos`) -> mapea a `isActive` nullable
+- `Limpiar filtros`
+
+### 2.3 Estados de vista
+
+- carga inicial,
+- carga por filtros/paginación,
+- estado vacío,
+- error de carga,
+- operación en curso (toggle estado),
+- éxito/error de operación.
+
+### 2.4 Acciones soportadas y no soportadas
+
+**Soportadas**
+
+- ver detalle (`GET /api/roles/{roleCode}`),
+- activar/desactivar (`PATCH /api/roles/{roleCode}/activation`).
+
+**No soportadas (declaradas explícitamente)**
+
+- crear rol,
+- editar `RoleCode`,
+- editar `RoleName`,
+- eliminación de rol.
+
+---
+
+## 3) Diseño de página
+
+### Toolbar
+- título/subtítulo,
+- botón `Actualizar`.
+
+### Filtros
+- `SearchField`,
+- `SearchText`,
+- `StatusFilter`,
+- `Limpiar filtros`.
+
+### Grid
+- tabla principal con columnas del contrato backend,
+- chips para estado.
+
+### Paginación
+- `Página X de Y`,
+- `Total backend`,
+- selector `Filas por página`,
+- control de páginas.
+
+### Drawers
+- drawer de detalle read-only.
+
+---
+
+## 4) Mapeo exacto contra contratos backend
+
+| Elemento | Contrato real |
+|---|---|
+| Listado | `GET /api/roles` |
+| Query params soportados | `query`, `code`, `name`, `isActive`, `page`, `pageSize` |
+| Respuesta listado | `{ items, page, pageSize, totalItems, totalPages }` |
+| Detalle | `GET /api/roles/{roleCode}` |
+| Toggle estado | `PATCH /api/roles/{roleCode}/activation` body `{ isActive }` |
+| DTO item grid | `RoleCatalogListItemDto` |
+| DTO detalle | `RoleCatalogDetailDto` |
+| Policy | `AuthorizationMatrixManage` |
+
+---
+
+## 5) Limitaciones abiertas (sin suposiciones)
+
+1. No existe endpoint para alta/edición textual de rol en este alcance.
+2. No existe endpoint para eliminación de rol.
+3. `RoleCatalog` se administra operativamente en este corte solo por estado activo/inactivo.
+4. Cualquier expansión CRUD debe pasar por validación explícita fuera de este cambio.
+
+---
+
+## 6) Checklist de cumplimiento del estándar
+
+- [x] Toolbar + filtros + grid + paginación + drawer + feedback.
+- [x] `SearchField` + `SearchText` + `StatusFilter` + `Limpiar filtros`.
+- [x] `StatusFilter` obligatorio aplicado (`RoleCatalog.IsActive`).
+- [x] Paginación backend-driven.
+- [x] Sin inventar campos/filtros/catálogos/acciones fuera del backend.
+- [x] Contrato visual coherente con shell actual.
+- [x] Autorización robusta por policy existente.
