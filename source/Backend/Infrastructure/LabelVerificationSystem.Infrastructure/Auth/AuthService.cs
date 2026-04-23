@@ -550,8 +550,8 @@ public sealed class AuthService : IAuthService
 
         if (dbUser is not null)
         {
-            var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
-            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, effectiveRoles, cancellationToken);
+            var resolvedRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
+            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, resolvedRoles.Codes, resolvedRoles.HasRobustAssignments, cancellationToken);
             var fallbackPassword = configuredUserByLogin?.Password;
             return new ResolvedAuthUser(
                 dbUser.UserId,
@@ -559,7 +559,7 @@ public sealed class AuthService : IAuthService
                 dbUser.DisplayName,
                 dbUser.Email,
                 dbUser.IsActive,
-                effectiveRoles,
+                resolvedRoles.Codes,
                 effectivePermissions,
                 fallbackPassword);
         }
@@ -577,7 +577,11 @@ public sealed class AuthService : IAuthService
             if (bridgedDbUser is not null)
             {
                 var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
-                var bridgedPermissions = await ResolveEffectivePermissionsAsync(bridgedDbUser, bridgedRoles, cancellationToken);
+                var bridgedPermissions = await ResolveEffectivePermissionsAsync(
+                    bridgedDbUser,
+                    bridgedRoles.Codes,
+                    bridgedRoles.HasRobustAssignments,
+                    cancellationToken);
 
                 return new ResolvedAuthUser(
                     bridgedDbUser.UserId,
@@ -585,7 +589,7 @@ public sealed class AuthService : IAuthService
                     bridgedDbUser.DisplayName,
                     bridgedDbUser.Email,
                     bridgedDbUser.IsActive,
-                    bridgedRoles,
+                    bridgedRoles.Codes,
                     bridgedPermissions,
                     configuredUserByLogin.Password);
             }
@@ -612,8 +616,8 @@ public sealed class AuthService : IAuthService
         var dbUser = await _dbContext.SystemUsers.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
         if (dbUser is not null)
         {
-            var effectiveRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
-            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, effectiveRoles, cancellationToken);
+            var resolvedRoles = await ResolveEffectiveRolesAsync(dbUser, cancellationToken);
+            var effectivePermissions = await ResolveEffectivePermissionsAsync(dbUser, resolvedRoles.Codes, resolvedRoles.HasRobustAssignments, cancellationToken);
             var fallbackPassword = _options.Users.FirstOrDefault(x => x.UserId == dbUser.UserId)?.Password;
             return new ResolvedAuthUser(
                 dbUser.UserId,
@@ -621,7 +625,7 @@ public sealed class AuthService : IAuthService
                 dbUser.DisplayName,
                 dbUser.Email,
                 dbUser.IsActive,
-                effectiveRoles,
+                resolvedRoles.Codes,
                 effectivePermissions,
                 fallbackPassword);
         }
@@ -640,7 +644,11 @@ public sealed class AuthService : IAuthService
             if (bridgedDbUser is not null)
             {
                 var bridgedRoles = await ResolveEffectiveRolesAsync(bridgedDbUser, cancellationToken);
-                var bridgedPermissions = await ResolveEffectivePermissionsAsync(bridgedDbUser, bridgedRoles, cancellationToken);
+                var bridgedPermissions = await ResolveEffectivePermissionsAsync(
+                    bridgedDbUser,
+                    bridgedRoles.Codes,
+                    bridgedRoles.HasRobustAssignments,
+                    cancellationToken);
 
                 return new ResolvedAuthUser(
                     bridgedDbUser.UserId,
@@ -648,7 +656,7 @@ public sealed class AuthService : IAuthService
                     bridgedDbUser.DisplayName,
                     bridgedDbUser.Email,
                     bridgedDbUser.IsActive,
-                    bridgedRoles,
+                    bridgedRoles.Codes,
                     bridgedPermissions,
                     configuredUser.Password);
             }
@@ -850,7 +858,9 @@ public sealed class AuthService : IAuthService
         IReadOnlyList<string> Permissions,
         string? FallbackPassword);
 
-    private async Task<IReadOnlyList<string>> ResolveEffectiveRolesAsync(SystemUser dbUser, CancellationToken cancellationToken)
+    private sealed record ResolvedRoles(IReadOnlyList<string> Codes, bool HasRobustAssignments);
+
+    private async Task<ResolvedRoles> ResolveEffectiveRolesAsync(SystemUser dbUser, CancellationToken cancellationToken)
     {
         var catalogRoles = await _dbContext.SystemUserRoles
             .AsNoTracking()
@@ -861,21 +871,30 @@ public sealed class AuthService : IAuthService
 
         if (catalogRoles.Count > 0)
         {
-            return catalogRoles;
+            return new ResolvedRoles(catalogRoles, true);
         }
 
         if (IsRobustOnlyCutoverUser(dbUser.UserId))
         {
-            return [];
+            return new ResolvedRoles([], false);
         }
 
-        return DeserializeList(dbUser.RolesJson);
+        return new ResolvedRoles(DeserializeList(dbUser.RolesJson), false);
     }
 
-    private async Task<IReadOnlyList<string>> ResolveEffectivePermissionsAsync(SystemUser dbUser, IReadOnlyList<string> roleCodes, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<string>> ResolveEffectivePermissionsAsync(
+        SystemUser dbUser,
+        IReadOnlyList<string> roleCodes,
+        bool hasRobustRoleAssignments,
+        CancellationToken cancellationToken)
     {
         var robustPermissions = await ResolveRobustPermissionsFromRolesAsync(roleCodes, cancellationToken);
         if (IsRobustOnlyCutoverUser(dbUser.UserId))
+        {
+            return robustPermissions;
+        }
+
+        if (hasRobustRoleAssignments && robustPermissions.Count > 0)
         {
             return robustPermissions;
         }
