@@ -6,5 +6,7 @@ public interface IRoleCatalogAdministrationService
 {
     Task<RoleCatalogListResponse> ListAsync(RoleCatalogListQuery query, CancellationToken cancellationToken);
     Task<RoleCatalogDetailDto> GetByCodeAsync(string roleCode, CancellationToken cancellationToken);
+    Task<RoleCatalogDetailDto> CreateAsync(CreateRoleCatalogRequest request, CancellationToken cancellationToken);
+    Task<RoleCatalogDetailDto> UpdateAsync(string roleCode, UpdateRoleCatalogRequest request, CancellationToken cancellationToken);
     Task<RoleCatalogDetailDto> SetActivationAsync(string roleCode, bool isActive, CancellationToken cancellationToken);
 }

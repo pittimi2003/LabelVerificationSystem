@@ -86,6 +86,47 @@ public sealed class RoleCatalogAdministrationApiClient
         throw new InvalidOperationException(await ReadErrorAsync(response, cancellationToken));
     }
 
+
+    public async Task<RoleCatalogDetailDto> CreateAsync(CreateRoleRequestDto createRequest, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/roles")
+        {
+            Content = JsonContent.Create(createRequest)
+        };
+        var response = await SendAsync(request, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await ReadRequiredJsonAsync<RoleCatalogDetailDto>(
+                   response,
+                   "La API devolvió una respuesta vacía.",
+                   cancellationToken)
+               ?? throw new InvalidOperationException("La API devolvió una respuesta vacía.");
+        }
+
+        throw new InvalidOperationException(await ReadErrorAsync(response, cancellationToken));
+    }
+
+    public async Task<RoleCatalogDetailDto> UpdateAsync(string roleCode, UpdateRoleRequestDto updateRequest, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"api/roles/{Uri.EscapeDataString(roleCode)}")
+        {
+            Content = JsonContent.Create(updateRequest)
+        };
+        var response = await SendAsync(request, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await ReadRequiredJsonAsync<RoleCatalogDetailDto>(
+                   response,
+                   "La API devolvió una respuesta vacía.",
+                   cancellationToken)
+               ?? throw new InvalidOperationException("La API devolvió una respuesta vacía.");
+        }
+
+        throw new InvalidOperationException(await ReadErrorAsync(response, cancellationToken));
+    }
+
     private static void AddIfPresent(ICollection<string> queryParameters, string key, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value))

@@ -83,6 +83,59 @@ public sealed class RoleCatalogAdministrationService : IRoleCatalogAdministratio
         return MapToDetail(role);
     }
 
+    public async Task<RoleCatalogDetailDto> CreateAsync(CreateRoleCatalogRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var normalizedRoleCode = ValidateRoleCode(request.RoleCode);
+        var normalizedName = ValidateRoleName(request.Name);
+
+        var roleExists = await _dbContext.RoleCatalogs
+            .AnyAsync(x => x.Code == normalizedRoleCode, cancellationToken);
+        if (roleExists)
+        {
+            throw new AuthValidationException($"Ya existe un rol con RoleCode '{normalizedRoleCode}'.");
+        }
+
+        var utcNow = DateTime.UtcNow;
+        var role = new Domain.Entities.Auth.RoleCatalog
+        {
+            Id = Guid.NewGuid(),
+            Code = normalizedRoleCode,
+            Name = normalizedName,
+            IsActive = request.IsActive,
+            CreatedAtUtc = utcNow,
+            UpdatedAtUtc = utcNow
+        };
+
+        _dbContext.RoleCatalogs.Add(role);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapToDetail(role);
+    }
+
+    public async Task<RoleCatalogDetailDto> UpdateAsync(string roleCode, UpdateRoleCatalogRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var normalizedRoleCode = ValidateRequiredTrimmed(roleCode, nameof(roleCode));
+        var normalizedName = ValidateRoleName(request.Name);
+
+        var role = await _dbContext.RoleCatalogs.FirstOrDefaultAsync(x => x.Code == normalizedRoleCode, cancellationToken);
+        if (role is null)
+        {
+            throw new AuthUnauthorizedException("Rol no encontrado.");
+        }
+
+        role.Name = normalizedName;
+        role.IsActive = request.IsActive;
+        role.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return MapToDetail(role);
+    }
+
     public async Task<RoleCatalogDetailDto> SetActivationAsync(string roleCode, bool isActive, CancellationToken cancellationToken)
     {
         var normalizedRoleCode = ValidateRequiredTrimmed(roleCode, nameof(roleCode));
@@ -113,6 +166,28 @@ public sealed class RoleCatalogAdministrationService : IRoleCatalogAdministratio
         }
 
         return value.Trim();
+    }
+
+    private static string ValidateRoleCode(string? value)
+    {
+        var normalized = ValidateRequiredTrimmed(value, "roleCode");
+        if (normalized.Length is < 2 or > 64)
+        {
+            throw new AuthValidationException("roleCode debe tener entre 2 y 64 caracteres.");
+        }
+
+        return normalized;
+    }
+
+    private static string ValidateRoleName(string? value)
+    {
+        var normalized = ValidateRequiredTrimmed(value, "name");
+        if (normalized.Length is < 2 or > 120)
+        {
+            throw new AuthValidationException("name debe tener entre 2 y 120 caracteres.");
+        }
+
+        return normalized;
     }
 
     private static string? NormalizeFilter(string? value)

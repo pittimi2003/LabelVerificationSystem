@@ -31,6 +31,8 @@ public sealed record RoleCatalogDetailDto(
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
 
+public sealed record CreateRoleRequestDto(string RoleCode, string Name, bool IsActive);
+public sealed record UpdateRoleRequestDto(string Name, bool IsActive);
 public sealed record SetRoleActivationRequestDto(bool IsActive);
 
 public sealed record ApiErrorResponseDto(string Error);

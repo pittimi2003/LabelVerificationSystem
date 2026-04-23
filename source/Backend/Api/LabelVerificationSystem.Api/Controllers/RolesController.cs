@@ -67,6 +67,55 @@ public sealed class RolesController : ControllerBase
         }
     }
 
+    [HttpPost]
+    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RoleCatalogDetailDto>> Create(
+        [FromBody] CreateRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _roleCatalogAdministrationService.CreateAsync(
+                new CreateRoleCatalogRequest(request.RoleCode, request.Name, request.IsActive),
+                cancellationToken);
+            return CreatedAtAction(nameof(GetByCode), new { roleCode = response.RoleCode }, response);
+        }
+        catch (AuthValidationException ex)
+        {
+            return BadRequest(new ApiErrorResponse(ex.Message));
+        }
+    }
+
+    [HttpPut("{roleCode}")]
+    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RoleCatalogDetailDto>> Update(
+        string roleCode,
+        [FromBody] UpdateRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _roleCatalogAdministrationService.UpdateAsync(
+                roleCode,
+                new UpdateRoleCatalogRequest(request.Name, request.IsActive),
+                cancellationToken);
+            return Ok(response);
+        }
+        catch (AuthValidationException ex)
+        {
+            return BadRequest(new ApiErrorResponse(ex.Message));
+        }
+        catch (AuthUnauthorizedException ex)
+        {
+            return NotFound(new ApiErrorResponse(ex.Message));
+        }
+    }
+
     [HttpPatch("{roleCode}/activation")]
     [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
     [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status200OK)]
@@ -94,3 +143,6 @@ public sealed class RolesController : ControllerBase
 }
 
 public sealed record SetRoleActivationRequest(bool IsActive);
+
+public sealed record CreateRoleRequest(string RoleCode, string Name, bool IsActive);
+public sealed record UpdateRoleRequest(string Name, bool IsActive);

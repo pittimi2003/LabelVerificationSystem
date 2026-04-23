@@ -1419,6 +1419,38 @@ Listado paginado y filtrado de `RoleCatalog`.
 ### `GET /api/roles/{roleCode}`
 Detalle de rol por código.
 
+### `POST /api/roles`
+Crea un rol nuevo en `RoleCatalog`.
+
+#### Request DTO
+```json
+{
+  "roleCode": "QualityLeads",
+  "name": "Quality Leads",
+  "isActive": true
+}
+```
+
+#### Validaciones
+- `roleCode` requerido y único (case-insensitive por collation de catálogo).
+- `roleCode` longitud `2..64`.
+- `name` requerido, longitud `2..120`.
+
+### `PUT /api/roles/{roleCode}`
+Edita atributos de un rol existente sin permitir cambio de `roleCode`.
+
+#### Request DTO
+```json
+{
+  "name": "Quality Leads Senior",
+  "isActive": true
+}
+```
+
+#### Validaciones
+- `roleCode` de ruta es inmutable en update.
+- `name` requerido, longitud `2..120`.
+
 ### `PATCH /api/roles/{roleCode}/activation`
 Actualiza estado activo/inactivo.
 
@@ -1433,5 +1465,5 @@ Actualiza estado activo/inactivo.
 - Endpoints protegidos con policy robusta `AuthorizationMatrixManage`.
 
 ### Notas de alcance
-- No se agregan endpoints de alta/edición/eliminación de roles en este corte.
+- Se agregan endpoints de create/update para completar CRUD operativo (sin eliminación física).
 - No se mezclan cambios de Fase 5 ni NLog.
