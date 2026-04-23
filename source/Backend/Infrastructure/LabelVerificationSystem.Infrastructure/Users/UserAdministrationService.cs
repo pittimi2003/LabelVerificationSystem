@@ -198,7 +198,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
 
         var normalizedRoles = NormalizeValues(request.Roles);
         var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
-        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(syncedRoles));
+        UpdateLegacySnapshotsForTransition(user, syncedRoles, request.Permissions);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
@@ -232,7 +232,6 @@ public sealed class UserAdministrationService : IUserAdministrationService
         user.Email = email;
         user.IsActive = request.IsActive;
         var normalizedRoles = NormalizeValues(request.Roles);
-        user.PermissionsJson = SerializeList(NormalizeValues(request.Permissions));
         user.UpdatedAtUtc = nowUtc;
 
         if (!string.IsNullOrWhiteSpace(request.NewPassword))
@@ -262,7 +261,7 @@ public sealed class UserAdministrationService : IUserAdministrationService
         }
 
         var syncedRoles = await SyncUserRoleAssignmentsAsync(user, normalizedRoles, nowUtc, cancellationToken);
-        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(syncedRoles));
+        UpdateLegacySnapshotsForTransition(user, syncedRoles, request.Permissions);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var roleMap = await ResolveEffectiveRolesAsync([user], cancellationToken);
@@ -430,6 +429,22 @@ public sealed class UserAdministrationService : IUserAdministrationService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+    private void UpdateLegacySnapshotsForTransition(
+        SystemUser user,
+        IReadOnlyList<string> synchronizedRoles,
+        IReadOnlyList<string>? requestedPermissions)
+    {
+        if (IsRobustOnlyCutoverUser(user.UserId))
+        {
+            user.RolesJson = SerializeList([]);
+            user.PermissionsJson = SerializeList([]);
+            return;
+        }
+
+        user.RolesJson = SerializeList(BuildLegacyRolesSnapshot(synchronizedRoles));
+        user.PermissionsJson = SerializeList(NormalizeValues(requestedPermissions));
+    }
 
     private static UserListItemDto MapToListItem(
         SystemUser user,
