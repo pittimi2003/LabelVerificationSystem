@@ -34,9 +34,9 @@
                     </MudItem>
                     <MudItem xs="12" md="6" lg="2">
                         <MudSelect T="string" Value="@ActiveFilter" ValueChanged="OnActiveFilterChanged" Label="StatusFilter" Variant="Variant.Outlined">
-                            <MudSelectItem Value="@AnyFilterValue">Todos</MudSelectItem>
-                            <MudSelectItem Value="true">Activos</MudSelectItem>
-                            <MudSelectItem Value="false">Inactivos</MudSelectItem>
+                            <MudSelectItem T="string" Value="@AnyFilterValue">Todos</MudSelectItem>
+                            <MudSelectItem T="string" Value="@TrueFilterValue">Activos</MudSelectItem>
+                            <MudSelectItem T="string" Value="@FalseFilterValue">Inactivos</MudSelectItem>
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6" lg="2" Class="d-flex align-center justify-end">
@@ -217,6 +217,8 @@
 
 @code {
     private const string AnyFilterValue = "*";
+    private const string TrueFilterValue = "true";
+    private const string FalseFilterValue = "false";
 
     private readonly List<UserListItemDto> _users = [];
 
@@ -325,12 +327,12 @@
 
     private bool? ParseActiveFilterForBackend()
     {
-        if (string.Equals(ActiveFilter, "true", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(ActiveFilter, TrueFilterValue, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
-        if (string.Equals(ActiveFilter, "false", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(ActiveFilter, FalseFilterValue, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
