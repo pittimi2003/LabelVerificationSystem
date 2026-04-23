@@ -13,7 +13,10 @@
                     <MudText Typo="Typo.h5">Administración de roles</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/roles</code>.</MudText>
                 </MudStack>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadRolesAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                <MudStack Row="true" Spacing="1">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsLoading" OnClick="OpenCreateDrawer" StartIcon="@Icons.Material.Filled.Add">Crear rol</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadRolesAsync" StartIcon="@Icons.Material.Filled.Refresh">Actualizar</MudButton>
+                </MudStack>
             </MudStack>
 
             <MudPaper Class="pa-3 roles-admin-filters" Outlined="true">
@@ -72,6 +75,9 @@
                                 <MudTooltip Text="Ver detalle">
                                     <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small" OnClick="() => OpenDetailDrawerAsync(context.RoleCode)" />
                                 </MudTooltip>
+                                <MudTooltip Text="Editar rol">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Size="Size.Small" OnClick="() => OpenEditDrawerAsync(context.RoleCode)" />
+                                </MudTooltip>
                                 <MudTooltip Text="@(context.IsActive ? "Desactivar rol" : "Activar rol")">
                                     <MudIconButton Icon="@(context.IsActive ? Icons.Material.Filled.ToggleOff : Icons.Material.Filled.ToggleOn)" Color="@(context.IsActive ? Color.Error : Color.Success)" Size="Size.Small" OnClick="() => ToggleActivationAsync(context)" />
                                 </MudTooltip>
@@ -98,6 +104,46 @@
         </MudStack>
     </MudPaper>
 </div>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsCreateDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Crear rol</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCreateDrawer" />
+    </MudDrawerHeader>
+    <div class="pa-4">
+        <MudForm @ref="_createForm">
+            <MudStack Spacing="2">
+                <MudTextField T="string" @bind-Value="CreateModel.RoleCode" Label="RoleCode" Variant="Variant.Outlined" Required="true" RequiredError="RoleCode es requerido" MaxLength="64" Counter="64" />
+                <MudTextField T="string" @bind-Value="CreateModel.Name" Label="RoleName" Variant="Variant.Outlined" Required="true" RequiredError="RoleName es requerido" MaxLength="120" Counter="120" />
+                <MudSwitch T="bool" @bind-Value="CreateModel.IsActive" Label="Rol activo" Color="Color.Success" />
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-2">
+                    <MudButton Variant="Variant.Text" OnClick="CloseCreateDrawer">Cancelar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsSaving" OnClick="SaveCreateAsync">Guardar</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudForm>
+    </div>
+</MudDrawer>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+    <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
+        <MudText Typo="Typo.h6">Editar rol</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseEditDrawer" />
+    </MudDrawerHeader>
+    <div class="pa-4">
+        <MudForm @ref="_editForm">
+            <MudStack Spacing="2">
+                <MudTextField T="string" Value="@EditModel.RoleCode" Label="RoleCode" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" @bind-Value="EditModel.Name" Label="RoleName" Variant="Variant.Outlined" Required="true" RequiredError="RoleName es requerido" MaxLength="120" Counter="120" />
+                <MudSwitch T="bool" @bind-Value="EditModel.IsActive" Label="Rol activo" Color="Color.Success" />
+                <MudStack Row="true" Justify="Justify.FlexEnd" Class="mt-2">
+                    <MudButton Variant="Variant.Text" OnClick="CloseEditDrawer">Cancelar</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsSaving" OnClick="SaveEditAsync">Guardar</MudButton>
+                </MudStack>
+            </MudStack>
+        </MudForm>
+    </div>
+</MudDrawer>
 
 <MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="480px" Elevation="6" Class="roles-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
@@ -129,8 +175,14 @@
 
     private readonly List<RoleCatalogListItemDto> _roles = [];
 
+    private MudForm? _createForm;
+    private MudForm? _editForm;
+
     private bool IsLoading { get; set; }
+    private bool IsSaving { get; set; }
     private bool IsDetailDrawerOpen { get; set; }
+    private bool IsCreateDrawerOpen { get; set; }
+    private bool IsEditDrawerOpen { get; set; }
 
     private string SearchField { get; set; } = "query";
     private string SearchText { get; set; } = string.Empty;
@@ -142,6 +194,8 @@
     private int TotalPages { get; set; }
 
     private RoleCatalogDetailDto? SelectedRole { get; set; }
+    private RoleEditorModel CreateModel { get; set; } = RoleEditorModel.NewForCreate();
+    private RoleEditorModel EditModel { get; set; } = RoleEditorModel.Empty();
 
     protected override async Task OnInitializedAsync()
     {
@@ -264,6 +318,133 @@
         SelectedRole = null;
     }
 
+    private void OpenCreateDrawer()
+    {
+        CreateModel = RoleEditorModel.NewForCreate();
+        IsCreateDrawerOpen = true;
+    }
+
+    private void CloseCreateDrawer()
+    {
+        IsCreateDrawerOpen = false;
+        CreateModel = RoleEditorModel.NewForCreate();
+    }
+
+    private async Task OpenEditDrawerAsync(string roleCode)
+    {
+        try
+        {
+            var role = await RoleCatalogAdministrationApiClient.GetByCodeAsync(roleCode, CancellationToken.None);
+            EditModel = new RoleEditorModel
+            {
+                RoleCode = role.RoleCode,
+                Name = role.RoleName,
+                IsActive = role.IsActive
+            };
+            IsEditDrawerOpen = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo cargar el rol para edición: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void CloseEditDrawer()
+    {
+        IsEditDrawerOpen = false;
+        EditModel = RoleEditorModel.Empty();
+    }
+
+    private async Task SaveCreateAsync()
+    {
+        if (_createForm is null)
+        {
+            return;
+        }
+
+        await _createForm.Validate();
+        if (!_createForm.IsValid)
+        {
+            return;
+        }
+
+        if (!HasValidLengths(CreateModel.RoleCode, CreateModel.Name))
+        {
+            return;
+        }
+
+        IsSaving = true;
+        try
+        {
+            await RoleCatalogAdministrationApiClient.CreateAsync(new CreateRoleRequestDto(
+                CreateModel.RoleCode.Trim(),
+                CreateModel.Name.Trim(),
+                CreateModel.IsActive),
+                CancellationToken.None);
+            Snackbar.Add("Rol creado correctamente.", Severity.Success);
+            CloseCreateDrawer();
+            await LoadRolesAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo crear el rol: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (_editForm is null)
+        {
+            return;
+        }
+
+        await _editForm.Validate();
+        if (!_editForm.IsValid)
+        {
+            return;
+        }
+
+        if (!HasValidLengths(EditModel.RoleCode, EditModel.Name))
+        {
+            return;
+        }
+
+        IsSaving = true;
+        try
+        {
+            await RoleCatalogAdministrationApiClient.UpdateAsync(
+                EditModel.RoleCode,
+                new UpdateRoleRequestDto(EditModel.Name.Trim(), EditModel.IsActive),
+                CancellationToken.None);
+
+            Snackbar.Add("Rol actualizado correctamente.", Severity.Success);
+            CloseEditDrawer();
+            await LoadRolesAsync();
+            if (IsDetailDrawerOpen && SelectedRole?.RoleCode == EditModel.RoleCode)
+            {
+                SelectedRole = await RoleCatalogAdministrationApiClient.GetByCodeAsync(EditModel.RoleCode, CancellationToken.None);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"No se pudo actualizar el rol: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private static bool HasValidLengths(string roleCode, string name)
+    {
+        return roleCode.Trim().Length is >= 2 and <= 64
+            && name.Trim().Length is >= 2 and <= 120;
+    }
+
     private async Task ToggleActivationAsync(RoleCatalogListItemDto role)
     {
         try
@@ -280,5 +461,15 @@
         {
             Snackbar.Add($"No se pudo actualizar el estado del rol: {ex.Message}", Severity.Error);
         }
+    }
+
+    private sealed class RoleEditorModel
+    {
+        public string RoleCode { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
+
+        public static RoleEditorModel NewForCreate() => new();
+        public static RoleEditorModel Empty() => new() { IsActive = true };
     }
 }

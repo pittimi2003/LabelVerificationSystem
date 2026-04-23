@@ -56,14 +56,14 @@ Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin v
 
 **Soportadas**
 
+- crear rol (`POST /api/roles`) con drawer dedicado,
+- editar rol (`PUT /api/roles/{roleCode}`) con `RoleCode` bloqueado (read-only),
 - ver detalle (`GET /api/roles/{roleCode}`),
 - activar/desactivar (`PATCH /api/roles/{roleCode}/activation`).
 
 **No soportadas (declaradas explícitamente)**
 
-- crear rol,
-- editar `RoleCode`,
-- editar `RoleName`,
+- edición de `RoleCode` en update,
 - eliminación de rol.
 
 ---
@@ -91,6 +91,8 @@ Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin v
 - control de páginas.
 
 ### Drawers
+- drawer de create,
+- drawer de edit,
 - drawer de detalle read-only.
 
 ---
@@ -102,6 +104,8 @@ Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin v
 | Listado | `GET /api/roles` |
 | Query params soportados | `query`, `code`, `name`, `isActive`, `page`, `pageSize` |
 | Respuesta listado | `{ items, page, pageSize, totalItems, totalPages }` |
+| Create | `POST /api/roles` body `{ roleCode, name, isActive }` |
+| Update | `PUT /api/roles/{roleCode}` body `{ name, isActive }` |
 | Detalle | `GET /api/roles/{roleCode}` |
 | Toggle estado | `PATCH /api/roles/{roleCode}/activation` body `{ isActive }` |
 | DTO item grid | `RoleCatalogListItemDto` |
@@ -112,10 +116,9 @@ Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin v
 
 ## 5) Limitaciones abiertas (sin suposiciones)
 
-1. No existe endpoint para alta/edición textual de rol en este alcance.
-2. No existe endpoint para eliminación de rol.
-3. `RoleCatalog` se administra operativamente en este corte solo por estado activo/inactivo.
-4. Cualquier expansión CRUD debe pasar por validación explícita fuera de este cambio.
+1. No existe endpoint para eliminación de rol.
+2. `Description` no forma parte del modelo persistente actual de `RoleCatalog`; no se expone en UI ni API.
+3. `RoleCode` es inmutable después de crear el rol.
 
 ---
 

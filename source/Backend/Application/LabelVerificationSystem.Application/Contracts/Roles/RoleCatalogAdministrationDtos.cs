@@ -30,3 +30,13 @@ public sealed record RoleCatalogDetailDto(
     bool IsActive,
     DateTime CreatedAtUtc,
     DateTime UpdatedAtUtc);
+
+
+public sealed record CreateRoleCatalogRequest(
+    string RoleCode,
+    string Name,
+    bool IsActive);
+
+public sealed record UpdateRoleCatalogRequest(
+    string Name,
+    bool IsActive);
