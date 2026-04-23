@@ -3,6 +3,7 @@
 @inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.Components
+@using System.Net
 
 <PageTitle>Sign In</PageTitle>
 
@@ -70,7 +71,12 @@
         }
         catch (HttpRequestException ex)
         {
-            _error = ex.Message;
+            _error = ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden => "Usuario o contraseña inválidos.",
+                null => "No se pudo conectar con el backend de autenticación. Verifica que la API esté disponible e intenta nuevamente.",
+                _ => ex.Message
+            };
         }
         catch (Exception)
         {

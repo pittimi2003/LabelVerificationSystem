@@ -2,31 +2,29 @@
 @inject LabelVerificationSystem.Web.Components.Auth.AuthSessionService AuthSessionService
 @inject NavigationManager NavigationManager
 
-@if (!AuthSessionService.IsInitialized)
-{
-    <MudContainer Class="d-flex justify-center pa-10">
-        <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-    </MudContainer>
-}
-else
-{
-    <Router AppAssembly="@typeof(Program).Assembly" OnNavigateAsync="HandleNavigateAsync">
-        <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)" />
-            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-        </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)">
-                <MudText Typo="Typo.h6">Página no encontrada.</MudText>
-            </LayoutView>
-        </NotFound>
-    </Router>
-}
+<Router AppAssembly="@typeof(Program).Assembly" OnNavigateAsync="HandleNavigateAsync">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(LabelVerificationSystem.Web.Components.Layout.MainLayout)">
+            <MudText Typo="Typo.h6">Página no encontrada.</MudText>
+        </LayoutView>
+    </NotFound>
+</Router>
 
 @code {
     protected override async Task OnInitializedAsync()
     {
         AuthSessionService.SessionChanged += OnSessionChanged;
+        EnsureCurrentLocationAccess();
+        _ = InitializeSessionAsync();
+        await Task.CompletedTask;
+    }
+
+    private async Task InitializeSessionAsync()
+    {
         await AuthSessionService.InitializeAsync();
         EnsureCurrentLocationAccess();
     }

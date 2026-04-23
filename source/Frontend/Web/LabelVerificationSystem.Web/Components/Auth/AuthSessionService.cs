@@ -11,6 +11,7 @@ public sealed class AuthSessionService
     private readonly AuthSessionStorage _storage;
     private readonly NavigationManager _navigationManager;
     private readonly ILogger<AuthSessionService> _logger;
+    private readonly bool _enableBypassBootstrap;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
     private AuthSessionSnapshot _current = AuthSessionSnapshot.Anonymous();
@@ -23,12 +24,14 @@ public sealed class AuthSessionService
         AuthApiClient authApiClient,
         AuthSessionStorage storage,
         NavigationManager navigationManager,
+        IConfiguration configuration,
         ILogger<AuthSessionService> logger)
     {
         _authApiClient = authApiClient;
         _storage = storage;
         _navigationManager = navigationManager;
         _logger = logger;
+        _enableBypassBootstrap = configuration.GetValue<bool>("Auth:EnableBypassBootstrap");
     }
 
     public AuthSessionSnapshot Current => _current;
@@ -68,7 +71,7 @@ public sealed class AuthSessionService
                     await ClearSessionInternalAsync();
                 }
             }
-            else
+            else if (_enableBypassBootstrap)
             {
                 await TryHydrateBypassAsync(cancellationToken);
             }
@@ -181,20 +184,27 @@ public sealed class AuthSessionService
 
     private async Task TryHydrateBypassAsync(CancellationToken cancellationToken)
     {
-        var me = await _authApiClient.GetMeAsync(null, cancellationToken);
-        if (me is null || !me.IsAuthenticated || !string.Equals(me.AuthenticationMode, "Bypass", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            return;
+            var me = await _authApiClient.GetMeAsync(null, cancellationToken);
+            if (me is null || !me.IsAuthenticated || !string.Equals(me.AuthenticationMode, "Bypass", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _current = new AuthSessionSnapshot
+            {
+                IsAuthenticated = true,
+                AuthenticationMode = me.AuthenticationMode,
+                User = me.User
+            };
+
+            await _storage.SaveAsync(_current);
         }
-
-        _current = new AuthSessionSnapshot
+        catch (HttpRequestException ex)
         {
-            IsAuthenticated = true,
-            AuthenticationMode = me.AuthenticationMode,
-            User = me.User
-        };
-
-        await _storage.SaveAsync(_current);
+            _logger.LogDebug(ex, "Bypass bootstrap omitido por error de conectividad.");
+        }
     }
 
     private async Task<bool> RefreshSingleFlightAsync(CancellationToken cancellationToken)
