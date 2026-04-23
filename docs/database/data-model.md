@@ -504,7 +504,7 @@ Regla implementada:
 
 ---
 
-### Entidad implementada para administración de usuarios (Bloque B / Fase 4 en curso)
+### Entidad implementada para administración de usuarios (Bloque B / cierre técnico legacy autorización, 2026-04-23)
 
 #### SystemUser
 Propósito: persistir el catálogo operativo de cuentas administrables del sistema para alta/consulta/edición/activación.
@@ -516,8 +516,6 @@ Campos implementados:
 - `DisplayName` (`string`).
 - `Email` (`string`, nullable, indexado).
 - `IsActive` (`bool`, indexado).
-- `RolesJson` (`string`, JSON serializado).
-- `PermissionsJson` (`string`, JSON serializado).
 - `CreatedAtUtc` (`datetime`).
 - `UpdatedAtUtc` (`datetime`).
 
@@ -527,22 +525,15 @@ Reglas implementadas:
 - edición permite actualizar password de forma opcional.
 - desactivación se gestiona por `IsActive` (sin borrado físico en este bloque).
 
-Decisiones abiertas explícitas:
-- normalizar roles/permisos a tablas dedicadas.
-- definir política de borrado final.
-- endurecer normalización case-insensitive para unicidad en distintos motores.
-
-Evolución documental definida para Bloque B / Fase 4 (abierta):
-- modelo objetivo basado en catálogos y matriz de autorización:
+Estado final de autorización en este corte:
+- fuente única operativa de autorización:
+  - `SystemUsers`
+  - `SystemUserRole`
   - `RoleCatalog`
-  - `ModuleCatalog`
-  - `ModuleActionCatalog`
   - `RoleModuleAuthorization`
   - `RoleModuleActionAuthorization`
-  - `SystemUserRole`
-- catálogo inicial de roles cerrado: `SuperAdmin`, `Operators`, `Managers`.
-- `RolesJson`/`PermissionsJson` se consideran estado transitorio hasta migración.
-- detalle funcional/relacional consolidado en `docs/security-authorization-model-block-b-phase4.md`.
+- `RolesJson` y `PermissionsJson` retirados del modelo persistido mediante migración `20260423110000_RemoveLegacyAuthorizationJson`.
+- `Authentication:Users` se mantiene únicamente como bootstrap/sincronización inicial de cuentas hacia modelo robusto (no como fuente paralela de permisos).
 
 
 ## Relaciones principales del modelo

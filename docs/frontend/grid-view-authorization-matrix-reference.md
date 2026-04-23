@@ -34,5 +34,5 @@
 
 ## Limitaciones abiertas
 - El acceso ya usa policy dedicada `AuthorizationMatrixManage`; la evolución pendiente es endurecer la gobernanza fina de quién puede delegar permisos por entorno.
-- No se retiran aún `RolesJson`/`PermissionsJson`.
+- `RolesJson`/`PermissionsJson` fueron retirados del modelo operativo y persistido (2026-04-23); esta vista opera sobre matriz robusta.
 - No hay mezcla de este alcance con Fase 5 ni con NLog.

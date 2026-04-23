@@ -1513,3 +1513,32 @@ Escrituras:
 ### Estado explícito
 
 - **Fase 4 continúa abierta**.
+
+## 29) Bloque B / cierre técnico final de legado JSON de autorización (2026-04-23)
+
+Alcance de este corte:
+- retiro final controlado de `RolesJson` y `PermissionsJson` como fuente operativa;
+- sin mezclar con Fase 5;
+- sin cambios de alcance en NLog.
+
+Cambios aplicados:
+1. Se eliminó lectura/escritura legacy de `RolesJson`/`PermissionsJson` en:
+   - `AuthService`,
+   - `UserAdministrationService`,
+   - `AuthorizationMatrixService`.
+2. Se retiraron `RolesJson` y `PermissionsJson` de `SystemUser` y de configuración EF en `AppDbContext`.
+3. Se agregó migración `20260423110000_RemoveLegacyAuthorizationJson` para retiro físico de columnas en SQLite.
+4. `Authentication:Users` queda solo como bootstrap:
+   - en login/resolución de usuario configurado se sincroniza primero a `SystemUsers` + `SystemUserRole`;
+   - los permisos efectivos de sesión se resuelven únicamente desde matriz robusta.
+
+Validación técnica (instalación nueva):
+- arranque limpio con base SQLite nueva;
+- login `admin` desde usuario configurado (bootstrap);
+- `/me`, `/users`, `/authorization-matrix/roles`, `/excel-uploads` en `200`;
+- migración final aplicada y confirmación física:
+  - última migración: `20260423110000_RemoveLegacyAuthorizationJson`;
+  - columnas `RolesJson`/`PermissionsJson` ausentes en `SystemUsers`.
+
+Estado explícito:
+- `RolesJson` y `PermissionsJson` **ya no forman parte del modelo operativo final**.

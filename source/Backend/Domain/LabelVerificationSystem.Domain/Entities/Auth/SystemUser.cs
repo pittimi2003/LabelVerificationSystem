@@ -8,8 +8,6 @@ public sealed class SystemUser
     public string DisplayName { get; set; } = string.Empty;
     public string? Email { get; set; }
     public bool IsActive { get; set; } = true;
-    public string RolesJson { get; set; } = "[]";
-    public string PermissionsJson { get; set; } = "[]";
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 

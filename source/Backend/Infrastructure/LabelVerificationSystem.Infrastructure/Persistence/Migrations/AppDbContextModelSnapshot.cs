@@ -375,14 +375,6 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("PermissionsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("RolesJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
