@@ -85,31 +85,9 @@ public sealed class AuthorizationAdministrationService : IAuthorizationAdministr
             .Select(x => x.Last())
             .ToList();
 
-        var existingModuleRows = await _dbContext.RoleModuleAuthorizations
-            .Where(x => x.RoleId == role.Id)
-            .ToListAsync(cancellationToken);
-
-        foreach (var moduleRequest in requestedModules)
-        {
-            var current = existingModuleRows.FirstOrDefault(x => x.ModuleId == moduleRequest.ModuleId);
-            if (current is null)
-            {
-                _dbContext.RoleModuleAuthorizations.Add(new RoleModuleAuthorization
-                {
-                    Id = Guid.NewGuid(),
-                    RoleId = role.Id,
-                    ModuleId = moduleRequest.ModuleId,
-                    Authorized = moduleRequest.ModuleAuthorized,
-                    CreatedAtUtc = DateTime.UtcNow,
-                    UpdatedAtUtc = DateTime.UtcNow
-                });
-            }
-            else
-            {
-                current.Authorized = moduleRequest.ModuleAuthorized;
-                current.UpdatedAtUtc = DateTime.UtcNow;
-            }
-        }
+        var requestedModuleIds = requestedModules
+            .Select(x => x.ModuleId)
+            .ToHashSet();
 
         var requestedActions = requestedModules
             .SelectMany(m => m.Actions.Select(a => new { m.ModuleId, a.ActionId, a.Authorized }))
@@ -117,31 +95,38 @@ public sealed class AuthorizationAdministrationService : IAuthorizationAdministr
             .Select(x => x.Last())
             .ToList();
 
-        var existingActionRows = await _dbContext.RoleModuleActionAuthorizations
-            .Where(x => x.RoleId == role.Id)
-            .ToListAsync(cancellationToken);
+        var requestedActionIds = requestedActions
+            .Select(x => x.ActionId)
+            .ToHashSet();
 
-        foreach (var actionRequest in requestedActions)
+        await _dbContext.RoleModuleActionAuthorizations
+            .Where(x => x.RoleId == role.Id && requestedActionIds.Contains(x.ModuleActionId))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await _dbContext.RoleModuleAuthorizations
+            .Where(x => x.RoleId == role.Id && requestedModuleIds.Contains(x.ModuleId))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        var now = DateTime.UtcNow;
+        _dbContext.RoleModuleAuthorizations.AddRange(requestedModules.Select(moduleRequest => new RoleModuleAuthorization
         {
-            var current = existingActionRows.FirstOrDefault(x => x.ModuleActionId == actionRequest.ActionId);
-            if (current is null)
-            {
-                _dbContext.RoleModuleActionAuthorizations.Add(new RoleModuleActionAuthorization
-                {
-                    Id = Guid.NewGuid(),
-                    RoleId = role.Id,
-                    ModuleActionId = actionRequest.ActionId,
-                    Authorized = actionRequest.Authorized,
-                    CreatedAtUtc = DateTime.UtcNow,
-                    UpdatedAtUtc = DateTime.UtcNow
-                });
-            }
-            else
-            {
-                current.Authorized = actionRequest.Authorized;
-                current.UpdatedAtUtc = DateTime.UtcNow;
-            }
-        }
+            Id = Guid.NewGuid(),
+            RoleId = role.Id,
+            ModuleId = moduleRequest.ModuleId,
+            Authorized = moduleRequest.ModuleAuthorized,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        }));
+
+        _dbContext.RoleModuleActionAuthorizations.AddRange(requestedActions.Select(actionRequest => new RoleModuleActionAuthorization
+        {
+            Id = Guid.NewGuid(),
+            RoleId = role.Id,
+            ModuleActionId = actionRequest.ActionId,
+            Authorized = actionRequest.Authorized,
+            CreatedAtUtc = now,
+            UpdatedAtUtc = now
+        }));
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         var modules = await BuildRoleMatrixModulesAsync(role.Id, cancellationToken);
