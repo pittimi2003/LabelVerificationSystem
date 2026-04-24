@@ -51,6 +51,11 @@
     border: 1px solid var(--mud-palette-lines-default);
 }
 
+.excel-detail-card .mud-card-content,
+.excel-summary-item .mud-card-content {
+    padding: 0.85rem;
+}
+
 .excel-summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -58,10 +63,10 @@
 }
 
 .excel-summary-item {
-    background: color-mix(in srgb, var(--mud-palette-surface) 82%, var(--mud-palette-background));
-    border: 1px solid var(--mud-palette-lines-default);
+    background: color-mix(in srgb, var(--mud-palette-surface) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--mud-palette-lines-default) 80%, transparent);
     border-radius: 8px;
-    padding: 0.75rem;
+    min-height: 100%;
 }
 
 .excel-metric-card {
@@ -70,8 +75,8 @@
     flex-direction: column;
     gap: 0.35rem;
     justify-content: center;
-    background: color-mix(in srgb, var(--mud-palette-surface) 78%, var(--mud-palette-background));
-    border-color: var(--mud-palette-lines-default);
+    background: color-mix(in srgb, var(--mud-palette-surface) 88%, transparent);
+    border-color: color-mix(in srgb, var(--mud-palette-lines-default) 80%, transparent);
     border-radius: 8px;
 }
 
@@ -94,8 +99,12 @@
 }
 
 .admin-drawer .excel-detail-card {
-    background: color-mix(in srgb, var(--mud-palette-surface) 84%, var(--mud-palette-background));
-    border-color: var(--mud-palette-lines-default);
+    background: color-mix(in srgb, var(--mud-palette-surface) 92%, transparent);
+    border-color: color-mix(in srgb, var(--mud-palette-lines-default) 80%, transparent);
+}
+
+.admin-drawer .excel-metric-card .mud-card-content {
+    padding: 0.85rem;
 }
 
 .admin-drawer .excel-detail-section-title,

@@ -136,28 +136,38 @@
         else
         {
             <MudStack Spacing="2">
-                <MudPaper Class="pa-3 excel-detail-card" Outlined="true">
-                    <MudText Typo="Typo.h6" Class="excel-detail-section-title">Resumen</MudText>
-                    <MudDivider Class="my-2" />
-                    <div class="excel-summary-grid">
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">Archivo</div>
-                            <div class="excel-detail-value">@SelectedDetail.OriginalFileName</div>
+                <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden secondary excel-detail-card">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Class="excel-detail-section-title">Resumen</MudText>
+                        <MudDivider Class="my-2" />
+                        <div class="excel-summary-grid">
+                            <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary excel-summary-item">
+                                <MudCardContent>
+                                    <div class="excel-detail-label">Archivo</div>
+                                    <div class="excel-detail-value">@SelectedDetail.OriginalFileName</div>
+                                </MudCardContent>
+                            </MudCard>
+                            <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden info excel-summary-item">
+                                <MudCardContent>
+                                    <div class="excel-detail-label">Fecha UTC</div>
+                                    <div class="excel-detail-value">@SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</div>
+                                </MudCardContent>
+                            </MudCard>
+                            <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden warning excel-summary-item">
+                                <MudCardContent>
+                                    <div class="excel-detail-label">Estado</div>
+                                    <div class="excel-detail-value">@SelectedDetail.Status</div>
+                                </MudCardContent>
+                            </MudCard>
+                            <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden success excel-summary-item">
+                                <MudCardContent>
+                                    <div class="excel-detail-label">UploadId</div>
+                                    <div class="excel-detail-value">@SelectedDetail.UploadId</div>
+                                </MudCardContent>
+                            </MudCard>
                         </div>
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">Fecha UTC</div>
-                            <div class="excel-detail-value">@SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</div>
-                        </div>
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">Estado</div>
-                            <div class="excel-detail-value">@SelectedDetail.Status</div>
-                        </div>
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">UploadId</div>
-                            <div class="excel-detail-value">@SelectedDetail.UploadId</div>
-                        </div>
-                    </div>
-                </MudPaper>               
+                    </MudCardContent>
+                </MudCard>
 
                 <MudTabs Elevation="0" Rounded="true" PanelClass="pt-3" ActivePanelIndex="@DetailTabIndex" ActivePanelIndexChanged="OnDetailTabIndexChanged">
                     <MudTabPanel Text="Vista General" />
@@ -166,33 +176,42 @@
 
                 @if (DetailViewMode == "general")
                 {
-                    <MudPaper Class="pa-3 excel-detail-card" Outlined="true">
+                    <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary excel-detail-card">
+                        <MudCardContent>
                         <MudStack Spacing="2">
                             <MudText Typo="Typo.h6" Class="excel-detail-section-title">Vista general</MudText>
                             <MudGrid>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                    <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary excel-metric-card">
+                                        <MudCardContent>
                                         <div class="excel-detail-label">Total filas</div>
                                         <div class="excel-detail-value">@SelectedDetail.TotalRows</div>
-                                    </MudPaper>
+                                        </MudCardContent>
+                                    </MudCard>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                    <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden success excel-metric-card">
+                                        <MudCardContent>
                                         <div class="excel-detail-label">Insertadas</div>
                                         <div class="excel-detail-value">@SelectedDetail.InsertedRows</div>
-                                    </MudPaper>
+                                        </MudCardContent>
+                                    </MudCard>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                    <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden warning excel-metric-card">
+                                        <MudCardContent>
                                         <div class="excel-detail-label">Rechazadas</div>
                                         <div class="excel-detail-value">@SelectedDetail.RejectedRows</div>
-                                    </MudPaper>
+                                        </MudCardContent>
+                                    </MudCard>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                    <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden secondary excel-metric-card">
+                                        <MudCardContent>
                                         <div class="excel-detail-label">% éxito</div>
                                         <div class="excel-detail-value">@SuccessRate%</div>
-                                    </MudPaper>
+                                        </MudCardContent>
+                                    </MudCard>
                                 </MudItem>
                             </MudGrid>
 
@@ -227,7 +246,8 @@
                                 }
                             </MudPaper>
                         </MudStack>
-                    </MudPaper>
+                        </MudCardContent>
+                    </MudCard>
                 }
                 else
                 {
