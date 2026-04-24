@@ -136,14 +136,29 @@
         else
         {
             <MudStack Spacing="2">
-                <MudPaper Class="pa-3" Outlined="true">
+                <MudPaper Class="pa-3 excel-detail-card" Outlined="true">
                     <MudText Typo="Typo.h6" Class="section-title">Resumen</MudText>
                     <MudDivider Class="my-2" />
                     <MudGrid>
-                        <MudItem xs="6"><MudText Typo="Typo.body2"><b>Archivo:</b> @SelectedDetail.OriginalFileName</MudText></MudItem>
-                        <MudItem xs="6"><MudText Typo="Typo.body2"><b>Fecha UTC:</b> @SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudText></MudItem>
+                        <MudItem xs="6">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.caption" Class="excel-detail-label">Archivo</MudText>
+                                <MudText Typo="Typo.body2" Class="excel-detail-value">@SelectedDetail.OriginalFileName</MudText>
+                            </MudStack>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.caption" Class="excel-detail-label">Fecha UTC</MudText>
+                                <MudText Typo="Typo.body2" Class="excel-detail-value">@SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+                            </MudStack>
+                        </MudItem>
                         <MudItem xs="6"><MudChip T="string" Color="@(SelectedDetail.RejectedRows > 0 ? Color.Warning : Color.Success)">Estado: @SelectedDetail.Status</MudChip></MudItem>
-                        <MudItem xs="6"><MudText Typo="Typo.body2"><b>UploadId:</b> @SelectedDetail.UploadId</MudText></MudItem>
+                        <MudItem xs="6">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.caption" Class="excel-detail-label">UploadId</MudText>
+                                <MudText Typo="Typo.body2" Class="excel-detail-value">@SelectedDetail.UploadId</MudText>
+                            </MudStack>
+                        </MudItem>
                     </MudGrid>
                 </MudPaper>               
 
@@ -154,37 +169,37 @@
 
                 @if (DetailViewMode == "general")
                 {
-                    <MudPaper Class="pa-3" Outlined="true">
+                    <MudPaper Class="pa-3 excel-detail-card" Outlined="true">
                         <MudStack Spacing="2">
                             <MudText Typo="Typo.h6" Class="section-title">Vista general</MudText>
                             <MudGrid>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3" Outlined="true">
-                                        <MudText Typo="Typo.caption">Total filas</MudText>
-                                        <MudText Typo="Typo.h6">@SelectedDetail.TotalRows</MudText>
+                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                        <MudText Typo="Typo.caption" Class="excel-detail-label">Total filas</MudText>
+                                        <MudText Typo="Typo.h6" Class="excel-detail-value">@SelectedDetail.TotalRows</MudText>
                                     </MudPaper>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3" Outlined="true">
-                                        <MudText Typo="Typo.caption">Insertadas</MudText>
-                                        <MudText Typo="Typo.h6">@SelectedDetail.InsertedRows</MudText>
+                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                        <MudText Typo="Typo.caption" Class="excel-detail-label">Insertadas</MudText>
+                                        <MudText Typo="Typo.h6" Class="excel-detail-value">@SelectedDetail.InsertedRows</MudText>
                                     </MudPaper>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3" Outlined="true">
-                                        <MudText Typo="Typo.caption">Rechazadas</MudText>
-                                        <MudText Typo="Typo.h6">@SelectedDetail.RejectedRows</MudText>
+                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                        <MudText Typo="Typo.caption" Class="excel-detail-label">Rechazadas</MudText>
+                                        <MudText Typo="Typo.h6" Class="excel-detail-value">@SelectedDetail.RejectedRows</MudText>
                                     </MudPaper>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3" Outlined="true">
-                                        <MudText Typo="Typo.caption">% éxito</MudText>
-                                        <MudText Typo="Typo.h6">@SuccessRate%</MudText>
+                                    <MudPaper Class="pa-3 excel-metric-card" Outlined="true">
+                                        <MudText Typo="Typo.caption" Class="excel-detail-label">% éxito</MudText>
+                                        <MudText Typo="Typo.h6" Class="excel-detail-value">@SuccessRate%</MudText>
                                     </MudPaper>
                                 </MudItem>
                             </MudGrid>
 
-                            <MudPaper Class="pa-3" Outlined="true">
+                            <MudPaper Class="pa-3 excel-detail-card" Outlined="true">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                     <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Warning" />
                                     <MudText Typo="Typo.h6" Class="section-title">Agrupación por ErrorCode</MudText>
