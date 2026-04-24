@@ -5,7 +5,7 @@
 
 <PageTitle>Carga de Excel</PageTitle>
 
-<MudPaper Class="pa-4" Outlined="true">
+<MudPaper Class="excel-upload-card pa-4" Outlined="true">
     <MudStack Spacing="3">
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
             <MudText Typo="Typo.h5">Carga de Excel</MudText>
@@ -14,7 +14,7 @@
             </MudButton>
         </MudStack>
 
-        <MudText Typo="Typo.subtitle1">Subir archivo Excel</MudText>
+        <MudText Typo="Typo.h6" Class="section-title mb-2">Subir archivo Excel</MudText>
 
         <MudFileUpload T="IBrowserFile"
                        @key="@FileUploadResetKey"
@@ -27,8 +27,8 @@
                 <MudPaper Class="@DropzoneClass" Outlined="true" Width="100%">
                     <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1" Class="py-6 px-4">
                         <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" Color="Color.Primary" />
-                        <MudText Typo="Typo.subtitle1">Arrastra el archivo aquí</MudText>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">Formatos permitidos: .xlsx, .xls</MudChip>
+                        <MudText Typo="Typo.h6" Class="section-title">Arrastra el archivo aquí</MudText>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">Formatos permitidos: .xlsx, .xls</MudChip>
                     </MudStack>
                 </MudPaper>
             </ActivatorContent>
@@ -46,7 +46,7 @@
                         <MudChip T="string" Color="Color.Success" Variant="Variant.Filled">Listo para cargar</MudChip>
                     </MudStack>
 
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">Tamaño: @GetHumanReadableFileSize(SelectedFile.Size)</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Default">Tamaño: @GetHumanReadableFileSize(SelectedFile.Size)</MudText>
 
                     <MudStack Row="true" Spacing="2" Justify="Justify.Center">
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@IsLoading" OnClick="UploadAsync" StartIcon="@Icons.Material.Filled.CloudUpload">Cargar</MudButton>
@@ -68,7 +68,7 @@
 
         <MudDivider />
 
-        <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
+        <MudText Typo="Typo.h6" Class="section-title mb-2">Historial de cargas</MudText>
 
         @if (IsHistoryLoading)
         {
@@ -137,7 +137,7 @@
         {
             <MudStack Spacing="2">
                 <MudPaper Class="pa-3" Outlined="true">
-                    <MudText Typo="Typo.subtitle2">Resumen</MudText>
+                    <MudText Typo="Typo.h6" Class="section-title">Resumen</MudText>
                     <MudDivider Class="my-2" />
                     <MudGrid>
                         <MudItem xs="6"><MudText Typo="Typo.body2"><b>Archivo:</b> @SelectedDetail.OriginalFileName</MudText></MudItem>
@@ -156,7 +156,7 @@
                 {
                     <MudPaper Class="pa-3" Outlined="true">
                         <MudStack Spacing="2">
-                            <MudText Typo="Typo.subtitle2">Vista general</MudText>
+                            <MudText Typo="Typo.h6" Class="section-title">Vista general</MudText>
                             <MudGrid>
                                 <MudItem xs="6">
                                     <MudPaper Class="pa-3" Outlined="true">
@@ -187,7 +187,7 @@
                             <MudPaper Class="pa-3" Outlined="true">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                     <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Warning" />
-                                    <MudText Typo="Typo.subtitle2">Agrupación por ErrorCode</MudText>
+                                    <MudText Typo="Typo.h6" Class="section-title">Agrupación por ErrorCode</MudText>
                                 </MudStack>
                                 <MudDivider Class="my-2" />
                                 @if (ErrorGroups.Count == 0)
@@ -221,7 +221,7 @@
                 {
                     <MudPaper Class="pa-3" Outlined="true">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
-                            <MudText Typo="Typo.subtitle2">Detalle por fila</MudText>
+                            <MudText Typo="Typo.h6" Class="section-title">Detalle por fila</MudText>
                             <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="ClearRowFilters">
                                 Limpiar filtros
                             </MudButton>
@@ -406,7 +406,7 @@
     {
         if (SelectedFile is null)
         {
-            Snackbar.Add("Selecciona un archivo antes de cargar.", Severity.Warning);
+            Notify("Selecciona un archivo antes de cargar.", Severity.Warning);
             return;
         }
 
@@ -415,7 +415,7 @@
         try
         {
             LastResult = await ExcelUploadApiClient.UploadAsync(SelectedFile, CancellationToken.None);
-            Snackbar.Add("Carga completada correctamente.", Severity.Success);
+            Notify("Carga completada correctamente.", Severity.Success);
 
             SelectedFile = null;
             FileUploadResetKey++;
@@ -424,7 +424,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Notify(ex.Message, Severity.Error);
         }
         finally
         {
@@ -444,7 +444,7 @@
         catch (Exception ex)
         {
             HistoryItems = [];
-            Snackbar.Add($"No se pudo cargar el historial: {ex.Message}", Severity.Error);
+            Notify($"No se pudo cargar el historial: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -468,13 +468,13 @@
 
             if (SelectedDetail is null)
             {
-                Snackbar.Add("No se encontró el detalle de la carga seleccionada.", Severity.Warning);
+                Notify("No se encontró el detalle de la carga seleccionada.", Severity.Warning);
                 IsDetailDrawerOpen = false;
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"No se pudo cargar el detalle: {ex.Message}", Severity.Error);
+            Notify($"No se pudo cargar el detalle: {ex.Message}", Severity.Error);
             IsDetailDrawerOpen = false;
         }
         finally
@@ -486,6 +486,12 @@
     private void CloseDetailDrawer()
     {
         IsDetailDrawerOpen = false;
+    }
+
+    private void Notify(string message, Severity severity)
+    {
+        Snackbar.Clear();
+        Snackbar.Add(message, severity);
     }
 
     private int DetailTabIndex { get; set; }
