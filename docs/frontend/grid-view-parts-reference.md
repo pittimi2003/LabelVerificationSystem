@@ -2,7 +2,7 @@
 
 ## Estándar reusable aplicado
 - Toolbar con actualizar + alta.
-- Bloque de filtros con `SearchField`, `SearchText` y `Limpiar filtros`.
+- Bloque de filtros con `SearchField`, `SearchText` y `Limpiar filtros` (sin `StatusFilter`).
 - Grid administrativo backend-driven.
 - Paginación backend-driven (`page`, `pageSize`, `totalItems`, `totalPages`).
 - Drawers laterales para create/edit/detail.
@@ -15,5 +15,5 @@
 - Acción de toolbar soportada: crear.
 
 ## Limitaciones abiertas
-- No existe estado operativo en `Part`; por estándar reusable no se renderiza `StatusFilter`.
+- `StatusFilter` es **no aplicable** para `Part` porque no existe estado operativo real; por estándar reusable **no se renderiza** en `/parts`.
 - No existe contrato backend de activar/desactivar para `Part`.

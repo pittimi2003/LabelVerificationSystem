@@ -21,7 +21,7 @@ public sealed class RolesController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.RolesRead)]
     [ProducesResponseType(typeof(RoleCatalogListResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<RoleCatalogListResponse>> List(
@@ -46,7 +46,7 @@ public sealed class RolesController : ControllerBase
     }
 
     [HttpGet("{roleCode}")]
-    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.RolesRead)]
     [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -68,7 +68,7 @@ public sealed class RolesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.RolesCreate)]
     [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<RoleCatalogDetailDto>> Create(
@@ -89,7 +89,7 @@ public sealed class RolesController : ControllerBase
     }
 
     [HttpPut("{roleCode}")]
-    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.RolesEdit)]
     [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
@@ -117,7 +117,7 @@ public sealed class RolesController : ControllerBase
     }
 
     [HttpPatch("{roleCode}/activation")]
-    [Authorize(Policy = AuthAuthorizationPolicies.AuthorizationMatrixManage)]
+    [Authorize(Policy = AuthAuthorizationPolicies.RolesActivateDeactivate)]
     [ProducesResponseType(typeof(RoleCatalogDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]

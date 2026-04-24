@@ -12,7 +12,12 @@ public static class AuthAuthorizationPolicies
     public const string PartsRead = "PartsRead";
     public const string PartsCreate = "PartsCreate";
     public const string PartsEdit = "PartsEdit";
+    public const string RolesRead = "RolesRead";
+    public const string RolesCreate = "RolesCreate";
+    public const string RolesEdit = "RolesEdit";
+    public const string RolesActivateDeactivate = "RolesActivateDeactivate";
 }
+
 
 public static class AuthModules
 {
@@ -20,7 +25,9 @@ public static class AuthModules
     public const string AuthorizationMatrixAdministration = "AuthorizationMatrixAdministration";
     public const string ExcelUploads = "ExcelUploads";
     public const string PartsCatalog = "PartsCatalog";
+    public const string RolesCatalog = "RolesCatalog";
 }
+
 
 public static class AuthModuleActions
 {
