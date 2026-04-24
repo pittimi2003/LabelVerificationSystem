@@ -17,28 +17,27 @@
     z-index: 1400;
 }
 
-.user-role-chip,
-.user-permission-chip {
+.user-role-pill,
+.user-permission-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid var(--mud-palette-lines-default);
     color: var(--mud-palette-text-primary);
-    border-color: var(--mud-palette-lines-default);
-    background-color: transparent;
-    opacity: 1;
-}
-
-.user-role-chip {
-    background-color: color-mix(in srgb, var(--mud-palette-primary) 10%, var(--mud-palette-surface));
-    border-color: color-mix(in srgb, var(--mud-palette-primary) 32%, var(--mud-palette-lines-default));
-}
-
-.user-permission-chip {
-    background-color: color-mix(in srgb, var(--mud-palette-secondary) 8%, var(--mud-palette-surface));
-    border-color: color-mix(in srgb, var(--mud-palette-secondary) 28%, var(--mud-palette-lines-default));
-}
-
-.user-role-chip :deep(.mud-chip-content),
-.user-permission-chip :deep(.mud-chip-content) {
-    color: inherit;
-    opacity: 1;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 600;
     line-height: 1.2;
+    opacity: 1;
+}
+
+.user-role-pill {
+    background-color: color-mix(in srgb, var(--mud-palette-primary) 14%, var(--mud-palette-surface));
+    border-color: color-mix(in srgb, var(--mud-palette-primary) 48%, var(--mud-palette-lines-default));
+}
+
+.user-permission-pill {
+    background-color: color-mix(in srgb, var(--mud-palette-secondary) 12%, var(--mud-palette-surface));
+    border-color: color-mix(in srgb, var(--mud-palette-secondary) 42%, var(--mud-palette-lines-default));
 }
