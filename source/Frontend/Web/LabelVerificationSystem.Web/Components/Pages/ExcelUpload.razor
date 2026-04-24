@@ -5,7 +5,7 @@
 
 <PageTitle>Carga de Excel</PageTitle>
 
-<MudPaper Class="excel-upload-card pa-4" Outlined="true">
+<MudPaper Class="pa-4" Outlined="true">
     <MudStack Spacing="3">
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
             <MudText Typo="Typo.h5">Carga de Excel</MudText>
@@ -14,7 +14,7 @@
             </MudButton>
         </MudStack>
 
-        <MudText Typo="Typo.h6" Class="section-title mb-2">Subir archivo Excel</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2">Subir archivo Excel</MudText>
 
         <MudFileUpload T="IBrowserFile"
                        @key="@FileUploadResetKey"
@@ -27,7 +27,7 @@
                 <MudPaper Class="@DropzoneClass" Outlined="true" Width="100%">
                     <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Spacing="1" Class="py-6 px-4">
                         <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Large" Color="Color.Primary" />
-                        <MudText Typo="Typo.h6" Class="section-title">Arrastra el archivo aquí</MudText>
+                        <MudText Typo="Typo.h6">Arrastra el archivo aquí</MudText>
                         <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">Formatos permitidos: .xlsx, .xls</MudChip>
                     </MudStack>
                 </MudPaper>
@@ -68,7 +68,7 @@
 
         <MudDivider />
 
-        <MudText Typo="Typo.h6" Class="section-title mb-2">Historial de cargas</MudText>
+        <MudText Typo="Typo.h6" Class="mb-2">Historial de cargas</MudText>
 
         @if (IsHistoryLoading)
         {
@@ -115,13 +115,13 @@
     </MudStack>
 </MudPaper>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6" Class="admin-drawer">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Detalle de carga Excel</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CloseDetailDrawer" />
     </MudDrawerHeader>
 
-    <div class="pa-4">
+    <MudStack Class="pa-4" Spacing="2">
         @if (IsDetailLoading)
         {
             <div class="d-flex align-center gap-2">
@@ -136,28 +136,38 @@
         else
         {
             <MudStack Spacing="2">
-                <div class="excel-detail-card">
-                    <MudText Typo="Typo.h6" Class="excel-detail-section-title">Resumen</MudText>
+                <MudPaper Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6">Resumen</MudText>
                     <MudDivider Class="my-2" />
-                    <div class="excel-summary-grid">
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">Archivo</div>
-                            <div class="excel-detail-value">@SelectedDetail.OriginalFileName</div>
-                        </div>
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">Fecha UTC</div>
-                            <div class="excel-detail-value">@SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</div>
-                        </div>
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">Estado</div>
-                            <div class="excel-detail-value">@SelectedDetail.Status</div>
-                        </div>
-                        <div class="excel-summary-item">
-                            <div class="excel-detail-label">UploadId</div>
-                            <div class="excel-detail-value">@SelectedDetail.UploadId</div>
-                        </div>
-                    </div>
-                </div>
+                    <MudGrid>
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Outlined="true" Class="pa-3 h-100">
+                                <MudText Typo="Typo.caption">Archivo</MudText>
+                                <MudText Typo="Typo.subtitle1">@SelectedDetail.OriginalFileName</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Outlined="true" Class="pa-3 h-100">
+                                <MudText Typo="Typo.caption">Fecha UTC</MudText>
+                                <MudText Typo="Typo.subtitle1">@SelectedDetail.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudText>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Outlined="true" Class="pa-3 h-100">
+                                <MudText Typo="Typo.caption">Estado</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@(SelectedDetail.RejectedRows > 0 ? Color.Warning : Color.Success)" Variant="Variant.Outlined">
+                                    @SelectedDetail.Status
+                                </MudChip>
+                            </MudPaper>
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Outlined="true" Class="pa-3 h-100">
+                                <MudText Typo="Typo.caption">UploadId</MudText>
+                                <MudText Typo="Typo.subtitle1">@SelectedDetail.UploadId</MudText>
+                            </MudPaper>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
 
                 <MudTabs Elevation="0" Rounded="true" PanelClass="pt-3" ActivePanelIndex="@DetailTabIndex" ActivePanelIndexChanged="OnDetailTabIndexChanged">
                     <MudTabPanel Text="Vista General" />
@@ -166,40 +176,42 @@
 
                 @if (DetailViewMode == "general")
                 {
-                    <div class="excel-detail-card">
-                        <MudStack Spacing="2">
-                            <MudText Typo="Typo.h6" Class="excel-detail-section-title">Vista general</MudText>
+                    <MudStack Spacing="2">
+                        <MudPaper Outlined="true" Class="pa-3">
+                            <MudText Typo="Typo.h6">Vista general</MudText>
+                            <MudDivider Class="my-2" />
                             <MudGrid>
-                                <MudItem xs="6">
-                                    <div class="excel-metric-card">
-                                        <div class="excel-detail-label">Total filas</div>
-                                        <div class="excel-detail-value">@SelectedDetail.TotalRows</div>
-                                    </div>
+                                <MudItem xs="12" sm="6">
+                                    <MudPaper Outlined="true" Class="pa-3 h-100">
+                                        <MudText Typo="Typo.caption">Total filas</MudText>
+                                        <MudText Typo="Typo.h6">@SelectedDetail.TotalRows</MudText>
+                                    </MudPaper>
                                 </MudItem>
-                                <MudItem xs="6">
-                                    <div class="excel-metric-card">
-                                        <div class="excel-detail-label">Insertadas</div>
-                                        <div class="excel-detail-value">@SelectedDetail.InsertedRows</div>
-                                    </div>
+                                <MudItem xs="12" sm="6">
+                                    <MudPaper Outlined="true" Class="pa-3 h-100">
+                                        <MudText Typo="Typo.caption">Insertadas</MudText>
+                                        <MudText Typo="Typo.h6">@SelectedDetail.InsertedRows</MudText>
+                                    </MudPaper>
                                 </MudItem>
-                                <MudItem xs="6">
-                                    <div class="excel-metric-card">
-                                        <div class="excel-detail-label">Rechazadas</div>
-                                        <div class="excel-detail-value">@SelectedDetail.RejectedRows</div>
-                                    </div>
+                                <MudItem xs="12" sm="6">
+                                    <MudPaper Outlined="true" Class="pa-3 h-100">
+                                        <MudText Typo="Typo.caption">Rechazadas</MudText>
+                                        <MudText Typo="Typo.h6">@SelectedDetail.RejectedRows</MudText>
+                                    </MudPaper>
                                 </MudItem>
-                                <MudItem xs="6">
-                                    <div class="excel-metric-card">
-                                        <div class="excel-detail-label">% éxito</div>
-                                        <div class="excel-detail-value">@SuccessRate%</div>
-                                    </div>
+                                <MudItem xs="12" sm="6">
+                                    <MudPaper Outlined="true" Class="pa-3 h-100">
+                                        <MudText Typo="Typo.caption">% éxito</MudText>
+                                        <MudText Typo="Typo.h6">@SuccessRate%</MudText>
+                                    </MudPaper>
                                 </MudItem>
                             </MudGrid>
+                        </MudPaper>
 
-                            <MudPaper Class="pa-3 excel-detail-card" Outlined="true">
+                        <MudPaper Class="pa-3" Outlined="true">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                     <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Warning" />
-                                    <MudText Typo="Typo.h6" Class="excel-detail-section-title">Agrupación por ErrorCode</MudText>
+                                    <MudText Typo="Typo.h6">Agrupación por ErrorCode</MudText>
                                 </MudStack>
                                 <MudDivider Class="my-2" />
                                 @if (ErrorGroups.Count == 0)
@@ -225,15 +237,14 @@
                                         </RowTemplate>
                                     </MudTable>
                                 }
-                            </MudPaper>
-                        </MudStack>
-                    </div>
+                        </MudPaper>
+                    </MudStack>
                 }
                 else
                 {
                     <MudPaper Class="pa-3" Outlined="true">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
-                            <MudText Typo="Typo.h6" Class="section-title">Detalle por fila</MudText>
+                            <MudText Typo="Typo.h6">Detalle por fila</MudText>
                             <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="ClearRowFilters">
                                 Limpiar filtros
                             </MudButton>
@@ -325,7 +336,7 @@
                 }
             </MudStack>
         }
-    </div>
+    </MudStack>
 </MudDrawer>
 
 @code {

@@ -2,104 +2,21 @@
     width: 100%;
     border: 2px dashed var(--mud-palette-primary);
     border-radius: 12px;
-    background-color: color-mix(in srgb, var(--mud-palette-primary) 8%, transparent);
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .excel-upload-dropzone:hover {
     border-color: var(--mud-palette-primary-darken);
-    background-color: color-mix(in srgb, var(--mud-palette-primary) 14%, transparent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mud-palette-primary) 12%, transparent);
+    box-shadow: 0 0 0 2px var(--mud-palette-primary);
 }
 
 .excel-upload-dropzone-selected {
     border-style: solid;
-    background-color: color-mix(in srgb, var(--mud-palette-success) 12%, transparent);
 }
 
 .status-chip {
     min-width: 84px;
     justify-content: center;
     font-weight: 600;
-}
-
-.excel-upload-card {
-    background: var(--mud-palette-surface);
-    color: var(--mud-palette-text-primary);
-}
-
-.section-title {
-    color: var(--mud-palette-text-primary);
-    font-weight: 600;
-}
-
-:deep(.admin-drawer) {
-    background: var(--mud-palette-surface);
-    color: var(--mud-palette-text-primary);
-}
-
-.excel-detail-section-title {
-    color: var(--mud-palette-text-primary);
-    font-weight: 600;
-    opacity: 1;
-}
-
-.admin-drawer .excel-detail-card {
-    background: var(--mud-palette-surface);
-    border: 1px solid var(--mud-palette-lines-default);
-    color: var(--mud-palette-text-primary);
-    border-radius: 8px;
-    padding: 0.85rem;
-}
-
-.excel-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-}
-
-.admin-drawer .excel-summary-item,
-.admin-drawer .excel-metric-card {
-    background: var(--mud-palette-background);
-    border: 1px solid var(--mud-palette-lines-default);
-    border-radius: 8px;
-    color: var(--mud-palette-text-primary);
-    padding: 0.85rem;
-}
-
-.admin-drawer .excel-summary-item {
-    min-height: 100%;
-}
-
-.excel-metric-card {
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    justify-content: center;
-}
-
-.admin-drawer .excel-detail-label {
-    color: var(--mud-palette-text-secondary);
-    font-weight: 700;
-    font-size: 0.8rem;
-    line-height: 1.3;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    opacity: 1;
-}
-
-.admin-drawer .excel-detail-value {
-    color: var(--mud-palette-text-primary);
-    font-weight: 800;
-    font-size: 1.05rem;
-    line-height: 1.35;
-    opacity: 1;
-}
-
-@media (max-width: 900px) {
-    .excel-summary-grid {
-        grid-template-columns: 1fr;
-    }
 }
