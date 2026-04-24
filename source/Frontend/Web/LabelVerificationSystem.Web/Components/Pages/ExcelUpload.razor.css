@@ -47,9 +47,10 @@
 
 .excel-detail-card,
 .excel-metric-card {
-    background: var(--mud-palette-surface-bright);
+    background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-lines-default);
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--mud-palette-black) 24%, transparent);
+    color: var(--mud-palette-text-primary);
+    opacity: 1;
 }
 
 .excel-detail-card .mud-card-content,
@@ -64,11 +65,12 @@
 }
 
 .excel-summary-item {
-    background: var(--mud-palette-surface-bright);
+    background: var(--mud-palette-background);
     border: 1px solid var(--mud-palette-lines-default);
     border-radius: 8px;
     min-height: 100%;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--mud-palette-black) 20%, transparent);
+    color: var(--mud-palette-text-primary);
+    opacity: 1;
 }
 
 .excel-metric-card {
@@ -77,10 +79,11 @@
     flex-direction: column;
     gap: 0.35rem;
     justify-content: center;
-    background: var(--mud-palette-surface-bright);
+    background: var(--mud-palette-background);
     border-color: var(--mud-palette-lines-default);
     border-radius: 8px;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--mud-palette-black) 20%, transparent);
+    color: var(--mud-palette-text-primary);
+    opacity: 1;
 }
 
 .excel-detail-label {
@@ -101,25 +104,8 @@
     opacity: 1;
 }
 
-.admin-drawer .excel-detail-card {
-    background: var(--mud-palette-surface-bright);
-    border-color: var(--mud-palette-lines-default);
-    box-shadow: 0 6px 18px color-mix(in srgb, var(--mud-palette-black) 28%, transparent);
-}
-
 .admin-drawer .excel-metric-card .mud-card-content {
     padding: 0.85rem;
-}
-
-.admin-drawer .excel-detail-section-title,
-.admin-drawer .excel-detail-label,
-.admin-drawer .excel-detail-value {
-    opacity: 1;
-}
-
-.admin-drawer .excel-detail-value {
-    color: var(--mud-palette-text-primary);
-    font-weight: 700;
 }
 
 .admin-drawer .excel-metric-card .excel-detail-value {
