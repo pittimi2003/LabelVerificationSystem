@@ -18,35 +18,6 @@
     background-color: color-mix(in srgb, var(--mud-palette-success) 12%, transparent);
 }
 
-.admin-grid-card,
-.excel-upload-drawer {
-    background: var(--mud-palette-surface);
-    color: var(--mud-palette-text-primary);
-}
-
-.upload-general-view .metric-card {
-    border-left: 4px solid transparent;
-    background: var(--mud-palette-surface);
-}
-
-.upload-general-view .metric-card-total { border-left-color: var(--mud-palette-primary); }
-.upload-general-view .metric-card-inserted { border-left-color: var(--mud-palette-success); }
-.upload-general-view .metric-card-rejected { border-left-color: var(--mud-palette-warning); }
-.upload-general-view .metric-card-quality { border-left-color: var(--mud-palette-info); }
-
-.upload-general-view .error-group-container {
-    background-color: color-mix(in srgb, var(--mud-palette-warning) 10%, transparent);
-}
-
-.admin-grid-table :deep(.mud-table-head .mud-table-cell) {
-    background: var(--mud-palette-surface);
-    color: var(--mud-palette-text-primary);
-}
-
-.admin-grid-table :deep(.mud-table-body .mud-table-cell) {
-    color: var(--mud-palette-text-primary);
-}
-
 .status-chip {
     min-width: 84px;
     justify-content: center;

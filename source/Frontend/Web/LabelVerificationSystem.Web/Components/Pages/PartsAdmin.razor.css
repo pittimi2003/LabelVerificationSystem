@@ -1,27 +1,3 @@
-.parts-admin-page {
-    width: 100%;
-}
-
-.parts-admin-card,
-.parts-admin-filters,
-.parts-admin-drawer {
-    background: var(--mud-palette-surface);
-    color: var(--mud-palette-text-primary);
-}
-
 .parts-page-size {
     min-width: 140px;
-}
-
-.parts-admin-drawer {
-    z-index: 1400;
-}
-
-.admin-grid-table :deep(.mud-table-head .mud-table-cell) {
-    background: var(--mud-palette-surface);
-    color: var(--mud-palette-text-primary);
-}
-
-.admin-grid-table :deep(.mud-table-body .mud-table-cell) {
-    color: var(--mud-palette-text-primary);
 }

@@ -5,15 +5,15 @@
 
 <PageTitle>Carga de Excel</PageTitle>
 
-<div class="d-flex justify-space-between align-center mb-4 flex-wrap gap-2">
-    <MudText Typo="Typo.h5">Carga de Excel</MudText>
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadHistoryAsync" StartIcon="@Icons.Material.Filled.Refresh">
-        Actualizar historial
-    </MudButton>
-</div>
+<MudPaper Class="pa-4" Outlined="true">
+    <MudStack Spacing="3">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
+            <MudText Typo="Typo.h5">Carga de Excel</MudText>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@IsLoading" OnClick="LoadHistoryAsync" StartIcon="@Icons.Material.Filled.Refresh">
+                Actualizar historial
+            </MudButton>
+        </MudStack>
 
-<MudPaper Class="pa-4 mb-4 admin-grid-card" Outlined="true">
-    <MudStack Spacing="2">
         <MudText Typo="Typo.subtitle1">Subir archivo Excel</MudText>
 
         <MudFileUpload T="IBrowserFile"
@@ -65,57 +65,57 @@
                 <MudText Typo="Typo.body2">Procesando carga...</MudText>
             </div>
         }
+
+        <MudDivider />
+
+        <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
+
+        @if (IsHistoryLoading)
+        {
+            <div class="d-flex align-center gap-2">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+                <MudText Typo="Typo.body2">Cargando historial...</MudText>
+            </div>
+        }
+        else if (HistoryItems.Count == 0)
+        {
+            <MudText Typo="Typo.body2">No hay cargas registradas todavía.</MudText>
+        }
+        else
+        {
+            <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems" Class="admin-grid-table">
+                <HeaderContent>
+                    <MudTh>Acción</MudTh>
+                    <MudTh>UploadId</MudTh>
+                    <MudTh>Archivo</MudTh>
+                    <MudTh>Fecha UTC</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh>Total</MudTh>
+                    <MudTh>Insertadas</MudTh>
+                    <MudTh>Rechazadas</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudTooltip Text="Ver detalle">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Primary" OnClick="() => OpenDetailAsync(context.UploadId)" />
+                        </MudTooltip>
+                    </MudTd>
+                    <MudTd>@context.UploadId</MudTd>
+                    <MudTd>@context.OriginalFileName</MudTd>
+                    <MudTd>@context.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small" Color="@(context.RejectedRows > 0 ? Color.Warning : Color.Success)" Variant="Variant.Outlined">@context.Status</MudChip>
+                    </MudTd>
+                    <MudTd>@context.TotalRows</MudTd>
+                    <MudTd>@context.InsertedRows</MudTd>
+                    <MudTd>@context.RejectedRows</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
     </MudStack>
 </MudPaper>
 
-<MudPaper Class="pa-4 admin-grid-card" Outlined="true">
-    <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
-
-    @if (IsHistoryLoading)
-    {
-        <div class="d-flex align-center gap-2">
-            <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
-            <MudText Typo="Typo.body2">Cargando historial...</MudText>
-        </div>
-    }
-    else if (HistoryItems.Count == 0)
-    {
-        <MudText Typo="Typo.body2">No hay cargas registradas todavía.</MudText>
-    }
-    else
-    {
-        <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems" Class="admin-grid-table">
-            <HeaderContent>
-                <MudTh>Acción</MudTh>
-                <MudTh>UploadId</MudTh>
-                <MudTh>Archivo</MudTh>
-                <MudTh>Fecha UTC</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Total</MudTh>
-                <MudTh>Insertadas</MudTh>
-                <MudTh>Rechazadas</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>
-                    <MudTooltip Text="Ver detalle">
-                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" Color="Color.Primary" OnClick="() => OpenDetailAsync(context.UploadId)" />
-                    </MudTooltip>
-                </MudTd>
-                <MudTd>@context.UploadId</MudTd>
-                <MudTd>@context.OriginalFileName</MudTd>
-                <MudTd>@context.UploadedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")</MudTd>
-                <MudTd>
-                    <MudChip T="string" Size="Size.Small" Color="@(context.RejectedRows > 0 ? Color.Warning : Color.Success)" Variant="Variant.Outlined">@context.Status</MudChip>
-                </MudTd>
-                <MudTd>@context.TotalRows</MudTd>
-                <MudTd>@context.InsertedRows</MudTd>
-                <MudTd>@context.RejectedRows</MudTd>
-            </RowTemplate>
-        </MudTable>
-    }
-</MudPaper>
-
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6" Class="admin-drawer excel-upload-drawer">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6" Class="admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Detalle de carga Excel</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CloseDetailDrawer" />
@@ -154,37 +154,37 @@
 
                 @if (DetailViewMode == "general")
                 {
-                    <MudPaper Class="pa-3 upload-general-view" Outlined="true">
+                    <MudPaper Class="pa-3" Outlined="true">
                         <MudStack Spacing="2">
                             <MudText Typo="Typo.subtitle2">Vista general</MudText>
                             <MudGrid>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 metric-card metric-card-total" Outlined="true">
+                                    <MudPaper Class="pa-3" Outlined="true">
                                         <MudText Typo="Typo.caption">Total filas</MudText>
                                         <MudText Typo="Typo.h6">@SelectedDetail.TotalRows</MudText>
                                     </MudPaper>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 metric-card metric-card-inserted" Outlined="true">
+                                    <MudPaper Class="pa-3" Outlined="true">
                                         <MudText Typo="Typo.caption">Insertadas</MudText>
                                         <MudText Typo="Typo.h6">@SelectedDetail.InsertedRows</MudText>
                                     </MudPaper>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 metric-card metric-card-rejected" Outlined="true">
+                                    <MudPaper Class="pa-3" Outlined="true">
                                         <MudText Typo="Typo.caption">Rechazadas</MudText>
                                         <MudText Typo="Typo.h6">@SelectedDetail.RejectedRows</MudText>
                                     </MudPaper>
                                 </MudItem>
                                 <MudItem xs="6">
-                                    <MudPaper Class="pa-3 metric-card metric-card-quality" Outlined="true">
+                                    <MudPaper Class="pa-3" Outlined="true">
                                         <MudText Typo="Typo.caption">% éxito</MudText>
                                         <MudText Typo="Typo.h6">@SuccessRate%</MudText>
                                     </MudPaper>
                                 </MudItem>
                             </MudGrid>
 
-                            <MudPaper Class="pa-3 error-group-container" Outlined="true">
+                            <MudPaper Class="pa-3" Outlined="true">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                     <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Warning" />
                                     <MudText Typo="Typo.subtitle2">Agrupación por ErrorCode</MudText>
