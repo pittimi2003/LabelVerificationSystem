@@ -139,7 +139,7 @@
                 <MudPaper Outlined="true" Class="pa-3">
                     <MudText Typo="Typo.h6">Resumen</MudText>
                     <MudDivider Class="my-2" />
-                    <MudGrid>
+                    <MudGrid Class="mt-2">
                         <MudItem xs="12" sm="6">
                             <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary h-100">
                                 <MudCardContent>
@@ -160,26 +160,16 @@
                                 </MudCardContent>
                             </MudCard>
                         </MudItem>
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="6" sm="6">
                             <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary h-100">
                                 <MudCardContent>
                                     <span class="fs-13 fw-medium">Estado</span>
-                                    <MudText Typo="Typo.h6" Class="fw-semibold my-2 lh-1">
+                                    <MudChip T="string" Color="Color.Success" Variant="Variant.Outlined" Size="Size.Small">
                                         @SelectedDetail.Status
-                                    </MudText>
+                                    </MudChip>
                                 </MudCardContent>
                             </MudCard>
-                        </MudItem>
-                        <MudItem xs="12" sm="6">
-                            <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary h-100">
-                                <MudCardContent>
-                                    <span class="fs-13 fw-medium">UploadId</span>
-                                    <MudText Typo="Typo.h6" Class="fw-semibold my-2 lh-1">
-                                        @SelectedDetail.UploadId
-                                    </MudText>
-                                </MudCardContent>
-                            </MudCard>
-                        </MudItem>
+                        </MudItem>                        
                     </MudGrid>
                 </MudPaper>
 
@@ -194,7 +184,7 @@
                         <MudPaper Outlined="true" Class="pa-3">
                             <MudText Typo="Typo.h6">Vista general</MudText>
                             <MudDivider Class="my-2" />
-                            <MudGrid>
+                            <MudGrid Class="mt-2">
                                 <MudItem xs="12" sm="6">
                                     <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary h-100">
                                         <MudCardContent>
@@ -229,8 +219,8 @@
                                     <MudCard Class="custom-card mb-0 dashboard-main-card overflow-hidden primary h-100">
                                         <MudCardContent>
                                             <span class="fs-13 fw-medium">% éxito</span>
-                                            <MudText Typo="Typo.h6" Class="fw-semibold my-2 lh-1">
-                                                @SuccessRate%
+                                            <MudText Typo="Typo.h6" Class="fw-semibold my-2 text-success">
+                                                100.0%
                                             </MudText>
                                         </MudCardContent>
                                     </MudCard>
