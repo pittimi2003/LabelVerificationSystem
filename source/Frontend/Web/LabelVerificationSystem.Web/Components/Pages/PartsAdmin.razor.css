@@ -1,19 +1,19 @@
-.roles-admin-page {
+.parts-admin-page {
     width: 100%;
 }
 
-.roles-admin-card,
-.roles-admin-filters,
-.roles-admin-drawer {
+.parts-admin-card,
+.parts-admin-filters,
+.parts-admin-drawer {
     background: var(--mud-palette-surface);
     color: var(--mud-palette-text-primary);
 }
 
-.roles-page-size {
+.parts-page-size {
     min-width: 140px;
 }
 
-.roles-admin-drawer {
+.parts-admin-drawer {
     z-index: 1400;
 }
 

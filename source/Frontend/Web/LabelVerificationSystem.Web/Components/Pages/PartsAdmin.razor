@@ -5,10 +5,10 @@
 
 <PageTitle>Administración de parts</PageTitle>
 
-<div class="roles-admin-page d-flex flex-column gap-4">
-    <MudPaper Class="roles-admin-card pa-4" Outlined="true">
+<div class="parts-admin-page d-flex flex-column gap-4">
+    <MudPaper Class="parts-admin-card pa-4" Outlined="true">
         <MudStack Spacing="3">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="roles-admin-toolbar flex-wrap gap-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="parts-admin-toolbar flex-wrap gap-2">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h5">Administración de Parts</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Grid administrativo conectado a <code>/api/parts</code>.</MudText>
@@ -19,7 +19,7 @@
                 </MudStack>
             </MudStack>
 
-            <MudPaper Class="pa-3 roles-admin-filters" Outlined="true">
+            <MudPaper Class="pa-3 parts-admin-filters" Outlined="true">
                 <MudGrid>
                     <MudItem xs="12" md="4" lg="3">
                         <MudSelect T="string" Value="@SearchField" ValueChanged="OnSearchFieldChanged" Label="SearchField" Variant="Variant.Outlined">
@@ -52,7 +52,7 @@
             }
             else
             {
-                <MudTable Hover="true" Elevation="0" Items="@_parts" Breakpoint="Breakpoint.Md" Bordered="true">
+                <MudTable Hover="true" Elevation="0" Items="@_parts" Breakpoint="Breakpoint.Md" Bordered="true" Class="admin-grid-table">
                     <HeaderContent>
                         <MudTh>PartNumber</MudTh>
                         <MudTh>Model</MudTh>
@@ -94,7 +94,7 @@
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mt-3 flex-wrap gap-2">
                     <MudText Typo="Typo.caption">Página @CurrentPage de @TotalPages | Total backend: @TotalItems</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                        <MudSelect T="int" Value="@PageSize" ValueChanged="OnPageSizeChanged" Variant="Variant.Outlined" Label="Filas por página" Class="roles-page-size">
+                        <MudSelect T="int" Value="@PageSize" ValueChanged="OnPageSizeChanged" Variant="Variant.Outlined" Label="Filas por página" Class="parts-page-size">
                             <MudSelectItem Value="10">10</MudSelectItem>
                             <MudSelectItem Value="20">20</MudSelectItem>
                             <MudSelectItem Value="50">50</MudSelectItem>
@@ -107,7 +107,7 @@
     </MudPaper>
 </div>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsCreateDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsCreateDrawerOpen" Width="500px" Elevation="6" Class="parts-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Crear part</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCreateDrawer" />
@@ -135,7 +135,7 @@
     </div>
 </MudDrawer>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsEditDrawerOpen" Width="500px" Elevation="6" Class="parts-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Editar part</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseEditDrawer" />
@@ -163,7 +163,7 @@
     </div>
 </MudDrawer>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="500px" Elevation="6" Class="roles-admin-drawer">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="500px" Elevation="6" Class="parts-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Detalle de part</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseDetailDrawer" />
@@ -226,10 +226,15 @@
 
     private PartDetailDto? SelectedPart { get; set; }
 
-    protected override async Task OnInitializedAsync() => await LoadPartsAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        Snackbar.Clear();
+        await LoadPartsAsync();
+    }
 
     private async Task LoadPartsAsync()
     {
+        Snackbar.Clear();
         IsLoading = true;
         HasLoadError = false;
         LoadErrorMessage = string.Empty;

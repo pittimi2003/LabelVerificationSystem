@@ -30,7 +30,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6" Class="d-flex align-center">
-                        <MudText Typo="Typo.caption" Class="text-muted">La matriz se carga/guarda contra <code>/api/authorization-matrix/roles/{{roleCode}}</code>.</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">La matriz se carga/guarda contra <code>/api/authorization-matrix/roles/{{roleCode}}</code>.</MudText>
                     </MudItem>
                 </MudGrid>
             </MudPaper>
@@ -62,7 +62,7 @@
                         <MudTd>
                             <MudStack Spacing="0">
                                 <MudText Typo="Typo.body2" Class="fw-semibold">@context.ModuleName</MudText>
-                                <MudText Typo="Typo.caption" Class="text-muted">@context.ModuleCode</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ModuleCode</MudText>
                             </MudStack>
                         </MudTd>
                         <MudTd>
@@ -80,7 +80,7 @@
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="flex-wrap gap-2">
                                             <MudStack Spacing="0">
                                                 <MudText Typo="Typo.body2">@action.ActionName</MudText>
-                                                <MudText Typo="Typo.caption" Class="text-muted">@action.ActionCode</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">@action.ActionCode</MudText>
                                             </MudStack>
                                             <MudSwitch T="bool"
                                                        Value="@action.Authorized"
@@ -114,11 +114,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Snackbar.Clear();
         await LoadRolesAsync();
     }
 
     private async Task LoadRolesAsync()
     {
+        Snackbar.Clear();
         IsLoading = true;
 
         try

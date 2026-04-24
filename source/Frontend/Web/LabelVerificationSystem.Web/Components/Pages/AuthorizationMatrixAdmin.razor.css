@@ -4,6 +4,8 @@
 
 .auth-matrix-card {
     border-radius: 0.75rem;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
 }
 
 .auth-matrix-toolbar code {

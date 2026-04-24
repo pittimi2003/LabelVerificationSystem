@@ -54,7 +54,7 @@
             }
             else
             {
-                <MudTable Hover="true" Elevation="0" Items="@_users" Breakpoint="Breakpoint.Md" Bordered="true" Class="users-admin-table">
+                <MudTable Hover="true" Elevation="0" Items="@_users" Breakpoint="Breakpoint.Md" Bordered="true" Class="admin-grid-table users-admin-table">
                     <HeaderContent>
                         <MudTh>User</MudTh>
                         <MudTh>Display Name</MudTh>
@@ -70,7 +70,7 @@
                         <MudTd>
                             <MudStack Spacing="0">
                                 <MudText Typo="Typo.body2" Class="fw-semibold">@context.Username</MudText>
-                                <MudText Typo="Typo.caption" Class="text-muted">@context.UserId</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.UserId</MudText>
                             </MudStack>
                         </MudTd>
                         <MudTd>@context.DisplayName</MudTd>
@@ -170,7 +170,7 @@
             </MudSelect>
             @if (AvailableRoles.Count == 0)
             {
-                <MudText Typo="Typo.caption" Class="text-muted">No hay roles activos en el catálogo real.</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">No hay roles activos en el catálogo real.</MudText>
             }
 
             <MudSelect T="string"
@@ -186,7 +186,7 @@
             </MudSelect>
             @if (AvailablePermissions.Count == 0)
             {
-                <MudText Typo="Typo.caption" Class="text-muted">No hay permisos detectados aún en los datos reales disponibles.</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">No hay permisos detectados aún en los datos reales disponibles.</MudText>
             }
             <MudSwitch T="bool" Value="@EditorIsActive" ValueChanged="v => EditorIsActive = v" Label="Usuario activo" Color="Color.Success" />
 
@@ -217,7 +217,7 @@
                 <MudTextField T="string" Value="@SelectedUser.DisplayName" Label="Display Name" Variant="Variant.Outlined" ReadOnly="true" />
                 <MudTextField T="string" Value="@(string.IsNullOrWhiteSpace(SelectedUser.Email) ? "—" : SelectedUser.Email)" Label="Email" Variant="Variant.Outlined" ReadOnly="true" />
 
-                <MudText Typo="Typo.caption" Class="text-muted">Roles</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Roles</MudText>
                 <div class="d-flex flex-wrap gap-1">
                     @if (SelectedUser.Roles.Count == 0)
                     {
@@ -232,7 +232,7 @@
                     }
                 </div>
 
-                <MudText Typo="Typo.caption" Class="text-muted">Permisos</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Permisos</MudText>
                 <div class="d-flex flex-wrap gap-1">
                     @if (SelectedUser.Permissions.Count == 0)
                     {
@@ -263,7 +263,7 @@
 
     <div class="pa-4">
         <MudStack Spacing="2">
-            <MudText Typo="Typo.caption" Class="text-muted">Usuario: @ResetDrawerUsername (@ResetDrawerUserId)</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">Usuario: @ResetDrawerUsername (@ResetDrawerUserId)</MudText>
             <MudTextField T="string" Value="@ResetPassword" ValueChanged="(string? v) => ResetPassword = v ?? string.Empty" Label="Nuevo password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
             <MudTextField T="string" Value="@ResetConfirmPassword" ValueChanged="(string? v) => ResetConfirmPassword = v ?? string.Empty" Label="Confirmar password" InputType="InputType.Password" Variant="Variant.Outlined" Required="true" />
 
@@ -336,12 +336,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Snackbar.Clear();
         await LoadRoleCatalogAsync();
         await LoadUsersAsync();
     }
 
     private async Task LoadUsersAsync()
     {
+        Snackbar.Clear();
         IsLoading = true;
 
         try

@@ -110,7 +110,7 @@ Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin v
 | Toggle estado | `PATCH /api/roles/{roleCode}/activation` body `{ isActive }` |
 | DTO item grid | `RoleCatalogListItemDto` |
 | DTO detalle | `RoleCatalogDetailDto` |
-| Policy | `AuthorizationMatrixManage` |
+| Policy | `RolesCatalog` por acción (`View`, `Create`, `Edit`, `ActivateDeactivate`) |
 
 ---
 

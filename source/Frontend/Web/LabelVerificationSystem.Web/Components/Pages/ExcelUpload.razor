@@ -12,7 +12,7 @@
     </MudButton>
 </div>
 
-<MudPaper Class="pa-4 mb-4" Outlined="true">
+<MudPaper Class="pa-4 mb-4 admin-grid-card" Outlined="true">
     <MudStack Spacing="2">
         <MudText Typo="Typo.subtitle1">Subir archivo Excel</MudText>
 
@@ -68,7 +68,7 @@
     </MudStack>
 </MudPaper>
 
-<MudPaper Class="pa-4" Outlined="true">
+<MudPaper Class="pa-4 admin-grid-card" Outlined="true">
     <MudText Typo="Typo.subtitle1" Class="mb-2">Historial de cargas</MudText>
 
     @if (IsHistoryLoading)
@@ -84,7 +84,7 @@
     }
     else
     {
-        <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems">
+        <MudTable Dense="true" Hover="true" Elevation="0" Items="@HistoryItems" Class="admin-grid-table">
             <HeaderContent>
                 <MudTh>Acción</MudTh>
                 <MudTh>UploadId</MudTh>
@@ -115,7 +115,7 @@
     }
 </MudPaper>
 
-<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6">
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsDetailDrawerOpen" Width="680px" Elevation="6" Class="admin-drawer excel-upload-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
         <MudText Typo="Typo.h6">Detalle de carga Excel</MudText>
         <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="CloseDetailDrawer" />
@@ -198,7 +198,7 @@
                                 }
                                 else
                                 {
-                                    <MudTable Dense="true" Hover="true" Elevation="0" Items="@ErrorGroups">
+                                    <MudTable Dense="true" Hover="true" Elevation="0" Items="@ErrorGroups" Class="admin-grid-table">
                                         <HeaderContent>
                                             <MudTh>Error code</MudTh>
                                             <MudTh>Mensaje</MudTh>
@@ -274,6 +274,7 @@
                         </MudGrid>
 
                         <MudTable @key="_rowTableRenderKey"
+                                  Class="admin-grid-table"
                                   @ref="_rowDetailTable"
                                   Dense="true"
                                   Hover="true"
@@ -386,6 +387,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Snackbar.Clear();
         await LoadHistoryAsync();
     }
 
@@ -432,6 +434,7 @@
 
     private async Task LoadHistoryAsync()
     {
+        Snackbar.Clear();
         IsHistoryLoading = true;
 
         try
