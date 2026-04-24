@@ -39,10 +39,16 @@
     color: var(--mud-palette-text-primary);
 }
 
+.excel-detail-section-title {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+    opacity: 1;
+}
+
 .excel-detail-card,
 .excel-metric-card {
     background: var(--mud-palette-surface);
-    border-color: var(--mud-palette-lines-default);
+    border: 1px solid var(--mud-palette-lines-default);
 }
 
 .excel-metric-card {
@@ -52,11 +58,13 @@
 .excel-detail-label {
     color: var(--mud-palette-text-secondary);
     font-weight: 500;
+    opacity: 1;
 }
 
 .excel-detail-value {
     color: var(--mud-palette-text-primary);
     font-weight: 600;
+    opacity: 1;
 }
 
 .admin-drawer :deep(.mud-table-head .mud-table-cell) {
