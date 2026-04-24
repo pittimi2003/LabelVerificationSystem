@@ -12,3 +12,16 @@
 .users-page-size {
     min-width: 140px;
 }
+
+.users-admin-drawer {
+    z-index: 1400;
+}
+
+.admin-grid-table :deep(.mud-table-head .mud-table-cell) {
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+}
+
+.admin-grid-table :deep(.mud-table-body .mud-table-cell) {
+    color: var(--mud-palette-text-primary);
+}

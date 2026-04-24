@@ -33,3 +33,37 @@
     color: var(--mud-palette-text-primary);
     font-weight: 600;
 }
+
+.admin-drawer {
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+}
+
+.excel-detail-card,
+.excel-metric-card {
+    background: var(--mud-palette-surface);
+    border-color: var(--mud-palette-lines-default);
+}
+
+.excel-metric-card {
+    min-height: 100%;
+}
+
+.excel-detail-label {
+    color: var(--mud-palette-text-secondary);
+    font-weight: 500;
+}
+
+.excel-detail-value {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+}
+
+.admin-drawer :deep(.mud-table-head .mud-table-cell) {
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+}
+
+.admin-drawer :deep(.mud-table-body .mud-table-cell) {
+    color: var(--mud-palette-text-primary);
+}
