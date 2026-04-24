@@ -102,3 +102,8 @@ h1:focus {
 .users-admin-page .users-admin-drawer .mud-drawer-header {
     background: var(--mud-palette-surface);
 }
+
+.mud-table th {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+}

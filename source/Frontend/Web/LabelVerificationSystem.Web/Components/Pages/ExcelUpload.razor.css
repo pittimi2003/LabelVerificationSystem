@@ -23,3 +23,13 @@
     justify-content: center;
     font-weight: 600;
 }
+
+.excel-upload-card {
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
+}
+
+.section-title {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+}
