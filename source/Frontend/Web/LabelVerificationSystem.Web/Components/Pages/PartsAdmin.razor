@@ -5,8 +5,7 @@
 
 <PageTitle>Administración de parts</PageTitle>
 
-<div class="parts-admin-page d-flex flex-column gap-4">
-    <MudPaper Class="parts-admin-card pa-4" Outlined="true">
+<MudPaper Class="parts-admin-card pa-4" Outlined="true">
         <MudStack Spacing="3">
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="parts-admin-toolbar flex-wrap gap-2">
                 <MudStack Spacing="0">
@@ -19,8 +18,7 @@
                 </MudStack>
             </MudStack>
 
-            <MudPaper Class="pa-3 parts-admin-filters" Outlined="true">
-                <MudGrid>
+            <MudGrid>
                     <MudItem xs="12" md="4" lg="3">
                         <MudSelect T="string" Value="@SearchField" ValueChanged="OnSearchFieldChanged" Label="SearchField" Variant="Variant.Outlined">
                             <MudSelectItem T="string" Value="@(SearchFieldPartNumber)">PartNumber</MudSelectItem>
@@ -36,7 +34,6 @@
                         <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
                     </MudItem>
                 </MudGrid>
-            </MudPaper>
 
             @if (HasLoadError)
             {
@@ -104,8 +101,7 @@
                 </MudStack>
             }
         </MudStack>
-    </MudPaper>
-</div>
+</MudPaper>
 
 <MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@IsCreateDrawerOpen" Width="500px" Elevation="6" Class="parts-admin-drawer">
     <MudDrawerHeader class="d-flex align-center justify-space-between border-b px-4 py-3">
