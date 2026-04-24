@@ -67,6 +67,41 @@
     opacity: 1;
 }
 
+.admin-drawer .excel-detail-card {
+    background: color-mix(in srgb, var(--mud-palette-surface) 88%, var(--mud-palette-background));
+    border-color: var(--mud-palette-lines-default);
+}
+
+.admin-drawer .excel-metric-card {
+    background: color-mix(in srgb, var(--mud-palette-surface) 82%, var(--mud-palette-background));
+    border-color: var(--mud-palette-lines-default);
+}
+
+.admin-drawer .excel-detail-section-title,
+.admin-drawer .excel-detail-label,
+.admin-drawer .excel-detail-value {
+    opacity: 1;
+}
+
+.admin-drawer .excel-detail-label {
+    color: var(--mud-palette-text-secondary);
+}
+
+.admin-drawer .excel-detail-value {
+    color: var(--mud-palette-text-primary);
+    font-weight: 600;
+}
+
+.admin-drawer :deep(.excel-detail-card .mud-typography),
+.admin-drawer :deep(.excel-metric-card .mud-typography) {
+    color: var(--mud-palette-text-primary);
+}
+
+.admin-drawer :deep(.excel-detail-card .excel-detail-label),
+.admin-drawer :deep(.excel-metric-card .excel-detail-label) {
+    color: var(--mud-palette-text-secondary);
+}
+
 .admin-drawer :deep(.mud-table-head .mud-table-cell) {
     background: var(--mud-palette-surface);
     color: var(--mud-palette-text-primary);

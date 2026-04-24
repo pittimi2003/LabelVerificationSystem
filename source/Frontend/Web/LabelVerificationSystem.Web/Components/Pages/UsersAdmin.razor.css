@@ -16,3 +16,29 @@
 .users-admin-drawer {
     z-index: 1400;
 }
+
+.user-role-chip,
+.user-permission-chip {
+    color: var(--mud-palette-text-primary);
+    border-color: var(--mud-palette-lines-default);
+    background-color: transparent;
+    opacity: 1;
+}
+
+.user-role-chip {
+    background-color: color-mix(in srgb, var(--mud-palette-primary) 10%, var(--mud-palette-surface));
+    border-color: color-mix(in srgb, var(--mud-palette-primary) 32%, var(--mud-palette-lines-default));
+}
+
+.user-permission-chip {
+    background-color: color-mix(in srgb, var(--mud-palette-secondary) 8%, var(--mud-palette-surface));
+    border-color: color-mix(in srgb, var(--mud-palette-secondary) 28%, var(--mud-palette-lines-default));
+}
+
+.user-role-chip :deep(.mud-chip-content),
+.user-permission-chip :deep(.mud-chip-content) {
+    color: inherit;
+    opacity: 1;
+    font-weight: 500;
+    line-height: 1.2;
+}
