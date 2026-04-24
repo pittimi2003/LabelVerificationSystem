@@ -29,13 +29,8 @@
                             <MudSelectItem T="string" Value="@(SearchFieldCco)">Cco</MudSelectItem>
                         </MudSelect>
                     </MudItem>
-                    <MudItem xs="12" md="8" lg="5">
+                    <MudItem xs="12" md="8" lg="7">
                         <MudTextField T="string" Value="@SearchText" ValueChanged="OnSearchTextChanged" Label="SearchText" Variant="Variant.Outlined" Immediate="true" />
-                    </MudItem>
-                    <MudItem xs="12" md="6" lg="2">
-                        <MudSelect T="string" Value="@StatusFilter" Label="StatusFilter" Variant="Variant.Outlined" Disabled="true">
-                            <MudSelectItem T="string" Value="@StatusFilter">No aplica</MudSelectItem>
-                        </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="6" lg="2" Class="d-flex align-center justify-end">
                         <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="ClearFiltersAsync" StartIcon="@Icons.Material.Filled.FilterAltOff">Limpiar filtros</MudButton>
@@ -215,7 +210,6 @@
 
     private string SearchField { get; set; } = SearchFieldPartNumber;
     private string SearchText { get; set; } = string.Empty;
-    private string StatusFilter { get; set; } = "n/a";
 
     private bool IsCreateDrawerOpen { get; set; }
     private bool IsEditDrawerOpen { get; set; }
