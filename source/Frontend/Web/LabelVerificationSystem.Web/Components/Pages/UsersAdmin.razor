@@ -79,7 +79,7 @@
                             <div class="d-flex flex-wrap gap-1">
                                 @foreach (var role in context.Roles)
                                 {
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@role</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default" Class="user-role-chip">@role</MudChip>
                                 }
                             </div>
                         </MudTd>
@@ -87,7 +87,7 @@
                             <div class="d-flex flex-wrap gap-1">
                                 @foreach (var permission in context.Permissions)
                                 {
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@permission</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default" Class="user-permission-chip">@permission</MudChip>
                                 }
                             </div>
                         </MudTd>
