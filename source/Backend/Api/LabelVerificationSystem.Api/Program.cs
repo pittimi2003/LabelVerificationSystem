@@ -165,6 +165,31 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser();
         policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.RolesCatalog, AuthModuleActions.ActivateDeactivate));
     });
+
+
+    options.AddPolicy(AuthAuthorizationPolicies.LabelTypesRead, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.LabelTypes, AuthModuleActions.View));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.LabelTypesCreate, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.LabelTypes, AuthModuleActions.Create));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.LabelTypesEdit, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.LabelTypes, AuthModuleActions.Edit));
+    });
+
+    options.AddPolicy(AuthAuthorizationPolicies.LabelTypesActivateDeactivate, policy =>
+    {
+        policy.RequireAuthenticatedUser();
+        policy.Requirements.Add(new ModuleActionAuthorizationRequirement(AuthModules.LabelTypes, AuthModuleActions.ActivateDeactivate));
+    });
 });
 
 builder.Services.AddScoped<IAuthorizationHandler, ModuleActionAuthorizationHandler>();

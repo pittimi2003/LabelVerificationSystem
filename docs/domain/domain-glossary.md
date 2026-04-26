@@ -384,3 +384,8 @@ Este glosario debe actualizarse cuando ocurra cualquiera de estas situaciones:
 - Se crea el vocabulario base del dominio a partir de la propuesta funcional inicial.
 - Se definen los conceptos principales del sistema sin inventar detalles aún no formalizados.
 - Se identifican términos que deberán precisarse más adelante mediante flujos, contratos y modelo de datos.
+### Administración de Tipos de Etiqueta
+Módulo administrativo para definir clasificaciones de etiqueta por conjunto de columnas (`Columns` separado por `|`) y habilitar el cálculo automático durante carga de Excel.
+
+### Matching de Tipo de Etiqueta
+Regla de comparación entre columnas relevantes de una `Part` y la definición `LabelType.Columns` usando igualdad exacta de conjuntos; si no hay igualdad, el sistema usa `Por asignar`.

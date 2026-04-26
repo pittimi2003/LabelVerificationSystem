@@ -16,7 +16,12 @@ public static class AuthAuthorizationPolicies
     public const string RolesCreate = "RolesCreate";
     public const string RolesEdit = "RolesEdit";
     public const string RolesActivateDeactivate = "RolesActivateDeactivate";
+    public const string LabelTypesRead = "LabelTypesRead";
+    public const string LabelTypesCreate = "LabelTypesCreate";
+    public const string LabelTypesEdit = "LabelTypesEdit";
+    public const string LabelTypesActivateDeactivate = "LabelTypesActivateDeactivate";
 }
+
 
 
 public static class AuthModules
@@ -26,7 +31,9 @@ public static class AuthModules
     public const string ExcelUploads = "ExcelUploads";
     public const string PartsCatalog = "PartsCatalog";
     public const string RolesCatalog = "RolesCatalog";
+    public const string LabelTypes = "LabelTypes";
 }
+
 
 
 public static class AuthModuleActions

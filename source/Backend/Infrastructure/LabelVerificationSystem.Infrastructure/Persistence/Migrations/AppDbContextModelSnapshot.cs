@@ -549,6 +549,57 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.ToTable("ExcelUploadRowResults", (string)null);
                 });
 
+
+            modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.LabelType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Columns")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatedByUserName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UpdatedByUserName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("LabelTypes", (string)null);
+                });
+
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.Part", b =>
                 {
                     b.Property<Guid>("Id")
@@ -574,6 +625,13 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.Property<int>("FirstFourNumbers")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("LabelTypeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LabelTypeName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("MinghuaDescription")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -589,6 +647,8 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByExcelUploadId");
+
+                    b.HasIndex("LabelTypeId");
 
                     b.HasIndex("PartNumber")
                         .IsUnique();
@@ -707,7 +767,14 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CreatedByExcelUploadId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("LabelVerificationSystem.Domain.Entities.LabelType", "LabelType")
+                        .WithMany("Parts")
+                        .HasForeignKey("LabelTypeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("CreatedByExcelUpload");
+
+                    b.Navigation("LabelType");
                 });
 
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.Auth.AuthSession", b =>
@@ -725,6 +792,11 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.Navigation("Actions");
 
                     b.Navigation("RoleAuthorizations");
+                });
+
+            modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.LabelType", b =>
+                {
+                    b.Navigation("Parts");
                 });
 
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.Auth.RoleCatalog", b =>

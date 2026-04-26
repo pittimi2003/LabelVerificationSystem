@@ -63,6 +63,7 @@
                         <MudTh>FirstFourNumbers</MudTh>
                         <MudTh>CreatedByExcelUploadId</MudTh>
                         <MudTh>CreatedAtUtc</MudTh>
+                        <MudTh>LabelType</MudTh>
                         <MudTh>Acciones</MudTh>
                     </HeaderContent>
                     <RowTemplate>
@@ -75,6 +76,7 @@
                         <MudTd>@context.FirstFourNumbers</MudTd>
                         <MudTd>@(context.CreatedByExcelUploadId?.ToString("D") ?? "—")</MudTd>
                         <MudTd>@context.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm")</MudTd>
+                        <MudTd>@context.LabelTypeName</MudTd>
                         <MudTd>
                             <MudStack Row="true" Spacing="0">
                                 <MudTooltip Text="Ver detalle">
@@ -186,6 +188,7 @@
                 <MudTextField T="string" Value="@SelectedPart.FirstFourNumbers.ToString()" Label="FirstFourNumbers" Variant="Variant.Outlined" ReadOnly="true" />
                 <MudTextField T="string" Value="@(SelectedPart.CreatedByExcelUploadId?.ToString("D") ?? "—")" Label="CreatedByExcelUploadId" Variant="Variant.Outlined" ReadOnly="true" />
                 <MudTextField T="string" Value="@SelectedPart.CreatedAtUtc.ToString("yyyy-MM-dd HH:mm:ss")" Label="CreatedAtUtc" Variant="Variant.Outlined" ReadOnly="true" />
+                <MudTextField T="string" Value="@SelectedPart.LabelTypeName" Label="LabelType" Variant="Variant.Outlined" ReadOnly="true" />
             </MudStack>
         }
     </div>

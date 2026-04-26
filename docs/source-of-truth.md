@@ -234,3 +234,4 @@ Este documento debe actualizarse cuando ocurra alguna de estas situaciones:
 - Se establece que las decisiones documentadas tienen prioridad sobre el código heredado.
 - Se fija la propuesta como línea base funcional inicial, pero no como autoridad absoluta.
 - Se documenta la regla de no asumir como verdad nada no decidido ni vigente.
+- Desde el 2026-04-26, el módulo `Tipos de Etiqueta` forma parte del Core funcional activo y su fallback `Por asignar` es obligatorio para partes sin coincidencia.

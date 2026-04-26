@@ -135,3 +135,7 @@ Elementos del estándar `docs/frontend/grid-view-standard.md` reutilizados sin v
 - [x] Sin inventar campos/filtros/catálogos/acciones fuera del backend.
 - [x] Contrato visual coherente con shell actual.
 - [x] Autorización robusta por policy existente.
+
+
+### Reutilización de estándar
+- El estándar de grid aplicado en `RolesAdmin` se reutiliza también en `LabelTypesAdmin` (toolbar + filtros + grid + drawer + feedback).

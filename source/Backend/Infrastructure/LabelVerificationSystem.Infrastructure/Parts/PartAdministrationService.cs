@@ -1,6 +1,7 @@
 using LabelVerificationSystem.Application.Contracts.Parts;
 using LabelVerificationSystem.Application.Interfaces.Auth;
 using LabelVerificationSystem.Application.Interfaces.Parts;
+using LabelVerificationSystem.Application.Interfaces.LabelTypes;
 using LabelVerificationSystem.Domain.Entities;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +11,12 @@ namespace LabelVerificationSystem.Infrastructure.Parts;
 public sealed class PartAdministrationService : IPartAdministrationService
 {
     private readonly AppDbContext _dbContext;
+    private readonly ILabelTypeResolver _labelTypeResolver;
 
-    public PartAdministrationService(AppDbContext dbContext)
+    public PartAdministrationService(AppDbContext dbContext, ILabelTypeResolver labelTypeResolver)
     {
         _dbContext = dbContext;
+        _labelTypeResolver = labelTypeResolver;
     }
 
     public async Task<PartListResponse> ListAsync(PartListQuery query, CancellationToken cancellationToken)
@@ -114,6 +117,10 @@ public sealed class PartAdministrationService : IPartAdministrationService
             CreatedAtUtc = DateTime.UtcNow
         };
 
+        var labelType = await _labelTypeResolver.ResolveForPartAsync(entity, cancellationToken);
+        entity.LabelTypeId = labelType.LabelTypeId;
+        entity.LabelTypeName = labelType.LabelTypeName;
+
         _dbContext.Parts.Add(entity);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -152,6 +159,10 @@ public sealed class PartAdministrationService : IPartAdministrationService
         entity.Cco = normalizedCco;
         entity.CertificationEac = request.CertificationEac;
         entity.FirstFourNumbers = request.FirstFourNumbers;
+
+        var labelType = await _labelTypeResolver.ResolveForPartAsync(entity, cancellationToken);
+        entity.LabelTypeId = labelType.LabelTypeId;
+        entity.LabelTypeName = labelType.LabelTypeName;
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
@@ -196,7 +207,8 @@ public sealed class PartAdministrationService : IPartAdministrationService
             x.CertificationEac,
             x.FirstFourNumbers,
             x.CreatedByExcelUploadId,
-            x.CreatedAtUtc);
+            x.CreatedAtUtc,
+            x.LabelTypeName);
 
     private static System.Linq.Expressions.Expression<Func<Part, PartDetailDto>> MapToDetail() =>
         x => new PartDetailDto(
@@ -209,7 +221,8 @@ public sealed class PartAdministrationService : IPartAdministrationService
             x.CertificationEac,
             x.FirstFourNumbers,
             x.CreatedByExcelUploadId,
-            x.CreatedAtUtc);
+            x.CreatedAtUtc,
+            x.LabelTypeName);
 
     private static PartDetailDto MapToDetail(Part x) =>
         new(
@@ -222,5 +235,6 @@ public sealed class PartAdministrationService : IPartAdministrationService
             x.CertificationEac,
             x.FirstFourNumbers,
             x.CreatedByExcelUploadId,
-            x.CreatedAtUtc);
+            x.CreatedAtUtc,
+            x.LabelTypeName);
 }

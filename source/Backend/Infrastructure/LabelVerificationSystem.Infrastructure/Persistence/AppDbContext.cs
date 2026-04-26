@@ -36,6 +36,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<RoleModuleAuthorization> RoleModuleAuthorizations => Set<RoleModuleAuthorization>();
     public DbSet<RoleModuleActionAuthorization> RoleModuleActionAuthorizations => Set<RoleModuleActionAuthorization>();
     public DbSet<SystemUserRole> SystemUserRoles => Set<SystemUserRole>();
+    public DbSet<LabelType> LabelTypes => Set<LabelType>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,12 +53,34 @@ public sealed class AppDbContext : DbContext
             entity.Property(x => x.Cco).IsRequired();
             entity.Property(x => x.FirstFourNumbers).IsRequired();
             entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.LabelTypeName).IsRequired();
             entity.HasIndex(x => x.PartNumber).IsUnique();
 
             entity.HasOne(x => x.CreatedByExcelUpload)
                 .WithMany(x => x.CreatedParts)
                 .HasForeignKey(x => x.CreatedByExcelUploadId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(x => x.LabelType)
+                .WithMany(x => x.Parts)
+                .HasForeignKey(x => x.LabelTypeId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<LabelType>(entity =>
+        {
+            entity.ToTable("LabelTypes");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).IsRequired().UseCollation("NOCASE");
+            entity.Property(x => x.Columns).IsRequired();
+            entity.Property(x => x.IsActive).HasDefaultValue(true);
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.Property(x => x.CreatedByUserId).IsRequired();
+            entity.Property(x => x.CreatedByUserName).IsRequired();
+            entity.Property(x => x.UpdatedByUserId).IsRequired();
+            entity.Property(x => x.UpdatedByUserName).IsRequired();
+            entity.HasIndex(x => x.Name).IsUnique();
         });
 
         modelBuilder.Entity<ExcelUpload>(entity =>

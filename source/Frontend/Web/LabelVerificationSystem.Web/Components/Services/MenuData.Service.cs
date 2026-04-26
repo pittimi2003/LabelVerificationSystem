@@ -64,6 +64,15 @@ public class MenuDataService
                     dirChange: false
                 ),
                 new MainMenuItems (
+                    path: "/label-types",
+                    type: "link",
+                    icon: "",
+                    title: "Tipos de Etiqueta",
+                    selected: false,
+                    active: false,
+                    dirChange: false
+                ),
+                new MainMenuItems (
                     path: "/roles",
                     type: "link",
                     icon: "",

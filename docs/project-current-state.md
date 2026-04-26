@@ -1598,3 +1598,8 @@ Estado explícito:
 - sin cambios de contrato API;
 - sin mezcla con Fase 5 ni NLog;
 - **Fase 4 continúa abierta**.
+
+## Actualización 2026-04-26: inicio Core funcional - módulo Tipos de Etiqueta
+- Se implementó módulo administrativo `LabelTypes` (catálogo, API y grid frontend).
+- Se agregó asignación automática de tipo de etiqueta en alta de parts y carga Excel con fallback obligatorio `Por asignar`.
+- Se agregó soporte de permisos robustos para `LabelTypes` con deny-by-default (admin gestiona; manager solo view; operator sin acceso).
