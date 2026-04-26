@@ -37,6 +37,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<RoleModuleActionAuthorization> RoleModuleActionAuthorizations => Set<RoleModuleActionAuthorization>();
     public DbSet<SystemUserRole> SystemUserRoles => Set<SystemUserRole>();
     public DbSet<LabelType> LabelTypes => Set<LabelType>();
+    public DbSet<LabelTypeRule> LabelTypeRules => Set<LabelTypeRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +82,23 @@ public sealed class AppDbContext : DbContext
             entity.Property(x => x.UpdatedByUserId).IsRequired();
             entity.Property(x => x.UpdatedByUserName).IsRequired();
             entity.HasIndex(x => x.Name).IsUnique();
+        });
+
+
+        modelBuilder.Entity<LabelTypeRule>(entity =>
+        {
+            entity.ToTable("LabelTypeRules");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ColumnName).IsRequired();
+            entity.Property(x => x.ExpectedValue).IsRequired();
+            entity.Property(x => x.CreatedAtUtc).IsRequired();
+            entity.Property(x => x.UpdatedAtUtc).IsRequired();
+            entity.HasIndex(x => new { x.LabelTypeId, x.ColumnName }).IsUnique();
+
+            entity.HasOne(x => x.LabelType)
+                .WithMany(x => x.Rules)
+                .HasForeignKey(x => x.LabelTypeId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<ExcelUpload>(entity =>

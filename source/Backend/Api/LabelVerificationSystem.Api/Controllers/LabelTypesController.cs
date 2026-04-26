@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Security.Claims;
 using LabelVerificationSystem.Api.Auth;
 using LabelVerificationSystem.Api.Contracts;
@@ -48,7 +49,7 @@ public sealed class LabelTypesController : ControllerBase
     {
         try
         {
-            var response = await _service.CreateAsync(new CreateLabelTypeRequest(request.Name, request.Columns, GetActorId(), GetActorName()), cancellationToken);
+            var response = await _service.CreateAsync(new CreateLabelTypeRequest(request.Name, request.Rules.Select(x => new LabelTypeRuleDto(x.ColumnName, x.ExpectedValue)).ToList(), GetActorId(), GetActorName()), cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = response.Id }, response);
         }
         catch (AuthValidationException ex) { return BadRequest(new ApiErrorResponse(ex.Message)); }
@@ -61,7 +62,7 @@ public sealed class LabelTypesController : ControllerBase
     {
         try
         {
-            return Ok(await _service.UpdateAsync(id, new UpdateLabelTypeRequest(request.Name, request.Columns, request.IsActive, GetActorId(), GetActorName()), cancellationToken));
+            return Ok(await _service.UpdateAsync(id, new UpdateLabelTypeRequest(request.Name, request.Rules.Select(x => new LabelTypeRuleDto(x.ColumnName, x.ExpectedValue)).ToList(), request.IsActive, GetActorId(), GetActorName()), cancellationToken));
         }
         catch (AuthValidationException ex) { return BadRequest(new ApiErrorResponse(ex.Message)); }
         catch (AuthUnauthorizedException ex) { return NotFound(new ApiErrorResponse(ex.Message)); }
@@ -84,6 +85,7 @@ public sealed class LabelTypesController : ControllerBase
     private string GetActorName() => User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue("unique_name") ?? "unknown";
 }
 
-public sealed record CreateLabelTypeApiRequest(string Name, IReadOnlyList<string> Columns);
-public sealed record UpdateLabelTypeApiRequest(string Name, IReadOnlyList<string> Columns, bool IsActive);
+public sealed record LabelTypeRuleApiRequest(string ColumnName, string ExpectedValue);
+public sealed record CreateLabelTypeApiRequest(string Name, IReadOnlyList<LabelTypeRuleApiRequest> Rules);
+public sealed record UpdateLabelTypeApiRequest(string Name, IReadOnlyList<LabelTypeRuleApiRequest> Rules, bool IsActive);
 public sealed record SetLabelTypeActivationApiRequest(bool IsActive);

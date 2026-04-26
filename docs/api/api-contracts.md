@@ -1558,13 +1558,14 @@ Request: misma estructura que `POST /api/parts`.
 - `PATCH /api/label-types/{id}/activation`
 - `GET /api/label-types/available-columns`
 
-Reglas: nombre obligatorio/único, columnas obligatorias/sin duplicados, columnas válidas según carga Excel actual, fallback `Por asignar`.
+Reglas: nombre obligatorio/único, reglas obligatorias (`columnName`,`expectedValue`), columnas válidas según carga Excel actual, sin columnas duplicadas por tipo, sin `expectedValue` vacío, unicidad activa por combinación exacta de columna+valor, fallback `Por asignar`.
 
 ### `GET /api/label-types/available-columns`
-- Devuelve el catálogo técnico de columnas soportadas para `LabelTypes.Columns`.
+- Devuelve el catálogo técnico de columnas soportadas para `LabelTypeRules.ColumnName`.
 - Fuente actual: lista centralizada en backend (`LabelTypeAvailableColumns.Values`) alineada al modelo de `Part` persistido por carga Excel.
 
 ### Criterio de matching en asignación automática
-- La asignación usa comparación exacta de conjuntos de columnas (no es `contains`, no es coincidencia parcial).
-- Columnas faltantes o extra en la part generan **no match** y por lo tanto fallback `Por asignar`.
-- En empate de múltiples tipos con mismo set, la selección es determinista por orden del resolver (longitud desc, nombre asc).
+- La asignación usa reglas exactas `columna + valor esperado` (normalizado con `trim`, case-insensitive).
+- Columnas extra en la part no impiden match.
+- Columnas faltantes para una regla generan **no match** y por lo tanto fallback `Por asignar`.
+- En empate de múltiples tipos válidos, la selección es determinista por mayor cantidad de reglas y luego `Name` asc.

@@ -13,5 +13,6 @@ public sealed class LabelType
     public string UpdatedByUserId { get; set; } = string.Empty;
     public string UpdatedByUserName { get; set; } = string.Empty;
 
+    public ICollection<LabelTypeRule> Rules { get; set; } = new List<LabelTypeRule>();
     public ICollection<Part> Parts { get; set; } = new List<Part>();
 }

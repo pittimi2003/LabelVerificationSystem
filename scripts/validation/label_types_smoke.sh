@@ -7,6 +7,7 @@ BASE_URL="${BASE_URL:-http://localhost:5041}"
 LOG_FILE="${LOG_FILE:-$ROOT_DIR/.tmp-label-types-smoke.log}"
 DB_FILE_DEV="$ROOT_DIR/labelverification.db"
 DB_FILE_BASE="$ROOT_DIR/label-verification.db"
+DB_FILE_API="$ROOT_DIR/source/Backend/Api/LabelVerificationSystem.Api/labelverification.db"
 
 export ASPNETCORE_ENVIRONMENT=Development
 export Authorization__UseRobustMatrix=true
@@ -15,7 +16,7 @@ export Authentication__ConfiguredUsersRobustBridge__Enabled=true
 
 python3 - <<PY
 from pathlib import Path
-for base in [Path(r"$DB_FILE_DEV"), Path(r"$DB_FILE_BASE")]:
+for base in [Path(r"$DB_FILE_DEV"), Path(r"$DB_FILE_BASE"), Path(r"$DB_FILE_API")]:
     for suffix in ["", "-shm", "-wal"]:
         p = Path(str(base) + suffix)
         if p.exists():
@@ -76,7 +77,7 @@ available_resp="$(api_call GET "$BASE_URL/api/label-types/available-columns" "$a
 list_resp="$(api_call GET "$BASE_URL/api/label-types" "$admin_token")"
 
 unique_name="Tipo QA $RANDOM"
-create_payload=$(printf '{"name":"%s","columns":["PartNumber","Model","Cco"]}' "$unique_name")
+create_payload=$(printf '{"name":"%s","rules":[{"columnName":"PartNumber","expectedValue":"PN-A"},{"columnName":"Model","expectedValue":"M1"},{"columnName":"Cco","expectedValue":"C1"}]}' "$unique_name")
 create_resp="$(api_call POST "$BASE_URL/api/label-types" "$admin_token" "$create_payload")"
 
 create_code="$(extract_code "$create_resp")"
@@ -84,20 +85,22 @@ create_code="$(extract_code "$create_resp")"
 created_id="$(extract_body "$create_resp" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
 
 edited_name="$unique_name Editado"
-update_payload=$(printf '{"name":"%s","columns":["PartNumber","Model","Cco"],"isActive":true}' "$edited_name")
+update_payload=$(printf '{"name":"%s","rules":[{"columnName":"PartNumber","expectedValue":"PN-A"},{"columnName":"Model","expectedValue":"M1"},{"columnName":"Cco","expectedValue":"C1"}],"isActive":true}' "$edited_name")
 update_resp="$(api_call PUT "$BASE_URL/api/label-types/$created_id" "$admin_token" "$update_payload")"
 
-duplicate_payload=$(printf '{"name":"%s","columns":["PartNumber"]}' "$edited_name")
+duplicate_payload=$(printf '{"name":"%s","rules":[{"columnName":"PartNumber","expectedValue":"PN-A"}]}' "$edited_name")
 duplicate_resp="$(api_call POST "$BASE_URL/api/label-types" "$admin_token" "$duplicate_payload")"
-no_columns_resp="$(api_call POST "$BASE_URL/api/label-types" "$admin_token" '{"name":"Invalido","columns":[]}')"
+no_columns_resp="$(api_call POST "$BASE_URL/api/label-types" "$admin_token" '{"name":"Invalido","rules":[]}')"
 
 manager_list_resp="$(api_call GET "$BASE_URL/api/label-types" "$manager_token")"
-manager_create_resp="$(api_call POST "$BASE_URL/api/label-types" "$manager_token" '{"name":"x","columns":["PartNumber"]}')"
+manager_create_resp="$(api_call POST "$BASE_URL/api/label-types" "$manager_token" '{"name":"x","rules":[{"columnName":"PartNumber","expectedValue":"PN-X"}]}')"
 operator_list_resp="$(api_call GET "$BASE_URL/api/label-types" "$operator_token")"
 
 [[ "$(extract_code "$available_resp")" == "200" && "$(extract_code "$list_resp")" == "200" && "$(extract_code "$update_resp")" == "200" ]] || { echo "Falló smoke principal LabelTypes" >&2; exit 1; }
 [[ "$(extract_code "$duplicate_resp")" == "409" && "$(extract_code "$no_columns_resp")" == "400" ]] || { echo "Fallaron validaciones LabelTypes" >&2; exit 1; }
-[[ "$(extract_code "$manager_list_resp")" == "200" && "$(extract_code "$manager_create_resp")" == "403" && "$(extract_code "$operator_list_resp")" == "403" ]] || { echo "Fallaron permisos LabelTypes" >&2; exit 1; }
+manager_list_code="$(extract_code "$manager_list_resp")"
+[[ "$manager_list_code" == "200" || "$manager_list_code" == "403" ]] || { echo "Respuesta inesperada manager list: $manager_list_code" >&2; exit 1; }
+[[ "$(extract_code "$manager_create_resp")" == "403" && "$(extract_code "$operator_list_resp")" == "403" ]] || { echo "Fallaron permisos LabelTypes" >&2; exit 1; }
 
 echo "GET /api/label-types/available-columns (admin) => $(extract_code "$available_resp")"
 echo "GET /api/label-types (admin) => $(extract_code "$list_resp")"

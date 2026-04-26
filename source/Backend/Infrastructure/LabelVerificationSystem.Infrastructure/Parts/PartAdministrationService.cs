@@ -57,6 +57,12 @@ public sealed class PartAdministrationService : IPartAdministrationService
             partsQuery = partsQuery.Where(x => x.Cco.ToLower().Contains(cco));
         }
 
+        var labelTypeName = NormalizeFilter(query.LabelTypeName);
+        if (!string.IsNullOrWhiteSpace(labelTypeName))
+        {
+            partsQuery = partsQuery.Where(x => x.LabelTypeName.ToLower().Contains(labelTypeName));
+        }
+
         var totalItems = await partsQuery.CountAsync(cancellationToken);
         var totalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)query.PageSize);
 

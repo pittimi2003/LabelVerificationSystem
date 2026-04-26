@@ -385,7 +385,7 @@ Este glosario debe actualizarse cuando ocurra cualquiera de estas situaciones:
 - Se definen los conceptos principales del sistema sin inventar detalles aún no formalizados.
 - Se identifican términos que deberán precisarse más adelante mediante flujos, contratos y modelo de datos.
 ### Administración de Tipos de Etiqueta
-Módulo administrativo para definir clasificaciones de etiqueta por conjunto de columnas (`Columns` separado por `|`) y habilitar el cálculo automático durante carga de Excel.
+Módulo administrativo para definir clasificaciones de etiqueta por reglas `columna + valor esperado` y habilitar el cálculo automático durante carga de Excel. `Columns` puede mantenerse como proyección legible, pero la fuente operativa es `LabelTypeRule`.
 
 ### Matching de Tipo de Etiqueta
-Regla de comparación entre columnas relevantes de una `Part` y la definición `LabelType.Columns` usando igualdad exacta de conjuntos; si no hay igualdad, el sistema usa `Por asignar`.
+Regla de comparación entre valores normalizados de una `Part` y las reglas `LabelTypeRule` (`ColumnName + ExpectedValue`). Se normaliza con `trim` y comparación case-insensitive. Si no hay match, el sistema usa fallback `Por asignar`. En múltiples matches: mayor cantidad de reglas y luego `Name` ascendente.

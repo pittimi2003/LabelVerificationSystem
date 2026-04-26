@@ -600,6 +600,38 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.ToTable("LabelTypes", (string)null);
                 });
 
+
+            modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.LabelTypeRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ColumnName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExpectedValue")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LabelTypeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LabelTypeId", "ColumnName")
+                        .IsUnique();
+
+                    b.ToTable("LabelTypeRules", (string)null);
+                });
+
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.Part", b =>
                 {
                     b.Property<Guid>("Id")
@@ -760,6 +792,18 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
                     b.Navigation("ExcelUpload");
                 });
 
+
+            modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.LabelTypeRule", b =>
+                {
+                    b.HasOne("LabelVerificationSystem.Domain.Entities.LabelType", "LabelType")
+                        .WithMany("Rules")
+                        .HasForeignKey("LabelTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LabelType");
+                });
+
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.Part", b =>
                 {
                     b.HasOne("LabelVerificationSystem.Domain.Entities.ExcelUpload", "CreatedByExcelUpload")
@@ -797,6 +841,8 @@ namespace LabelVerificationSystem.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.LabelType", b =>
                 {
                     b.Navigation("Parts");
+
+                    b.Navigation("Rules");
                 });
 
             modelBuilder.Entity("LabelVerificationSystem.Domain.Entities.Auth.RoleCatalog", b =>

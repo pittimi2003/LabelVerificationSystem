@@ -9,8 +9,8 @@
 - Estados visibles: loading inicial, loading al filtrar/paginar, vacío, error de carga, guardando, éxito/error de operación.
 
 ## Específico del modelo Part
-- Columnas: `PartNumber`, `Model`, `MinghuaDescription`, `Caducidad`, `Cco`, `CertificationEac`, `FirstFourNumbers`, `CreatedByExcelUploadId`, `CreatedAtUtc`.
-- Filtros soportados por backend: `partNumber`, `model`, `minghuaDescription`, `cco`.
+- Columnas: `PartNumber`, `Model`, `MinghuaDescription`, `Caducidad`, `Cco`, `CertificationEac`, `FirstFourNumbers`, `CreatedByExcelUploadId`, `CreatedAtUtc`, `LabelType`.
+- Filtros soportados por backend: `partNumber`, `model`, `minghuaDescription`, `cco`, `labelTypeName`.
 - Acciones por fila soportadas: ver detalle, editar.
 - Acción de toolbar soportada: crear.
 

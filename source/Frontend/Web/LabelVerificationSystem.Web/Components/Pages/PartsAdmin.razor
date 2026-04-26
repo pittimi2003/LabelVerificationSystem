@@ -27,6 +27,7 @@
                             <MudSelectItem T="string" Value="@(SearchFieldModel)">Model</MudSelectItem>
                             <MudSelectItem T="string" Value="@(SearchFieldMinghuaDescription)">MinghuaDescription</MudSelectItem>
                             <MudSelectItem T="string" Value="@(SearchFieldCco)">Cco</MudSelectItem>
+                            <MudSelectItem T="string" Value="@(SearchFieldLabelTypeName)">LabelType</MudSelectItem>
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" md="8" lg="7">
@@ -199,6 +200,7 @@
     private const string SearchFieldModel = "model";
     private const string SearchFieldMinghuaDescription = "minghuaDescription";
     private const string SearchFieldCco = "cco";
+    private const string SearchFieldLabelTypeName = "labelTypeName";
 
     private readonly List<PartListItemDto> _parts = [];
 
@@ -267,7 +269,7 @@
 
     private async Task OnSearchFieldChanged(string? value)
     {
-        SearchField = value is SearchFieldPartNumber or SearchFieldModel or SearchFieldMinghuaDescription or SearchFieldCco
+        SearchField = value is SearchFieldPartNumber or SearchFieldModel or SearchFieldMinghuaDescription or SearchFieldCco or SearchFieldLabelTypeName
             ? value
             : SearchFieldPartNumber;
         await ApplyFiltersAsync();
@@ -314,6 +316,7 @@
             Model: SearchField == SearchFieldModel ? normalizedText : null,
             MinghuaDescription: SearchField == SearchFieldMinghuaDescription ? normalizedText : null,
             Cco: SearchField == SearchFieldCco ? normalizedText : null,
+            LabelTypeName: SearchField == SearchFieldLabelTypeName ? normalizedText : null,
             Page: CurrentPage,
             PageSize: PageSize);
     }

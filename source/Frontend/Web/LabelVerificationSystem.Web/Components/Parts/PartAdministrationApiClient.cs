@@ -29,6 +29,7 @@ public sealed class PartAdministrationApiClient
         AddIfPresent(queryParameters, "model", query.Model);
         AddIfPresent(queryParameters, "minghuaDescription", query.MinghuaDescription);
         AddIfPresent(queryParameters, "cco", query.Cco);
+        AddIfPresent(queryParameters, "labelTypeName", query.LabelTypeName);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, $"api/parts?{string.Join("&", queryParameters)}");
         var response = await SendAsync(request, cancellationToken);
