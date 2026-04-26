@@ -1,5 +1,14 @@
 # Flujos Funcionales
 
+> Nota histórica: las referencias a estado "abierta" en este documento corresponden a registros de avance previos al cierre.
+> Estado vigente: **Fase 4 cerrada al 100%** (2026-04-23, revalidada 2026-04-26) y **Fase 5 pendiente**.
+
+
+> Estado vigente (2026-04-26): **Fase 4 cerrada al 100%**.
+>
+> Nota: cualquier mención a "Fase 4 abierta" en secciones de bitácora dentro de este archivo debe leerse como **registro histórico** previo al cierre formal (2026-04-23).
+
+
 ## Propósito de este documento
 
 Este documento describe los flujos funcionales del sistema con el nivel de definición actualmente disponible.

@@ -29,6 +29,17 @@ debe usarse con el significado aquí establecido, salvo que una actualización f
 
 ## Términos del dominio
 
+
+### Fase 4 cerrada al 100%
+Estado formal/técnico del proyecto para Bloque B donde el modelo robusto de autorización quedó operativo en runtime y validado con build, migraciones y E2E.
+
+---
+
+### Fase 5 pendiente
+Siguiente etapa del roadmap, explícitamente fuera del alcance del cierre de Fase 4.
+
+---
+
 ### Sistema de Verificación de Etiquetas
 Sistema web orientado a operación en planta cuyo objetivo es verificar etiquetas de partes, gestionar packing lists, administrar catálogos de partes y centralizar procesos operativos relacionados.
 

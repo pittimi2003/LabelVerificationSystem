@@ -172,6 +172,8 @@ No debe asumirse automáticamente como verdad oficial ninguno de estos elementos
 
 A la fecha actual, las siguientes afirmaciones sí forman parte de la verdad vigente del proyecto:
 
+- **Fase 4 (Bloque B) está cerrada al 100%** (cierre formal 2026-04-23, revalidado en runtime el 2026-04-26).
+- **Fase 5 permanece pendiente** y fuera de alcance de este cierre.
 - el proyecto está en **Construcción inicial**
 - la solución actual es la base activa de trabajo
 - la UI actual se utiliza como template y shell visual
