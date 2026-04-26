@@ -3,6 +3,8 @@
 **Fecha de cierre formal:** 2026-04-23 (UTC)  
 **Estado final:** **CERRADA FORMALMENTE**
 
+> Addendum de consistencia (2026-04-26 UTC): se revalidó runtime completo (build, migraciones desde base limpia, E2E robust-only, grids users/roles/parts, matrix y excel upload) sin reapertura de Fase 4.
+
 ## 1) Resumen ejecutivo de cierre
 Se declara el **cierre formal de Fase 4 (Bloque B)** sobre el estado validado vigente, sin incorporar trabajo de Fase 5 ni iniciativas de NLog.
 

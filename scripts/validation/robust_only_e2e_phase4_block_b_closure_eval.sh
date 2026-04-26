@@ -132,14 +132,13 @@ python3 - <<PY
 import sqlite3
 con = sqlite3.connect(r"$DB_PATH")
 cur = con.cursor()
-cur.execute("""
-update SystemUsers
-set RolesJson='["SuperAdmin"]',
-    PermissionsJson='["users.manage","authorization.matrix.manage","excel.upload.create"]'
-where UserId='operator-001'
-""")
-con.commit()
-print('db_tamper_rows', cur.rowcount)
+cur.execute("PRAGMA table_info('SystemUsers')")
+columns = [row[1] for row in cur.fetchall()]
+legacy_columns = [name for name in ("RolesJson", "PermissionsJson") if name in columns]
+if legacy_columns:
+    raise SystemExit(f"Columnas legacy aún presentes en SystemUsers: {legacy_columns}")
+print("legacy_columns_removed", True)
+print("systemusers_columns", columns)
 PY
 
 tampered_login_response="$(curl -sS -w '\n%{http_code}' -H 'Content-Type: application/json' -d "$OPERATOR_LOGIN_PAYLOAD" "$BASE_URL/api/auth/login")"
@@ -176,15 +175,6 @@ if 'SuperAdmin' in roles or 'users.manage' in permissions or 'authorization.matr
     raise SystemExit('Se detectó contaminación de sesión por RolesJson/PermissionsJson en cutover robust-only.')
 print('tampered_roles', sorted(roles))
 print('tampered_permissions', sorted(permissions))
-PY
-
-python3 - <<PY
-import sqlite3
-con = sqlite3.connect(r"$DB_PATH")
-cur = con.cursor()
-cur.execute("update SystemUsers set RolesJson='[]', PermissionsJson='[]' where UserId in ('admin-001','manager-001','operator-001')")
-con.commit()
-print('db_restore_rows', cur.rowcount)
 PY
 
 echo "CONFIG: ASPNETCORE_ENVIRONMENT=$ASPNETCORE_ENVIRONMENT Authorization__UseRobustMatrix=$Authorization__UseRobustMatrix Authorization__EnableLegacyFallback=$Authorization__EnableLegacyFallback Authorization__RobustOnlyCutover__Enabled=$Authorization__RobustOnlyCutover__Enabled"

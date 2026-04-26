@@ -1,5 +1,9 @@
 # Referencia concreta: RolesAdmin.razor (`RoleCatalog` / `Role`)
 
+> Nota histórica: este archivo contiene entradas de bitácora previas al cierre formal de Fase 4 (2026-04-23).
+> La verdad vigente del proyecto es **Fase 4 cerrada al 100%** y **Fase 5 pendiente**.
+
+
 ## Estado y alcance
 
 - Vista administrativa tipo Grid para `RoleCatalog` sobre contrato HTTP real.

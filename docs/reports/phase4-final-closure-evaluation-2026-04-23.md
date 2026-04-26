@@ -2,6 +2,8 @@
 
 Fecha: 2026-04-23 (UTC)
 
+> Addendum de revalidación (2026-04-26 UTC): se re-ejecutó evidencia E2E en runtime; el script de cierre fue ajustado para validar eliminación física de columnas legacy (`RolesJson`/`PermissionsJson`) en lugar de tampering sobre columnas ya retiradas.
+
 ## Alcance evaluado
 Endpoints críticos:
 - `POST /api/auth/login`
