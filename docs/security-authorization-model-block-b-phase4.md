@@ -88,3 +88,7 @@ Por eso ahora se conserva como historia técnica y no como guía vigente de ejec
 - Sirve para trazabilidad y auditoría técnica de decisiones.
 - No reemplaza los contratos/documentos vigentes de operación.
 - No habilita reintroducir fallback legacy ni `RolesJson`/`PermissionsJson` como fuente activa.
+
+## Nota documental 2026-04-26 (post-cierre Fase 4)
+- Se agregó módulo de autorización robusta `LabelTypes` con acciones `View/Create/Edit/ActivateDeactivate`.
+- Matriz base: `SuperAdmin` gestiona completo, `Managers` solo `View`, `Operators` sin permisos en módulo.

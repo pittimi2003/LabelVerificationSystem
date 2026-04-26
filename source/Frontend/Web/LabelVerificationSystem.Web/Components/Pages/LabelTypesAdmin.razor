@@ -1,0 +1,67 @@
+@page "/label-types"
+@using LabelVerificationSystem.Web.Components.LabelTypes
+@inject LabelTypeAdministrationApiClient ApiClient
+@inject ISnackbar Snackbar
+
+<PageTitle>Tipos de Etiqueta</PageTitle>
+
+<MudPaper Class="pa-4" Outlined="true">
+    <MudStack Spacing="3">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="flex-wrap gap-2">
+            <MudText Typo="Typo.h5">Tipos de Etiqueta</MudText>
+            <MudStack Row="true" Spacing="1">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">Crear tipo</MudButton>
+                <MudButton Variant="Variant.Outlined" OnClick="LoadAsync">Actualizar</MudButton>
+            </MudStack>
+        </MudStack>
+        <MudGrid>
+            <MudItem xs="12" md="6"><MudTextField T="string" Value="@Query" ValueChanged="OnQueryChanged" Label="SearchText" Immediate="true" Variant="Variant.Outlined" /></MudItem>
+            <MudItem xs="12" md="4"><MudSelect T="bool?" Value="@IsActive" ValueChanged="OnStatusChanged" Label="StatusFilter" Variant="Variant.Outlined"><MudSelectItem T="bool?" Value="@(null)">Todos</MudSelectItem><MudSelectItem T="bool?" Value="@(true)">Activos</MudSelectItem><MudSelectItem T="bool?" Value="@(false)">Inactivos</MudSelectItem></MudSelect></MudItem>
+            <MudItem xs="12" md="2" Class="d-flex align-center"><MudButton Variant="Variant.Text" OnClick="ClearFilters">Limpiar filtros</MudButton></MudItem>
+        </MudGrid>
+
+        <MudTable Items="@_items" Hover="true" Bordered="true">
+            <HeaderContent><MudTh>Name</MudTh><MudTh>Columns</MudTh><MudTh>Estado</MudTh><MudTh>Acciones</MudTh></HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Name</MudTd>
+                <MudTd>@context.Columns</MudTd>
+                <MudTd><MudChip T="string" Color="@(context.IsActive ? Color.Success : Color.Default)">@(context.IsActive?"Activo":"Inactivo")</MudChip></MudTd>
+                <MudTd><MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="() => OpenEdit(context)" /><MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew" OnClick="() => ToggleActivationAsync(context)" /></MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudStack>
+</MudPaper>
+
+<MudDrawer Anchor="Anchor.End" Variant="DrawerVariant.Temporary" Open="@DrawerOpen" Width="500px">
+    <MudDrawerHeader><MudText Typo="Typo.h6">@DrawerTitle</MudText></MudDrawerHeader>
+    <div class="pa-4">
+        <MudTextField T="string" @bind-Value="FormName" Label="Name" Variant="Variant.Outlined" Required="true" />
+        <MudSelect T="string" Label="Columnas" Variant="Variant.Outlined" MultiSelection="true" SelectedValues="@FormColumns" SelectedValuesChanged="OnColumnsChanged">
+            @foreach (var column in AvailableColumns) { <MudSelectItem Value="@column">@column</MudSelectItem> }
+        </MudSelect>
+        <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync">Guardar</MudButton>
+    </div>
+</MudDrawer>
+
+@code {
+    private readonly List<LabelTypeListItemDto> _items = [];
+    private string Query { get; set; } = string.Empty;
+    private bool? IsActive { get; set; }
+    private bool DrawerOpen { get; set; }
+    private Guid? EditingId { get; set; }
+    private string FormName { get; set; } = string.Empty;
+    private HashSet<string> FormColumns { get; set; } = [];
+    private List<string> AvailableColumns { get; set; } = [];
+    private string DrawerTitle => EditingId.HasValue ? "Editar tipo" : "Crear tipo";
+
+    protected override async Task OnInitializedAsync() { await LoadAsync(); }
+    private async Task LoadAsync() { _items.Clear(); _items.AddRange((await ApiClient.ListAsync(new(Query, IsActive, 1, 100), CancellationToken.None)).Items); AvailableColumns = (await ApiClient.GetAvailableColumnsAsync(CancellationToken.None)).ToList(); }
+    private Task OnQueryChanged(string? value) { Query = value ?? string.Empty; return LoadAsync(); }
+    private Task OnStatusChanged(bool? value) { IsActive = value; return LoadAsync(); }
+    private Task ClearFilters() { Query = string.Empty; IsActive = null; return LoadAsync(); }
+    private void OpenCreate() { EditingId = null; FormName = string.Empty; FormColumns = []; DrawerOpen = true; }
+    private void OpenEdit(LabelTypeListItemDto item) { EditingId = item.Id; FormName = item.Name; FormColumns = item.Columns.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToHashSet(StringComparer.OrdinalIgnoreCase); DrawerOpen = true; }
+    private Task OnColumnsChanged(IEnumerable<string>? values) { FormColumns = (values ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase); return Task.CompletedTask; }
+    private async Task SaveAsync() { try { if (EditingId.HasValue) await ApiClient.UpdateAsync(EditingId.Value, new(FormName, FormColumns.ToList(), true), CancellationToken.None); else await ApiClient.CreateAsync(new(FormName, FormColumns.ToList()), CancellationToken.None); DrawerOpen = false; await LoadAsync(); Snackbar.Add("Guardado correctamente.", Severity.Success);} catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error);} }
+    private async Task ToggleActivationAsync(LabelTypeListItemDto item) { try { await ApiClient.SetActivationAsync(item.Id, !item.IsActive, CancellationToken.None); await LoadAsync(); } catch (Exception ex) { Snackbar.Add(ex.Message, Severity.Error);} }
+}

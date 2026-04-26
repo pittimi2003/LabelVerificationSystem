@@ -632,3 +632,16 @@ Este documento debe actualizarse cuando ocurra cualquiera de estas situaciones:
 - Se identifica Carga de Excel como primer módulo real a construir.
 - Se describen los flujos principales sin inventar detalle no formalizado.
 - Se deja explícito qué partes del comportamiento siguen pendientes de definición.
+
+## Actualización 2026-04-26: cálculo de Tipo de Etiqueta en Carga Excel
+- Se cerró la regla de asignación automática en servicio de aplicación/dominio (`ILabelTypeResolver`).
+- El sistema toma columnas relevantes de cada fila/part y busca coincidencia exacta con `LabelTypes.Columns`.
+- Si no hay coincidencia, asigna el tipo por defecto `Por asignar`.
+
+### Regla de asignación automática de TipoEtiqueta (implementada)
+- Fuente de columnas evaluadas por part: `PartNumber`, `Model`, `MinghuaDescription`, `Caducidad`, `Cco`, `CertificationEac`, `FirstFourNumbers`.
+- Se construye el conjunto de columnas relevantes de la part: se incluye la columna si tiene valor útil (`null`/vacío no cuenta), con excepción de `FirstFourNumbers` que siempre participa por ser obligatoria en v1.
+- Matching: comparación **exacta de conjuntos** (`set equals`) contra `LabelType.Columns` (pipe `|`).
+- Si hay múltiples candidatos con mismo set, el resolver usa orden determinista por mayor longitud de `Columns` y luego `Name` ascendente.
+- Si no existe coincidencia exacta, se asigna fallback obligatorio `Por asignar`.
+- Si el catálogo no trae `Por asignar` activo, se recupera por `Id` reservado (`11111111-1111-1111-1111-111111111111`).

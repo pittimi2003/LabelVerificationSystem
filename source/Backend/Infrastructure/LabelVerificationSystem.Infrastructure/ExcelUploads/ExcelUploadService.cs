@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using LabelVerificationSystem.Application.Contracts.ExcelUploads;
 using LabelVerificationSystem.Application.Interfaces.ExcelUploads;
+using LabelVerificationSystem.Application.Interfaces.LabelTypes;
 using LabelVerificationSystem.Domain.Entities;
 using LabelVerificationSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,11 +41,13 @@ public sealed class ExcelUploadService : IExcelUploadService
 
     private readonly AppDbContext _dbContext;
     private readonly ExcelUploadStorageOptions _storageOptions;
+    private readonly ILabelTypeResolver _labelTypeResolver;
 
-    public ExcelUploadService(AppDbContext dbContext, Microsoft.Extensions.Options.IOptions<ExcelUploadStorageOptions> storageOptions)
+    public ExcelUploadService(AppDbContext dbContext, Microsoft.Extensions.Options.IOptions<ExcelUploadStorageOptions> storageOptions, ILabelTypeResolver labelTypeResolver)
     {
         _dbContext = dbContext;
         _storageOptions = storageOptions.Value;
+        _labelTypeResolver = labelTypeResolver;
     }
 
     public async Task<ExcelUploadResult> ProcessUploadAsync(Stream fileStream, string originalFileName, CancellationToken cancellationToken)
@@ -144,23 +147,28 @@ public sealed class ExcelUploadService : IExcelUploadService
                     continue;
                 }
 
+                var part = new Part
+                {
+                    Id = Guid.NewGuid(),
+                    PartNumber = rowPartNumber,
+                    Model = rowModel,
+                    MinghuaDescription = rowDescription,
+                    Caducidad = caducidad,
+                    Cco = rowCco,
+                    CertificationEac = certificationEac,
+                    FirstFourNumbers = firstFourNumbers,
+                    CreatedByExcelUploadId = uploadId,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                var labelType = await _labelTypeResolver.ResolveForPartAsync(part, cancellationToken);
+                part.LabelTypeId = labelType.LabelTypeId;
+                part.LabelTypeName = labelType.LabelTypeName;
+
                 pendingRows.Add(new PendingPartRow(
                     rowNumber,
                     rowPartNumber,
                     rowModel,
-                    new Part
-                    {
-                        Id = Guid.NewGuid(),
-                        PartNumber = rowPartNumber,
-                        Model = rowModel,
-                        MinghuaDescription = rowDescription,
-                        Caducidad = caducidad,
-                        Cco = rowCco,
-                        CertificationEac = certificationEac,
-                        FirstFourNumbers = firstFourNumbers,
-                        CreatedByExcelUploadId = uploadId,
-                        CreatedAtUtc = DateTime.UtcNow
-                    }));
+                    part));
             }
 
             var insertedRows = 0;

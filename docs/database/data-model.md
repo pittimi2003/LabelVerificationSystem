@@ -688,3 +688,16 @@ Notas:
 - no se alteró modelo relacional,
 - no se añadieron nuevas tablas/columnas,
 - la operación queda acotada a consulta + toggle de `IsActive`.
+
+## Extensión 2026-04-26: LabelType
+### Entidad lógica/física nueva
+- `LabelTypes`: `Id`, `Name` (único), `Columns` (pipe `|`), `IsActive`, auditoría de creación/actualización.
+- Seed obligatorio: `Por asignar` (persistente, no desactivable).
+### Cambios en `Part`
+- Nuevos campos: `LabelTypeId` (FK nullable) y `LabelTypeName` (denormalizado para grid/reporting).
+- Asignación automática al procesar Excel y al crear/editar parte.
+
+### Relación `Part` -> `LabelType`
+- `Part.LabelTypeId` referencia opcional a `LabelTypes.Id` (FK con `SetNull` en delete).
+- `Part.LabelTypeName` persiste nombre denormalizado para lectura operativa en grid/reportes.
+- Integridad funcional: toda part queda con tipo visible por fallback `Por asignar` cuando no hay match exacto.

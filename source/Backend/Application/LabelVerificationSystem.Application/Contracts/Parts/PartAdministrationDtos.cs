@@ -18,7 +18,8 @@ public sealed record PartListItemDto(
     bool? CertificationEac,
     int FirstFourNumbers,
     Guid? CreatedByExcelUploadId,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string LabelTypeName);
 
 public sealed record PartListResponse(
     IReadOnlyList<PartListItemDto> Items,
@@ -37,7 +38,8 @@ public sealed record PartDetailDto(
     bool? CertificationEac,
     int FirstFourNumbers,
     Guid? CreatedByExcelUploadId,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string LabelTypeName);
 
 public sealed record CreatePartRequest(
     string PartNumber,

@@ -12,5 +12,8 @@ public sealed class Part
     public int FirstFourNumbers { get; set; }
     public Guid? CreatedByExcelUploadId { get; set; }
     public ExcelUpload? CreatedByExcelUpload { get; set; }
+    public Guid? LabelTypeId { get; set; }
+    public LabelType? LabelType { get; set; }
+    public string LabelTypeName { get; set; } = "Por asignar";
     public DateTime CreatedAtUtc { get; set; }
 }

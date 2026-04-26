@@ -1549,3 +1549,22 @@ Request: misma estructura que `POST /api/parts`.
 
 ### Limitación abierta explícita
 - No existe estado operativo de `Part` en el modelo actual, por lo tanto **no existe** endpoint de activar/desactivar en este contrato.
+
+## Contratos implementados 2026-04-26: LabelTypes
+- `GET /api/label-types`
+- `GET /api/label-types/{id}`
+- `POST /api/label-types`
+- `PUT /api/label-types/{id}`
+- `PATCH /api/label-types/{id}/activation`
+- `GET /api/label-types/available-columns`
+
+Reglas: nombre obligatorio/único, columnas obligatorias/sin duplicados, columnas válidas según carga Excel actual, fallback `Por asignar`.
+
+### `GET /api/label-types/available-columns`
+- Devuelve el catálogo técnico de columnas soportadas para `LabelTypes.Columns`.
+- Fuente actual: lista centralizada en backend (`LabelTypeAvailableColumns.Values`) alineada al modelo de `Part` persistido por carga Excel.
+
+### Criterio de matching en asignación automática
+- La asignación usa comparación exacta de conjuntos de columnas (no es `contains`, no es coincidencia parcial).
+- Columnas faltantes o extra en la part generan **no match** y por lo tanto fallback `Por asignar`.
+- En empate de múltiples tipos con mismo set, la selección es determinista por orden del resolver (longitud desc, nombre asc).
