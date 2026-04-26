@@ -1600,6 +1600,6 @@ Estado explícito:
 - **Fase 4 continúa abierta**.
 
 ## Actualización 2026-04-26: inicio Core funcional - módulo Tipos de Etiqueta
-- Se implementó módulo administrativo `LabelTypes` (catálogo, API y grid frontend).
-- Se agregó asignación automática de tipo de etiqueta en alta de parts y carga Excel con fallback obligatorio `Por asignar`.
+- Se corrigió módulo administrativo `LabelTypes` para operar por reglas `columna + valor esperado` (tabla relacional `LabelTypeRules`, API y grid frontend).
+- Se actualizó asignación automática de tipo de etiqueta en alta/edición de parts y carga Excel con matching determinista por reglas y fallback obligatorio `Por asignar`.
 - Se agregó soporte de permisos robustos para `LabelTypes` con deny-by-default (admin gestiona; manager solo view; operator sin acceso).

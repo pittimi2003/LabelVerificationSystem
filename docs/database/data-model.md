@@ -691,7 +691,9 @@ Notas:
 
 ## Extensión 2026-04-26: LabelType
 ### Entidad lógica/física nueva
-- `LabelTypes`: `Id`, `Name` (único), `Columns` (pipe `|`), `IsActive`, auditoría de creación/actualización.
+- `LabelTypes`: `Id`, `Name` (único), `Columns` (proyección legible de columnas), `IsActive`, auditoría de creación/actualización.
+- `LabelTypeRules`: `Id`, `LabelTypeId` (FK), `ColumnName`, `ExpectedValue`, `CreatedAtUtc`, `UpdatedAtUtc`.
+- Fuente operativa de matching: `LabelTypeRules`.
 - Seed obligatorio: `Por asignar` (persistente, no desactivable).
 ### Cambios en `Part`
 - Nuevos campos: `LabelTypeId` (FK nullable) y `LabelTypeName` (denormalizado para grid/reporting).
@@ -700,4 +702,5 @@ Notas:
 ### Relación `Part` -> `LabelType`
 - `Part.LabelTypeId` referencia opcional a `LabelTypes.Id` (FK con `SetNull` en delete).
 - `Part.LabelTypeName` persiste nombre denormalizado para lectura operativa en grid/reportes.
-- Integridad funcional: toda part queda con tipo visible por fallback `Por asignar` cuando no hay match exacto.
+- Integridad funcional: toda part queda con tipo visible por fallback `Por asignar` cuando no hay match exacto de reglas columna+valor.
+- Restricción de reglas: índice único (`LabelTypeId`, `ColumnName`) para impedir columnas duplicadas dentro del mismo tipo.

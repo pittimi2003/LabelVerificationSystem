@@ -16,15 +16,22 @@ public sealed class LabelTypeResolver : ILabelTypeResolver
 
     public async Task<(Guid? LabelTypeId, string LabelTypeName)> ResolveForPartAsync(Part part, CancellationToken cancellationToken)
     {
-        var relevantColumns = GetRelevantColumns(part);
+        var partValues = GetNormalizedPartValues(part);
+
         var activeTypes = await _dbContext.Set<LabelType>()
             .AsNoTracking()
+            .Include(x => x.Rules)
             .Where(x => x.IsActive)
-            .OrderByDescending(x => x.Columns.Length)
-            .ThenBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
-        var match = activeTypes.FirstOrDefault(x => ParseColumns(x.Columns).SetEquals(relevantColumns));
+        var matches = activeTypes
+            .Where(x => x.Rules.Count > 0)
+            .Where(x => RuleMatches(partValues, x.Rules))
+            .OrderByDescending(x => x.Rules.Count)
+            .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var match = matches.FirstOrDefault();
         if (match is not null)
         {
             return (match.Id, match.Name);
@@ -32,26 +39,52 @@ public sealed class LabelTypeResolver : ILabelTypeResolver
 
         var fallback = activeTypes.FirstOrDefault(x => x.Name == LabelTypeAdministrationService.UnassignedName)
                        ?? await _dbContext.Set<LabelType>().AsNoTracking().FirstAsync(x => x.Id == LabelTypeAdministrationService.UnassignedId, cancellationToken);
+
         return (fallback.Id, fallback.Name);
     }
 
-    private static HashSet<string> GetRelevantColumns(Part part)
+    private static bool RuleMatches(IReadOnlyDictionary<string, string> partValues, IEnumerable<LabelTypeRule> rules)
     {
-        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrWhiteSpace(part.PartNumber)) set.Add("PartNumber");
-        if (!string.IsNullOrWhiteSpace(part.Model)) set.Add("Model");
-        if (!string.IsNullOrWhiteSpace(part.MinghuaDescription)) set.Add("MinghuaDescription");
-        if (part.Caducidad.HasValue) set.Add("Caducidad");
-        if (!string.IsNullOrWhiteSpace(part.Cco)) set.Add("Cco");
-        if (part.CertificationEac.HasValue) set.Add("CertificationEac");
-        set.Add("FirstFourNumbers");
-        return set;
+        foreach (var rule in rules)
+        {
+            if (!partValues.TryGetValue(rule.ColumnName, out var partValue))
+            {
+                return false;
+            }
+
+            var expected = NormalizeValue(rule.ExpectedValue);
+            if (!string.Equals(partValue, expected, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    private static HashSet<string> ParseColumns(string columns)
+    private static IReadOnlyDictionary<string, string> GetNormalizedPartValues(Part part)
     {
-        if (string.IsNullOrWhiteSpace(columns)) return new(StringComparer.OrdinalIgnoreCase);
-        return columns.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["PartNumber"] = NormalizeValue(part.PartNumber),
+            ["Model"] = NormalizeValue(part.Model),
+            ["MinghuaDescription"] = NormalizeValue(part.MinghuaDescription),
+            ["Cco"] = NormalizeValue(part.Cco),
+            ["FirstFourNumbers"] = part.FirstFourNumbers.ToString()
+        };
+
+        if (part.Caducidad.HasValue)
+        {
+            values["Caducidad"] = part.Caducidad.Value.ToString();
+        }
+
+        if (part.CertificationEac.HasValue)
+        {
+            values["CertificationEac"] = part.CertificationEac.Value ? "YES" : "NO";
+        }
+
+        return values;
     }
+
+    private static string NormalizeValue(string? value) => (value ?? string.Empty).Trim();
 }

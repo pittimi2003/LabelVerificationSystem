@@ -29,13 +29,14 @@ public sealed class PartsController : ControllerBase
         [FromQuery] string? model,
         [FromQuery] string? minghuaDescription,
         [FromQuery] string? cco,
+        [FromQuery] string? labelTypeName,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _partAdministrationService.ListAsync(new PartListQuery(partNumber, model, minghuaDescription, cco, page, pageSize), cancellationToken);
+            var response = await _partAdministrationService.ListAsync(new PartListQuery(partNumber, model, minghuaDescription, cco, labelTypeName, page, pageSize), cancellationToken);
             return Ok(response);
         }
         catch (AuthValidationException ex)

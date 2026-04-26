@@ -5,6 +5,7 @@ public sealed record PartListQuery(
     string? Model,
     string? MinghuaDescription,
     string? Cco,
+    string? LabelTypeName,
     int Page,
     int PageSize);
 
